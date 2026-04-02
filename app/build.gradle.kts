@@ -53,6 +53,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
 
     // === Hilt (Dependency Injection) ===
     implementation(libs.hilt.android)
@@ -72,6 +73,9 @@ dependencies {
 
     // === ViewModel for Compose ===
     implementation(libs.lifecycle.viewmodel.compose)
+
+    // === Calendar ===
+    implementation(libs.calendar.compose)
 
     // === Testing ===
     testImplementation(libs.junit)
