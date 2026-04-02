@@ -136,7 +136,6 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- Quick Access ---
             QuickAccessSection(
                 enabledRoutes = enabledNavItems,
                 onToggle = { route, enabled -> viewModel.toggleNavItem(route, enabled) }

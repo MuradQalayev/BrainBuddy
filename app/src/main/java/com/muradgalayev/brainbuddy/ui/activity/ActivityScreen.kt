@@ -14,9 +14,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
@@ -38,7 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 private data class FeatureCard(
     val title: String,
     val subtitle: String,
@@ -51,6 +51,7 @@ private val features = listOf(
     FeatureCard("Calendar", "Plan your schedule", Icons.Rounded.CalendarMonth, "calendar")
 )
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ActivityScreen(onNavigate: (String) -> Unit) {
     var isGrid by rememberSaveable { mutableStateOf(true) }
@@ -58,6 +59,7 @@ fun ActivityScreen(onNavigate: (String) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 24.dp)
             .animateContentSize(animationSpec = tween(300))
     ) {
@@ -82,17 +84,29 @@ fun ActivityScreen(onNavigate: (String) -> Unit) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(if (isGrid) 2 else 1),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(features) { feature ->
-                FeatureCardItem(
-                    feature = feature,
-                    isGrid = isGrid,
-                    onClick = { onNavigate(feature.route) }
-                )
+        if (isGrid) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                maxItemsInEachRow = 2
+            ) {
+                features.forEach { feature ->
+                    FeatureCardItem(
+                        feature = feature,
+                        isGrid = true,
+                        onClick = { onNavigate(feature.route) },
+                        modifier = Modifier.fillMaxWidth(0.48f)                    )
+                }
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                features.forEach { feature ->
+                    FeatureCardItem(
+                        feature = feature,
+                        isGrid = false,
+                        onClick = { onNavigate(feature.route) }
+                    )
+                }
             }
         }
     }
@@ -102,13 +116,14 @@ fun ActivityScreen(onNavigate: (String) -> Unit) {
 private fun FeatureCardItem(
     feature: FeatureCard,
     isGrid: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Surface(
         modifier = if (isGrid) {
-            Modifier.fillMaxWidth().aspectRatio(1f)
+            modifier.aspectRatio(1f)
         } else {
-            Modifier.fillMaxWidth()
+            modifier.fillMaxWidth()
         },
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,

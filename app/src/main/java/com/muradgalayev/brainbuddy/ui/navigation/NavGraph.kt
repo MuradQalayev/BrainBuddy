@@ -1,15 +1,17 @@
 package com.muradgalayev.brainbuddy.ui.navigation
 
+import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -25,12 +27,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -50,19 +52,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import java.util.Locale
 import com.muradgalayev.brainbuddy.ui.theme.AiButtonDark
 import com.muradgalayev.brainbuddy.ui.theme.AiButtonDarkEnd
 import com.muradgalayev.brainbuddy.ui.theme.AiButtonLight
 import com.muradgalayev.brainbuddy.ui.theme.AiButtonLightEnd
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.navArgument
+import com.muradgalayev.brainbuddy.data.local.entity.TodoItemEntity
 import com.muradgalayev.brainbuddy.ui.activity.ActivityScreen
 import com.muradgalayev.brainbuddy.ui.calendar.CalendarScreen
 import com.muradgalayev.brainbuddy.ui.home.HomeScreen
 import com.muradgalayev.brainbuddy.ui.settings.SettingsScreen
+import com.muradgalayev.brainbuddy.ui.todo.TaskDetailScreen
 import com.muradgalayev.brainbuddy.ui.todo.TodoScreen
 
 private const val MAX_VISIBLE_NAV_ITEMS = 4
@@ -112,7 +118,7 @@ fun NavGraph(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(bottom = 88.dp),
+                .padding(bottom = 104.dp),
             enterTransition = { fadeIn(animationSpec = tween(200)) },
             exitTransition = { fadeOut(animationSpec = tween(200)) }
         ) {
@@ -130,7 +136,35 @@ fun NavGraph(
             }
             composable(Screen.Settings.route) { SettingsScreen() }
             composable(Screen.Calendar.route) { CalendarScreen() }
-            composable(Screen.Todo.route) { TodoScreen() }
+            composable(Screen.Todo.route) {
+                TodoScreen()
+            }
+            composable(
+                "${Screen.TaskDetail.route}?taskId={taskId}",
+                arguments = listOf(
+                    navArgument("taskId") {
+                        type = NavType.StringType
+                        defaultValue = ""
+                    }
+                )
+            ) { backStackEntry ->
+                val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
+                // For now, pass a demo task - later this will come from a ViewModel
+                val demoTask = TodoItemEntity(
+                    id = taskId,
+                    title = "Sample Task",
+                    description = "Sample description",
+                    startTime = "10:00",
+                    endTime = "11:00"
+                )
+
+                TaskDetailScreen(
+                    task = demoTask,
+                    onBackClick = { navController.popBackStack() },
+                    onDeleteClick = { navController.popBackStack() },
+                    onUpdateClick = { navController.popBackStack() }
+                )
+            }
         }
         // Scrim
         AnimatedVisibility(
@@ -181,6 +215,21 @@ fun NavGraph(
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
             var promptText by remember { mutableStateOf("") }
+            var isListening by remember { mutableStateOf(false) }
+
+            // Speech recognition launcher
+            val speechRecognitionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.StartActivityForResult()
+            ) { result ->
+                if (result.resultCode == android.app.Activity.RESULT_OK) {
+                    val data = result.data
+                    val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                    if (!results.isNullOrEmpty()) {
+                        promptText += if (promptText.isEmpty()) results[0] else " ${results[0]}"
+                    }
+                }
+                isListening = false
+            }
 
             Surface(
                 modifier = Modifier
@@ -246,7 +295,8 @@ fun NavGraph(
 
                         // Text field with send button
                         Row(
-                            verticalAlignment = Alignment.Bottom
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
                         ) {
                             TextField(
                                 value = promptText,
@@ -269,7 +319,36 @@ fun NavGraph(
                                 maxLines = 4
                             )
 
-                            Spacer(modifier = Modifier.width(10.dp))
+                            // Voice button
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        color = if (isListening)
+                                            MaterialTheme.colorScheme.errorContainer
+                                        else
+                                            MaterialTheme.colorScheme.surfaceContainerHigh
+                                    )
+                                    .clickable {
+                                        isListening = true
+                                        val speechIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                                            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now...")
+                                            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+                                        }
+                                        speechRecognitionLauncher.launch(speechIntent)
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Mic,
+                                    contentDescription = "Voice input",
+                                    tint = if (isListening) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
 
                             // Send button
                             Box(
