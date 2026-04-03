@@ -107,4 +107,6 @@ class PomodoroViewModel @Inject constructor(
     }
 
     fun getFocusModePermissionIntent() = focusModeManager.getPermissionIntent()
+
 }
+
