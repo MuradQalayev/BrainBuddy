@@ -15,7 +15,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 data class TodoScreenUiState(
@@ -284,6 +286,16 @@ class TodoViewModel @Inject constructor(
             null
         }
 
+        val durationMinutes = try {
+            if (startTime.isNotEmpty() && endTime.isNotEmpty()) {
+                val start = LocalTime.parse(startTime, DateTimeFormatter.ofPattern("HH:mm"))
+                val end = LocalTime.parse(endTime, DateTimeFormatter.ofPattern("HH:mm"))
+                ChronoUnit.MINUTES.between(start, end).toInt().coerceAtLeast(30)
+            } else 60
+        } catch (_: Exception) {
+            60
+        }
+
         val dateFormatter = DateTimeFormatter.ofPattern("dd.MM")
         val formattedDate = try {
             LocalDate.parse(this.date).format(dateFormatter)
@@ -294,7 +306,9 @@ class TodoViewModel @Inject constructor(
         return TaskUi(
             id = this.id,
             title = this.title,
-            subtitle = this.description.ifEmpty { timeRange },
+            subtitle = this.description.ifEmpty { null },
+            timeRange = timeRange,
+            durationMinutes = durationMinutes,
             trailingDate = formattedDate,
             accent = accentColor,
             completed = this.isCompleted,

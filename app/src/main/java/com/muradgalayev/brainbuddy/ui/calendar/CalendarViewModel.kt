@@ -108,8 +108,8 @@ class CalendarViewModel @Inject constructor(
         startTime: String,
         endTime: String,
         category: String,
-        priority: TodoPriority = TodoPriority.MEDIUM,
-        color: TodoColor = TodoColor.LIGHT_PINK
+        color: String,
+        priority: TodoPriority = TodoPriority.MEDIUM
     ) {
         if (title.isBlank()) return
         viewModelScope.launch {
@@ -119,7 +119,7 @@ class CalendarViewModel @Inject constructor(
                 startTime = startTime,
                 endTime = endTime,
                 date = _uiState.value.selectedDate.toString(),
-                color = color.name,
+                color = color,
                 priority = priority.name,
                 category = category
             )
@@ -142,11 +142,10 @@ class CalendarViewModel @Inject constructor(
     }
 
     private fun TodoItemEntity.toCalendarTaskUi(): CalendarTaskUi {
-        val accentColor = when (this.color) {
-            "LIGHT_PINK" -> Color(0xFFFFB9D5)
-            "LIGHT_YELLOW" -> Color(0xFFFFF9B9)
-            "BURGUNDY" -> Color(0xFFC41E3A)
-            "LIGHT_BLUE" -> Color(0xFFB9E4FF)
+        val accentColor = when (this.color.lowercase()) {
+            "red" -> Color(0xFFC41E3A)
+            "blue" -> Color(0xFF82C8FF)
+            "yellow" -> Color(0xFFFFF9B9)
             else -> Color(0xFF82C8FF)
         }
 

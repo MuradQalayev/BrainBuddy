@@ -74,6 +74,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.muradgalayev.brainbuddy.ui.sharedcomponents.ColorOption
+import com.muradgalayev.brainbuddy.ui.sharedcomponents.TimePickerDialog
+import com.muradgalayev.brainbuddy.ui.sharedcomponents.TimePickerField
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -228,10 +232,13 @@ fun AddTaskDialog(
                         Spacer(Modifier.height(10.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             TimePickerField(
-                                palette = palette,
                                 value = startTime,
                                 label = "Start",
                                 placeholder = "09:00",
+                                mutedColor = palette.muted,
+                                accentColor = palette.lavender,
+                                borderColor = palette.dialogBorder,
+                                textColor = palette.ink,
                                 modifier = Modifier.weight(1f),
                                 onClick = {
                                     focusManager.clearFocus()
@@ -239,14 +246,17 @@ fun AddTaskDialog(
                                 }
                             )
                             TimePickerField(
-                                palette = palette,
-                                value = endTime,
-                                label = "End",
-                                placeholder = "10:00",
+                                value = startTime,
+                                label = "Start",
+                                placeholder = "09:00",
+                                mutedColor = palette.muted,
+                                accentColor = palette.lavender,
+                                borderColor = palette.dialogBorder,
+                                textColor = palette.ink,
                                 modifier = Modifier.weight(1f),
                                 onClick = {
                                     focusManager.clearFocus()
-                                    showEndPicker = true
+                                    showStartPicker = true
                                 }
                             )
                         }
@@ -542,10 +552,13 @@ fun EditTaskDialog(
                         Spacer(Modifier.height(10.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             TimePickerField(
-                                palette = palette,
                                 value = startTime,
                                 label = "Start",
                                 placeholder = "09:00",
+                                mutedColor = palette.muted,
+                                accentColor = palette.lavender,
+                                borderColor = palette.dialogBorder,
+                                textColor = palette.ink,
                                 modifier = Modifier.weight(1f),
                                 onClick = {
                                     focusManager.clearFocus()
@@ -553,14 +566,17 @@ fun EditTaskDialog(
                                 }
                             )
                             TimePickerField(
-                                palette = palette,
-                                value = endTime,
-                                label = "End",
-                                placeholder = "10:00",
+                                value = startTime,
+                                label = "Start",
+                                placeholder = "09:00",
+                                mutedColor = palette.muted,
+                                accentColor = palette.lavender,
+                                borderColor = palette.dialogBorder,
+                                textColor = palette.ink,
                                 modifier = Modifier.weight(1f),
                                 onClick = {
                                     focusManager.clearFocus()
-                                    showEndPicker = true
+                                    showStartPicker = true
                                 }
                             )
                         }
@@ -691,57 +707,6 @@ private fun SectionLabel(palette: TodoPalette, text: String) {
     )
 }
 
-@Composable
-private fun TimePickerField(
-    palette: TodoPalette,
-    value: String,
-    label: String,
-    placeholder: String,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Box(modifier = modifier) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = {},
-            label = { Text(label, fontSize = 13.sp) },
-            placeholder = {
-                Text(placeholder, color = palette.muted.copy(alpha = 0.5f), fontSize = 14.sp)
-            },
-            readOnly = true,
-            shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = palette.lavender,
-                unfocusedBorderColor = palette.dialogBorder,
-                focusedLabelColor = palette.lavender,
-                unfocusedLabelColor = palette.muted,
-                focusedTextColor = palette.ink,
-                unfocusedTextColor = palette.ink,
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent
-            ),
-            trailingIcon = {
-                Icon(
-                    imageVector = Icons.Outlined.AccessTime,
-                    contentDescription = null,
-                    tint = palette.muted,
-                    modifier = Modifier.size(18.dp)
-                )
-            },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onClick
-                )
-        )
-    }
-}
 
 @Composable
 private fun CategoryChip(
@@ -777,34 +742,6 @@ private fun CategoryChip(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TimePickerDialog(
-    title: String,
-    initialHour: Int,
-    initialMinute: Int,
-    onConfirm: (hour: Int, minute: Int) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val state = rememberTimePickerState(
-        initialHour = initialHour,
-        initialMinute = initialMinute,
-        is24Hour = true
-    )
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(state.hour, state.minute) }) {
-                Text("OK")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        },
-        text = { TimePicker(state = state) }
-    )
-}
 
 @Composable
 fun DialogTextField(
@@ -842,49 +779,3 @@ fun DialogTextField(
     )
 }
 
-@Composable
-fun ColorOption(
-    color: Color,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    val borderColor by animateColorAsState(
-        targetValue = if (selected) color else Color.Transparent,
-        animationSpec = tween(250),
-        label = "colorBorder"
-    )
-
-    Box(
-        modifier = Modifier
-            .size(36.dp)
-            .clip(CircleShape)
-            .border(
-                width = 2.5.dp,
-                color = borderColor,
-                shape = CircleShape
-            )
-            .padding(4.dp)
-            .clip(CircleShape)
-            .background(color)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        AnimatedVisibility(
-            visible = selected,
-            enter = scaleIn(
-                animationSpec = spring(
-                    dampingRatio = 0.5f,
-                    stiffness = Spring.StiffnessMedium
-                )
-            ) + fadeIn(tween(150)),
-            exit = scaleOut(tween(100)) + fadeOut(tween(100))
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Check,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(16.dp)
-            )
-        }
-    }
-}

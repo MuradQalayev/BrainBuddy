@@ -54,6 +54,15 @@ fun TaskCard(
         label = "flagColor"
     )
 
+    val baseHeight = 70
+    val extraPerHour = 20
+
+    val hours = (task.durationMinutes / 60f)
+
+    val cardHeight = (baseHeight + (hours * extraPerHour))
+        .coerceIn(80f, 180f)
+        .dp
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -70,13 +79,13 @@ fun TaskCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(80.dp),
+                .height(cardHeight),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
                     .width(8.dp)
-                    .height(80.dp)
+                    .height(cardHeight)
                     .clip(RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp))
                     .background(task.accent)
             )
@@ -90,7 +99,10 @@ fun TaskCard(
                 TaskStatusCircle(palette = palette, completed = task.completed)
                 Spacer(Modifier.width(14.dp))
 
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center
+                ) {
                     Text(
                         text = task.title,
                         color = if (task.completed) palette.muted else palette.ink,
@@ -101,6 +113,7 @@ fun TaskCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+
                     if (!task.subtitle.isNullOrEmpty()) {
                         Spacer(Modifier.height(4.dp))
                         Text(
@@ -108,13 +121,25 @@ fun TaskCard(
                             color = palette.muted,
                             fontSize = 13.sp,
                             lineHeight = 16.sp,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    if (!task.timeRange.isNullOrEmpty()) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = task.timeRange,
+                            color = palette.ink.copy(alpha = 0.8f),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                Spacer(Modifier.width(4.dp))
+                Spacer(Modifier.width(8.dp))
 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -138,12 +163,15 @@ fun TaskCard(
                             modifier = Modifier.size(18.dp)
                         )
                     }
-                    Text(
-                        text = task.trailingDate,
-                        color = palette.muted.copy(alpha = 0.7f),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+
+                    if (!task.trailingDate.isNullOrEmpty()) {
+                        Text(
+                            text = task.trailingDate,
+                            color = palette.muted.copy(alpha = 0.7f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }

@@ -71,7 +71,7 @@ import com.muradgalayev.brainbuddy.ui.settings.SettingsScreen
 import com.muradgalayev.brainbuddy.ui.pomodoro.PomodoroScreen
 import com.muradgalayev.brainbuddy.ui.todo.TaskDetailScreen
 import com.muradgalayev.brainbuddy.ui.todo.TodoScreen
-
+import androidx.compose.animation.core.animateDpAsState
 private const val MAX_VISIBLE_NAV_ITEMS = 4
 
 @Composable
@@ -108,10 +108,13 @@ fun NavGraph(
         if (needsMore) allEnabled.drop(MAX_VISIBLE_NAV_ITEMS - 1) else emptyList()
     }
 
-    // Full-screen routes hide the bottom nav
     val fullScreenRoutes = setOf(Screen.Pomodoro.route, Screen.Calendar.route)
     val isFullScreen = currentRoute in fullScreenRoutes
-
+    val bottomPadding by animateDpAsState(
+        targetValue = if (isFullScreen) 0.dp else 104.dp,
+        animationSpec = tween(220),
+        label = "bottomPadding"
+    )
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -122,12 +125,8 @@ fun NavGraph(
             startDestination = Screen.Home.route,
             modifier = Modifier
                 .fillMaxSize()
-                .then(
-                    if (isFullScreen) Modifier
-                    else Modifier
-                        .statusBarsPadding()
-                        .padding(bottom = 104.dp)
-                ),
+                .statusBarsPadding()
+                .padding(bottom = bottomPadding),
             enterTransition = { fadeIn(animationSpec = tween(200)) },
             exitTransition = { fadeOut(animationSpec = tween(200)) }
         ) {

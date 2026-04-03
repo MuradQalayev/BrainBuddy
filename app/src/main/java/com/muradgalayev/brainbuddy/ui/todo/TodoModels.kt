@@ -16,9 +16,10 @@ data class TaskUi(
     val id: String,
     val title: String,
     val subtitle: String? = null,
+    val timeRange: String? = null,
+    val durationMinutes: Int = 60,
     val trailingDate: String,
     val accent: Color,
     val completed: Boolean = false,
     val flagged: Boolean = false,
-
 )
