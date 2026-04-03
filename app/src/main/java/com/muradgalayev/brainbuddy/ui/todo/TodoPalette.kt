@@ -24,9 +24,15 @@ data class TodoPalette(
     val avatarEyes: Color,
     val searchCursor: Color,
     val dialogBorder: Color,
+    val taskRed: Color,
+    val taskBlue: Color,
+    val taskYellow: Color,
 )
 
 val LightPalette = TodoPalette(
+    taskRed = Color(0xFFE57373),
+    taskBlue = Color(0xFF64B5F6),
+    taskYellow = Color(0xFFFFD54F),
     bg = Color(0xFFF6F4F8),
     ink = Color(0xFF2C295B),
     muted = Color(0xFF8F8CA1),
@@ -66,4 +72,7 @@ val DarkPalette = TodoPalette(
     avatarEyes = Color(0xFF7B6BAA),
     searchCursor = Color(0xFFB49BFF),
     dialogBorder = Color(0xFF32353F),
+    taskRed = Color(0xFFEF5350),
+    taskBlue = Color(0xFF42A5F5),
+    taskYellow = Color(0xFFFFCA28),
 )

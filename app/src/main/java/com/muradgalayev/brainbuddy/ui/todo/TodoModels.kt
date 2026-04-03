@@ -20,4 +20,5 @@ data class TaskUi(
     val accent: Color,
     val completed: Boolean = false,
     val flagged: Boolean = false,
+
 )

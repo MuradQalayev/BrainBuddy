@@ -1,30 +1,51 @@
 package com.muradgalayev.brainbuddy.ui.todo
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.outlined.AccessTime
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -32,21 +53,27 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,8 +85,10 @@ fun AddTaskDialog(
         description: String,
         startTime: String,
         endTime: String,
-        category: String
-    ) -> Unit) {
+        category: String,
+        color: String
+    ) -> Unit
+) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var startTime by remember { mutableStateOf("") }
@@ -68,219 +97,291 @@ fun AddTaskDialog(
     var showEndPicker by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     var selectedCategory by remember { mutableStateOf("personal") }
+    var selectedColor by remember { mutableStateOf("blue") }
+
+    // Entrance animations
+    val slideOffset = remember { Animatable(300f) }
+    val cardAlpha = remember { Animatable(0f) }
+    val scrimAlpha = remember { Animatable(0f) }
+
+    // Staggered section visibility
+    val sectionAlphas = remember { List(6) { Animatable(0f) } }
+    val sectionOffsets = remember { List(6) { Animatable(30f) } }
+
+    LaunchedEffect(Unit) {
+        // Scrim fade in
+        launch { scrimAlpha.animateTo(1f, tween(250)) }
+        // Card slides up with spring
+        launch {
+            slideOffset.animateTo(
+                0f,
+                spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessLow)
+            )
+        }
+        launch { cardAlpha.animateTo(1f, tween(200)) }
+        // Stagger each section
+        sectionAlphas.forEachIndexed { i, anim ->
+            launch {
+                delay(150L + i * 60L)
+                launch { anim.animateTo(1f, tween(300)) }
+                launch {
+                    sectionOffsets[i].animateTo(
+                        0f,
+                        spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow)
+                    )
+                }
+            }
+        }
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Card(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = palette.cardBg),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                .fillMaxSize()
+                .alpha(scrimAlpha.value),
+            contentAlignment = Alignment.Center
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Text(
-                    text = "New Task",
-                    color = palette.ink,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.height(20.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .offset { IntOffset(0, slideOffset.value.toInt()) }
+                    .graphicsLayer { alpha = cardAlpha.value }
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(palette.cardBg)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(24.dp)
+                ) {
+                    // Header — section 0
+                    Box(
+                        modifier = Modifier
+                            .staggerAnim(sectionAlphas[0].value, sectionOffsets[0].value)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "New Task",
+                                color = palette.ink,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            IconButton(
+                                onClick = onDismiss,
+                                modifier = Modifier.size(36.dp),
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = palette.pillBg
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Close,
+                                    contentDescription = "Close",
+                                    tint = palette.muted,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
 
-                DialogTextField(
-                    palette = palette,
-                    value = title,
-                    onValueChange = { title = it },
-                    label = "Task name",
-                    placeholder = "e.g. Yoga practice",
-                    imeAction = ImeAction.Next
-                )
-                Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(24.dp))
 
-                DialogTextField(
-                    palette = palette,
-                    value = description,
-                    onValueChange = { description = it },
-                    label = "Description (optional)",
-                    placeholder = "e.g. Morning stretch routine",
-                    imeAction = ImeAction.Next
-                )
-                Spacer(Modifier.height(14.dp))
-
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(modifier = Modifier.weight(1f)) {
+                    // Text fields — section 1
+                    Column(
+                        modifier = Modifier
+                            .staggerAnim(sectionAlphas[1].value, sectionOffsets[1].value)
+                    ) {
                         DialogTextField(
                             palette = palette,
-                            value = startTime,
-                            onValueChange = {},
-                            label = "Start",
-                            placeholder = "09:00",
-                            imeAction = ImeAction.Next,
-                            readOnly = true
+                            value = title,
+                            onValueChange = { title = it },
+                            label = "Task name",
+                            placeholder = "e.g. Yoga practice",
+                            imeAction = ImeAction.Next
                         )
+                        Spacer(Modifier.height(16.dp))
+                        DialogTextField(
+                            palette = palette,
+                            value = description,
+                            onValueChange = { description = it },
+                            label = "Description (optional)",
+                            placeholder = "e.g. Morning stretch routine",
+                            imeAction = ImeAction.Next
+                        )
+                    }
 
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable {
+                    Spacer(Modifier.height(20.dp))
+
+                    // Time section — section 2
+                    Column(
+                        modifier = Modifier
+                            .staggerAnim(sectionAlphas[2].value, sectionOffsets[2].value)
+                    ) {
+                        SectionLabel(palette, "Time")
+                        Spacer(Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            TimePickerField(
+                                palette = palette,
+                                value = startTime,
+                                label = "Start",
+                                placeholder = "09:00",
+                                modifier = Modifier.weight(1f),
+                                onClick = {
                                     focusManager.clearFocus()
                                     showStartPicker = true
                                 }
-                        )
-                    }
-
-                    Box(modifier = Modifier.weight(1f)) {
-                        DialogTextField(
-                            palette = palette,
-                            value = endTime,
-                            onValueChange = {},
-                            label = "End",
-                            placeholder = "10:00",
-                            imeAction = ImeAction.Done,
-                            readOnly = true
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable {
+                            )
+                            TimePickerField(
+                                palette = palette,
+                                value = endTime,
+                                label = "End",
+                                placeholder = "10:00",
+                                modifier = Modifier.weight(1f),
+                                onClick = {
                                     focusManager.clearFocus()
                                     showEndPicker = true
                                 }
-                        )
+                            )
+                        }
                     }
-                }
 
+                    Spacer(Modifier.height(20.dp))
 
-                Spacer(Modifier.height(14.dp))
+                    // Category — section 3
+                    Column(
+                        modifier = Modifier
+                            .staggerAnim(sectionAlphas[3].value, sectionOffsets[3].value)
+                    ) {
+                        SectionLabel(palette, "Category")
+                        Spacer(Modifier.height(10.dp))
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(end = 8.dp)
+                        ) {
+                            items(
+                                listOf("work", "education", "personal", "sport", "health")
+                            ) { category ->
+                                CategoryChip(
+                                    palette = palette,
+                                    label = category.replaceFirstChar { it.uppercase() },
+                                    selected = selectedCategory == category,
+                                    onClick = { selectedCategory = category }
+                                )
+                            }
+                        }
+                    }
 
-                Text(
-                    text = "Category",
-                    color = palette.muted,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                    Spacer(Modifier.height(20.dp))
 
-                Spacer(Modifier.height(24.dp))
+                    // Color — section 4
+                    Column(
+                        modifier = Modifier
+                            .staggerAnim(sectionAlphas[4].value, sectionOffsets[4].value)
+                    ) {
+                        SectionLabel(palette, "Color")
+                        Spacer(Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                            ColorOption(
+                                color = palette.taskRed,
+                                selected = selectedColor == "red",
+                                onClick = { selectedColor = "red" }
+                            )
+                            ColorOption(
+                                color = palette.taskBlue,
+                                selected = selectedColor == "blue",
+                                onClick = { selectedColor = "blue" }
+                            )
+                            ColorOption(
+                                color = palette.taskYellow,
+                                selected = selectedColor == "yellow",
+                                onClick = { selectedColor = "yellow" }
+                            )
+                        }
+                    }
 
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(
-                        listOf("work", "education", "personal", "sport", "health")
-                    ) { category ->
-                        val selected = selectedCategory == category
+                    Spacer(Modifier.height(28.dp))
 
-                        Box(
+                    // Buttons — section 5
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .staggerAnim(sectionAlphas[5].value, sectionOffsets[5].value),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        TextButton(
+                            onClick = onDismiss,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(if (selected) palette.lavender else palette.pillBg)
-                                .clickable { selectedCategory = category }
-                                .padding(horizontal = 16.dp, vertical = 10.dp)
+                                .weight(1f)
+                                .height(50.dp),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
                             Text(
-                                text = category.replaceFirstChar { it.uppercase() },
-                                color = if (selected) Color.White else palette.ink,
-                                fontSize = 13.sp,
-                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+                                "Cancel",
+                                color = palette.muted,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 15.sp
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                if (title.isNotBlank()) {
+                                    onConfirm(title, description, startTime, endTime, selectedCategory, selectedColor)
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = palette.lavender
+                            ),
+                            enabled = title.isNotBlank()
+                        ) {
+                            Text(
+                                "Add Task",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
                             )
                         }
                     }
                 }
-                Spacer(Modifier.height(24.dp))
-
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("Cancel", color = palette.muted, fontWeight = FontWeight.Medium)
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    TextButton(
-                        onClick = {
-                            if (title.isNotBlank()) {
-                                onConfirm(title, description, startTime, endTime, selectedCategory)
-                            }
-                        }
-                    ) {
-                        Text("Add Task", color = palette.lavender, fontWeight = FontWeight.Bold)
-                    }
-                }
-                Spacer(Modifier.height(14.dp))
-
             }
         }
-
     }
+
     if (showStartPicker) {
-        val startPickerState = rememberTimePickerState(
+        TimePickerDialog(
+            title = "Select start time",
             initialHour = 9,
             initialMinute = 0,
-            is24Hour = true
-        )
-
-        AlertDialog(
-            onDismissRequest = { showStartPicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        startTime = "%02d:%02d".format(
-                            startPickerState.hour,
-                            startPickerState.minute
-                        )
-                        showStartPicker = false
-                    }
-                ) {
-                    Text("OK")
-                }
+            onConfirm = { h, m ->
+                startTime = "%02d:%02d".format(h, m)
+                showStartPicker = false
             },
-            dismissButton = {
-                TextButton(onClick = { showStartPicker = false }) {
-                    Text("Cancel")
-                }
-            },
-            text = {
-                TimePicker(state = startPickerState)
-            }
+            onDismiss = { showStartPicker = false }
         )
     }
     if (showEndPicker) {
-        val endPickerState = rememberTimePickerState(
+        TimePickerDialog(
+            title = "Select end time",
             initialHour = 10,
             initialMinute = 0,
-            is24Hour = true
-        )
-
-        AlertDialog(
-            onDismissRequest = { showEndPicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        endTime = "%02d:%02d".format(
-                            endPickerState.hour,
-                            endPickerState.minute
-                        )
-                        showEndPicker = false
-                    }
-                ) {
-                    Text("OK")
-                }
+            onConfirm = { h, m ->
+                endTime = "%02d:%02d".format(h, m)
+                showEndPicker = false
             },
-            dismissButton = {
-                TextButton(onClick = { showEndPicker = false }) {
-                    Text("Cancel")
-                }
-            },
-            text = {
-                TimePicker(state = endPickerState)
-            }
+            onDismiss = { showEndPicker = false }
         )
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -288,7 +389,7 @@ fun EditTaskDialog(
     palette: TodoPalette,
     task: TaskEditData,
     onDismiss: () -> Unit,
-    onSave: (id: String, title: String, description: String, startTime: String, endTime: String, priority: String, color: String,category: String) -> Unit,
+    onSave: (id: String, title: String, description: String, startTime: String, endTime: String, priority: String, color: String, category: String) -> Unit,
     onDelete: (id: String) -> Unit
 ) {
     var title by remember { mutableStateOf(task.title) }
@@ -298,196 +399,411 @@ fun EditTaskDialog(
     val focusManager = LocalFocusManager.current
     var showStartPicker by remember { mutableStateOf(false) }
     var showEndPicker by remember { mutableStateOf(false) }
+    var selectedColor by remember { mutableStateOf(task.color) }
+
+    // Entrance animations
+    val slideOffset = remember { Animatable(300f) }
+    val cardAlpha = remember { Animatable(0f) }
+    val scrimAlpha = remember { Animatable(0f) }
+
+    val sectionAlphas = remember { List(5) { Animatable(0f) } }
+    val sectionOffsets = remember { List(5) { Animatable(30f) } }
+
+    LaunchedEffect(Unit) {
+        launch { scrimAlpha.animateTo(1f, tween(250)) }
+        launch {
+            slideOffset.animateTo(
+                0f,
+                spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessLow)
+            )
+        }
+        launch { cardAlpha.animateTo(1f, tween(200)) }
+        sectionAlphas.forEachIndexed { i, anim ->
+            launch {
+                delay(150L + i * 60L)
+                launch { anim.animateTo(1f, tween(300)) }
+                launch {
+                    sectionOffsets[i].animateTo(
+                        0f,
+                        spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow)
+                    )
+                }
+            }
+        }
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Card(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = palette.cardBg),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                .fillMaxSize()
+                .alpha(scrimAlpha.value),
+            contentAlignment = Alignment.Center
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .offset { IntOffset(0, slideOffset.value.toInt()) }
+                    .graphicsLayer { alpha = cardAlpha.value }
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(palette.cardBg)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(24.dp)
                 ) {
-                    Text(
-                        text = "Edit Task",
-                        color = palette.ink,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    IconButton(onClick = { onDelete(task.id) }) {
-                        Icon(
-                            imageVector = Icons.Rounded.Delete,
-                            contentDescription = "Delete task",
-                            tint = palette.flagRed.copy(alpha = 0.8f),
-                            modifier = Modifier.size(22.dp)
-                        )
+                    // Header — section 0
+                    Box(
+                        modifier = Modifier
+                            .staggerAnim(sectionAlphas[0].value, sectionOffsets[0].value)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Edit Task",
+                                color = palette.ink,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                IconButton(
+                                    onClick = { onDelete(task.id) },
+                                    modifier = Modifier.size(36.dp),
+                                    colors = IconButtonDefaults.iconButtonColors(
+                                        containerColor = palette.flagRed.copy(alpha = 0.1f)
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Delete,
+                                        contentDescription = "Delete task",
+                                        tint = palette.flagRed,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                IconButton(
+                                    onClick = onDismiss,
+                                    modifier = Modifier.size(36.dp),
+                                    colors = IconButtonDefaults.iconButtonColors(
+                                        containerColor = palette.pillBg
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Close,
+                                        contentDescription = "Close",
+                                        tint = palette.muted,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
-                }
-                Spacer(Modifier.height(16.dp))
 
-                DialogTextField(
-                    palette = palette,
-                    value = title,
-                    onValueChange = { title = it },
-                    label = "Task name",
-                    placeholder = "e.g. Yoga practice",
-                    imeAction = ImeAction.Next
-                )
-                Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(24.dp))
 
-                DialogTextField(
-                    palette = palette,
-                    value = description,
-                    onValueChange = { description = it },
-                    label = "Description (optional)",
-                    placeholder = "e.g. Morning stretch routine",
-                    imeAction = ImeAction.Next
-                )
-                Spacer(Modifier.height(14.dp))
-
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(modifier = Modifier.weight(1f)) {
+                    // Text fields — section 1
+                    Column(
+                        modifier = Modifier
+                            .staggerAnim(sectionAlphas[1].value, sectionOffsets[1].value)
+                    ) {
                         DialogTextField(
                             palette = palette,
-                            value = startTime,
-                            onValueChange = {},
-                            label = "Start",
-                            placeholder = "09:00",
-                            imeAction = ImeAction.Next,
-                            readOnly = true
+                            value = title,
+                            onValueChange = { title = it },
+                            label = "Task name",
+                            placeholder = "e.g. Yoga practice",
+                            imeAction = ImeAction.Next
                         )
+                        Spacer(Modifier.height(16.dp))
+                        DialogTextField(
+                            palette = palette,
+                            value = description,
+                            onValueChange = { description = it },
+                            label = "Description (optional)",
+                            placeholder = "e.g. Morning stretch routine",
+                            imeAction = ImeAction.Next
+                        )
+                    }
 
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable {
+                    Spacer(Modifier.height(20.dp))
+
+                    // Time — section 2
+                    Column(
+                        modifier = Modifier
+                            .staggerAnim(sectionAlphas[2].value, sectionOffsets[2].value)
+                    ) {
+                        SectionLabel(palette, "Time")
+                        Spacer(Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            TimePickerField(
+                                palette = palette,
+                                value = startTime,
+                                label = "Start",
+                                placeholder = "09:00",
+                                modifier = Modifier.weight(1f),
+                                onClick = {
                                     focusManager.clearFocus()
                                     showStartPicker = true
                                 }
-                        )
-                    }
-
-                    Box(modifier = Modifier.weight(1f)) {
-                        DialogTextField(
-                            palette = palette,
-                            value = endTime,
-                            onValueChange = {},
-                            label = "End",
-                            placeholder = "10:00",
-                            imeAction = ImeAction.Done,
-                            readOnly = true
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable {
+                            )
+                            TimePickerField(
+                                palette = palette,
+                                value = endTime,
+                                label = "End",
+                                placeholder = "10:00",
+                                modifier = Modifier.weight(1f),
+                                onClick = {
                                     focusManager.clearFocus()
                                     showEndPicker = true
                                 }
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("Cancel", color = palette.muted, fontWeight = FontWeight.Medium)
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    TextButton(
-                        onClick = {
-                            if (title.isNotBlank()) {
-                                onSave(task.id, title, description, startTime, endTime, task.priority, task.color, task.category)
-                            }
+                            )
                         }
+                    }
+
+                    Spacer(Modifier.height(20.dp))
+
+                    // Color — section 3
+                    Column(
+                        modifier = Modifier
+                            .staggerAnim(sectionAlphas[3].value, sectionOffsets[3].value)
                     ) {
-                        Text("Save", color = palette.lavender, fontWeight = FontWeight.Bold)
+                        SectionLabel(palette, "Color")
+                        Spacer(Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                            ColorOption(
+                                color = palette.taskRed,
+                                selected = selectedColor == "red",
+                                onClick = { selectedColor = "red" }
+                            )
+                            ColorOption(
+                                color = palette.taskBlue,
+                                selected = selectedColor == "blue",
+                                onClick = { selectedColor = "blue" }
+                            )
+                            ColorOption(
+                                color = palette.taskYellow,
+                                selected = selectedColor == "yellow",
+                                onClick = { selectedColor = "yellow" }
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(28.dp))
+
+                    // Buttons — section 4
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .staggerAnim(sectionAlphas[4].value, sectionOffsets[4].value),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        TextButton(
+                            onClick = onDismiss,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text(
+                                "Cancel",
+                                color = palette.muted,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 15.sp
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                if (title.isNotBlank()) {
+                                    onSave(task.id, title, description, startTime, endTime, task.priority, selectedColor, task.category)
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = palette.lavender
+                            ),
+                            enabled = title.isNotBlank()
+                        ) {
+                            Text(
+                                "Save",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                        }
                     }
                 }
             }
         }
-
     }
+
     if (showStartPicker) {
-        val startPickerState = rememberTimePickerState(
+        TimePickerDialog(
+            title = "Select start time",
             initialHour = 9,
             initialMinute = 0,
-            is24Hour = true
-        )
-
-        AlertDialog(
-            onDismissRequest = { showStartPicker = false },
-            title = { Text("Select start time") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        startTime = "%02d:%02d".format(
-                            startPickerState.hour,
-                            startPickerState.minute
-                        )
-                        showStartPicker = false
-                    }
-                ) {
-                    Text("OK")
-                }
+            onConfirm = { h, m ->
+                startTime = "%02d:%02d".format(h, m)
+                showStartPicker = false
             },
-            dismissButton = {
-                TextButton(onClick = { showStartPicker = false }) {
-                    Text("Cancel")
-                }
-            },
-            text = {
-                TimePicker(state = startPickerState)
-            }
+            onDismiss = { showStartPicker = false }
         )
     }
     if (showEndPicker) {
-        val endPickerState = rememberTimePickerState(
+        TimePickerDialog(
+            title = "Select end time",
             initialHour = 10,
             initialMinute = 0,
-            is24Hour = true
-        )
-
-        AlertDialog(
-            onDismissRequest = { showEndPicker = false },
-            title = { Text("Select end time") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        endTime = "%02d:%02d".format(
-                            endPickerState.hour,
-                            endPickerState.minute
-                        )
-                        showEndPicker = false
-                    }
-                ) {
-                    Text("OK")
-                }
+            onConfirm = { h, m ->
+                endTime = "%02d:%02d".format(h, m)
+                showEndPicker = false
             },
-            dismissButton = {
-                TextButton(onClick = { showEndPicker = false }) {
-                    Text("Cancel")
-                }
-            },
-            text = {
-                TimePicker(state = endPickerState)
-            }
+            onDismiss = { showEndPicker = false }
         )
     }
+}
+
+// ── Shared components ──────────────────────────────────────────────────
+
+private fun Modifier.staggerAnim(alpha: Float, offsetY: Float): Modifier =
+    this
+        .graphicsLayer {
+            this.alpha = alpha
+            translationY = offsetY
+        }
+
+@Composable
+private fun SectionLabel(palette: TodoPalette, text: String) {
+    Text(
+        text = text,
+        color = palette.muted,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 0.5.sp
+    )
+}
+
+@Composable
+private fun TimePickerField(
+    palette: TodoPalette,
+    value: String,
+    label: String,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Box(modifier = modifier) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {},
+            label = { Text(label, fontSize = 13.sp) },
+            placeholder = {
+                Text(placeholder, color = palette.muted.copy(alpha = 0.5f), fontSize = 14.sp)
+            },
+            readOnly = true,
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = palette.lavender,
+                unfocusedBorderColor = palette.dialogBorder,
+                focusedLabelColor = palette.lavender,
+                unfocusedLabelColor = palette.muted,
+                focusedTextColor = palette.ink,
+                unfocusedTextColor = palette.ink,
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent
+            ),
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Outlined.AccessTime,
+                    contentDescription = null,
+                    tint = palette.muted,
+                    modifier = Modifier.size(18.dp)
+                )
+            },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onClick
+                )
+        )
+    }
+}
+
+@Composable
+private fun CategoryChip(
+    palette: TodoPalette,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val bgColor by animateColorAsState(
+        targetValue = if (selected) palette.lavender else palette.pillBg,
+        animationSpec = tween(250),
+        label = "chipBg"
+    )
+    val textColor by animateColorAsState(
+        targetValue = if (selected) Color.White else palette.ink,
+        animationSpec = tween(250),
+        label = "chipText"
+    )
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(bgColor)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 18.dp, vertical = 10.dp)
+    ) {
+        Text(
+            text = label,
+            color = textColor,
+            fontSize = 13.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TimePickerDialog(
+    title: String,
+    initialHour: Int,
+    initialMinute: Int,
+    onConfirm: (hour: Int, minute: Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val state = rememberTimePickerState(
+        initialHour = initialHour,
+        initialMinute = initialMinute,
+        is24Hour = true
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(state.hour, state.minute) }) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+        text = { TimePicker(state = state) }
+    )
 }
 
 @Composable
@@ -520,7 +836,55 @@ fun DialogTextField(
             unfocusedContainerColor = Color.Transparent
         ),
         singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
         keyboardOptions = KeyboardOptions(imeAction = imeAction),
         keyboardActions = KeyboardActions(onDone = { onDone?.invoke() })
     )
+}
+
+@Composable
+fun ColorOption(
+    color: Color,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val borderColor by animateColorAsState(
+        targetValue = if (selected) color else Color.Transparent,
+        animationSpec = tween(250),
+        label = "colorBorder"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .border(
+                width = 2.5.dp,
+                color = borderColor,
+                shape = CircleShape
+            )
+            .padding(4.dp)
+            .clip(CircleShape)
+            .background(color)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        AnimatedVisibility(
+            visible = selected,
+            enter = scaleIn(
+                animationSpec = spring(
+                    dampingRatio = 0.5f,
+                    stiffness = Spring.StiffnessMedium
+                )
+            ) + fadeIn(tween(150)),
+            exit = scaleOut(tween(100)) + fadeOut(tween(100))
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Check,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
 }

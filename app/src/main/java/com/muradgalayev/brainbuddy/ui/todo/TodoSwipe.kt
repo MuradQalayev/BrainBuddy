@@ -55,7 +55,7 @@ fun SwipeableTaskCard(
 
     val backgroundColor by animateColorAsState(
         targetValue = when (dismissState.dismissDirection) {
-            SwipeToDismissBoxValue.StartToEnd -> palette.lavender
+            SwipeToDismissBoxValue.StartToEnd -> task.accent
             SwipeToDismissBoxValue.EndToStart -> palette.flagRed
             SwipeToDismissBoxValue.Settled, null -> palette.cardBg
         },

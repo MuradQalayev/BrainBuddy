@@ -153,7 +153,8 @@ fun BottomNavBar(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    imageVector = screen.icon,
+//                                    imageVector = screen.icon
+                                    painter = painterResource(id = screen.icon),
                                     contentDescription = screen.label,
                                     tint = if (isActive)
                                         MaterialTheme.colorScheme.onPrimaryContainer
@@ -420,7 +421,8 @@ private fun NavBarItem(
                         .background(pillColor)
                 )
                 Icon(
-                    imageVector = screen.icon,
+//                    imageVector = screen.icon,
+                    painter = painterResource(id = screen.icon),
                     contentDescription = screen.label,
                     tint = iconColor,
                     modifier = Modifier

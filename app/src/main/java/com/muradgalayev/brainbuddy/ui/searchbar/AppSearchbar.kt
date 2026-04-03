@@ -1,4 +1,4 @@
-package com.muradgalayev.brainbuddy.ui.todo
+package com.muradgalayev.brainbuddy.ui.searchbar
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandHorizontally
@@ -37,11 +37,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun SearchBar(
-    palette: TodoPalette,
+fun AppSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    placeholderText: String = "Search..."
 ) {
     val focusRequester = remember { FocusRequester() }
 
@@ -54,17 +54,18 @@ fun SearchBar(
             .fillMaxWidth()
             .height(52.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(palette.cardBg),
+            .background(MaterialTheme.colorScheme.surfaceContainer),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Outlined.Search,
             contentDescription = null,
-            tint = palette.muted,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .padding(start = 16.dp)
                 .size(22.dp)
         )
+
         TextField(
             value = query,
             onValueChange = onQueryChange,
@@ -73,8 +74,8 @@ fun SearchBar(
                 .focusRequester(focusRequester),
             placeholder = {
                 Text(
-                    "Search tasks...",
-                    color = palette.muted.copy(alpha = 0.6f),
+                    text = placeholderText,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     fontSize = 15.sp
                 )
             },
@@ -83,13 +84,13 @@ fun SearchBar(
                 unfocusedContainerColor = Color.Transparent,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
-                cursorColor = palette.searchCursor,
-                focusedTextColor = palette.ink,
-                unfocusedTextColor = palette.ink
+                cursorColor = MaterialTheme.colorScheme.primary,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
             ),
             singleLine = true,
             textStyle = MaterialTheme.typography.bodyLarge.copy(
-                color = palette.ink,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 15.sp
             ),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -105,7 +106,7 @@ fun SearchBar(
                 Icon(
                     imageVector = Icons.Outlined.Close,
                     contentDescription = "Clear",
-                    tint = palette.muted,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -115,7 +116,7 @@ fun SearchBar(
             Icon(
                 imageVector = Icons.Outlined.Close,
                 contentDescription = "Close search",
-                tint = palette.ink,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(20.dp)
             )
         }

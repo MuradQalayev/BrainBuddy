@@ -56,6 +56,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -376,7 +377,8 @@ private fun QuickAccessSection(
                             modifier = Modifier.fillMaxSize()
                         ) {
                             Icon(
-                                imageVector = screen.icon,
+//                                imageVector = screen.icon,
+                                painter = painterResource(id = screen.icon),
                                 contentDescription = null,
                                 tint = if (enabled)
                                     MaterialTheme.colorScheme.primary

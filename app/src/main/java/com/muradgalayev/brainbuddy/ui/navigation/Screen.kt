@@ -9,27 +9,29 @@ import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.muradgalayev.brainbuddy.R
 
 sealed class Screen(
     val route: String,
     val label: String,
-    val icon: ImageVector
+    val icon: Int
 ) {
     // Fixed — always in the navbar
-    object Home : Screen("home", "Home", Icons.Rounded.Home)
-    object Activity : Screen("activity", "Activity", Icons.Rounded.FavoriteBorder)
-    object Calendar : Screen("calendar", "Calendar", Icons.Rounded.CalendarMonth)
-    object Settings : Screen("settings", "Settings", Icons.Rounded.Settings)
+    object Home : Screen("home", "Home", R.drawable.ic_house)
+    object Activity : Screen("activity", "Activity", R.drawable.ic_activity)
+
+    object Calendar : Screen("calendar", "Calendar", R.drawable.ic_calendar)
+    object Settings : Screen("settings", "Settings", R.drawable.ic_settings)
 
     // Optional screens (toggled via Quick Access in Settings)
-    object Todo : Screen("todo", "Todo", Icons.Rounded.CheckCircle)
-    object Pomodoro : Screen("pomodoro", "Pomodoro", Icons.Rounded.Timer)
+    object Todo : Screen("todo", "Todo", R.drawable.ic_todo)
+    object Pomodoro : Screen("pomodoro", "Pomodoro", R.drawable.ic_timer)
 
     // Detail screens
-    object TaskDetail : Screen("task_detail", "Task Detail", Icons.Rounded.CheckCircle)
+    object TaskDetail : Screen("task_detail", "Task Detail", R.drawable.ic_check)
 
     // More — shown when overflow is needed
-    object More : Screen("more", "More", Icons.Rounded.MoreHoriz)
+    object More : Screen("more", "More", R.drawable.ic_more)
 }
 
 val fixedNavItems = listOf(Screen.Home, Screen.Activity, Screen.Calendar, Screen.Settings)

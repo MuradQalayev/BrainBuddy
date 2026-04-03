@@ -1,20 +1,25 @@
 package com.muradgalayev.brainbuddy.ui.todo
-
+import android.R
+import com.muradgalayev.brainbuddy.ui.searchbar.AppSearchBar
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,6 +61,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -75,6 +81,14 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val p = rememberTodoPalette()
     var taskToDelete by remember { mutableStateOf<String?>(null) }
+    val fabInteractionSource = remember { MutableInteractionSource() }
+    val fabPressed by fabInteractionSource.collectIsPressedAsState()
+
+    val fabScale by animateFloatAsState(
+        targetValue = if (fabPressed) 0.95f else 1f,
+        animationSpec = tween(100),
+        label = "fabScale"
+    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         TodoListContent(
@@ -99,12 +113,17 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
 
         FloatingActionButton(
             onClick = { viewModel.showAddTaskDialog() },
+            interactionSource = fabInteractionSource,
             shape = CircleShape,
             containerColor = p.lavender,
             contentColor = Color.White,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(24.dp)
+                .graphicsLayer {
+                    scaleX = fabScale
+                    scaleY = fabScale
+                }
                 .shadow(
                     elevation = 12.dp,
                     shape = CircleShape,
@@ -124,8 +143,8 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
         AddTaskDialog(
             palette = p,
             onDismiss = viewModel::dismissAddTaskDialog,
-            onConfirm = { title, description, startTime, endTime, category ->
-                viewModel.addTask(title, description, startTime, endTime, category)
+            onConfirm = { title, description, startTime, endTime, category,color ->
+                viewModel.addTask(title, description, startTime, endTime, category, color)
             }
         )
     }
@@ -236,16 +255,23 @@ fun TodoListContent(
             AnimatedContent(
                 targetState = isSearchActive,
                 transitionSpec = {
-                    fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+                    if (targetState) {
+                        (fadeIn(tween(220)) + expandHorizontally(expandFrom = Alignment.End))
+                            .togetherWith(fadeOut(tween(160)))
+                    } else {
+                        fadeIn(tween(160)).togetherWith(
+                            fadeOut(tween(220)) + shrinkHorizontally(shrinkTowards = Alignment.End)
+                        )
+                    }
                 },
                 label = "headerSwitch"
             ) { searching ->
                 if (searching) {
-                    SearchBar(
-                        palette = p,
+                    AppSearchBar(
                         query = searchQuery,
                         onQueryChange = onSearchQueryChange,
-                        onClose = onSearchClick
+                        onClose = onSearchClick,
+                        placeholderText = "Search tasks..."
                     )
                 } else {
                     Row(

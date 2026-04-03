@@ -40,23 +40,35 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.ui.res.painterResource
+import com.muradgalayev.brainbuddy.R
+import com.muradgalayev.brainbuddy.ui.searchbar.AppSearchBar
+
 private data class FeatureCard(
     val title: String,
     val subtitle: String,
-    val icon: ImageVector,
+    val icon: Int,
     val route: String
 )
 
 private val features = listOf(
-    FeatureCard("To-Do", "Manage tasks", Icons.Rounded.Checklist, "todo"),
-    FeatureCard("Calendar", "Plan your schedule", Icons.Rounded.CalendarMonth, "calendar"),
-    FeatureCard("Pomodoro", "Focus timer", Icons.Rounded.Timer, "pomodoro")
+    FeatureCard("To-Do", "Manage tasks", R.drawable.ic_todo, "todo"),
+    FeatureCard("Calendar", "Plan your schedule", R.drawable.ic_calendar, "calendar"),
+    FeatureCard("Pomodoro", "Focus timer", R.drawable.ic_timer, "pomodoro")
 )
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ActivityScreen(onNavigate: (String) -> Unit) {
     var isGrid by rememberSaveable { mutableStateOf(true) }
+    var isSearchActive by rememberSaveable { mutableStateOf(false) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+
+    val filteredFeatures = features.filter {
+        it.title.contains(searchQuery, ignoreCase = true) ||
+                it.subtitle.contains(searchQuery, ignoreCase = true)
+    }
 
     Column(
         modifier = Modifier
@@ -65,22 +77,43 @@ fun ActivityScreen(onNavigate: (String) -> Unit) {
             .padding(horizontal = 20.dp, vertical = 24.dp)
             .animateContentSize(animationSpec = tween(300))
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Activity",
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
+        if (isSearchActive) {
+            AppSearchBar(
+                query = searchQuery,
+                onQueryChange = { searchQuery = it },
+                onClose = {
+                    searchQuery = ""
+                    isSearchActive = false
+                },
+                placeholderText = "Search activities..."
             )
-            IconButton(onClick = { isGrid = !isGrid }) {
-                Icon(
-                    imageVector = if (isGrid) Icons.Rounded.ViewAgenda else Icons.Rounded.GridView,
-                    contentDescription = if (isGrid) "List view" else "Grid view",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Activity",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
                 )
+
+                IconButton(onClick = { isSearchActive = true }) {
+                    Icon(
+                        imageVector = Icons.Rounded.Search,
+                        contentDescription = "Search",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                IconButton(onClick = { isGrid = !isGrid }) {
+                    Icon(
+                        imageVector = if (isGrid) Icons.Rounded.ViewAgenda else Icons.Rounded.GridView,
+                        contentDescription = if (isGrid) "List view" else "Grid view",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
 
@@ -92,17 +125,18 @@ fun ActivityScreen(onNavigate: (String) -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 maxItemsInEachRow = 2
             ) {
-                features.forEach { feature ->
+                filteredFeatures.forEach { feature ->
                     FeatureCardItem(
                         feature = feature,
                         isGrid = true,
                         onClick = { onNavigate(feature.route) },
-                        modifier = Modifier.fillMaxWidth(0.48f)                    )
+                        modifier = Modifier.fillMaxWidth(0.48f)
+                    )
                 }
             }
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                features.forEach { feature ->
+                filteredFeatures.forEach { feature ->
                     FeatureCardItem(
                         feature = feature,
                         isGrid = false,
@@ -113,7 +147,6 @@ fun ActivityScreen(onNavigate: (String) -> Unit) {
         }
     }
 }
-
 @Composable
 private fun FeatureCardItem(
     feature: FeatureCard,
@@ -145,7 +178,7 @@ private fun FeatureCardItem(
                 ) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                         Icon(
-                            imageVector = feature.icon,
+                            painter = painterResource(id = feature.icon),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(26.dp)
@@ -181,7 +214,7 @@ private fun FeatureCardItem(
                 ) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                         Icon(
-                            imageVector = feature.icon,
+                            painter = painterResource(id = feature.icon),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(26.dp)

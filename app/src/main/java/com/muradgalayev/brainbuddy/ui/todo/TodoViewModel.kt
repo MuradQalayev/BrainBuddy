@@ -182,15 +182,14 @@ class TodoViewModel @Inject constructor(
     fun dismissAddTaskDialog() {
         _uiState.update { it.copy(showAddTaskDialog = false) }
     }
-
     fun addTask(
         title: String,
         description: String,
         startTime: String,
         endTime: String,
         category: String,
-        priority: TodoPriority = TodoPriority.MEDIUM,
-        color: TodoColor = TodoColor.LIGHT_PINK
+        color: String,
+        priority: TodoPriority = TodoPriority.MEDIUM
     ) {
         if (title.isBlank()) return
         viewModelScope.launch {
@@ -200,7 +199,7 @@ class TodoViewModel @Inject constructor(
                 startTime = startTime,
                 endTime = endTime,
                 date = LocalDate.now().toString(),
-                color = color.name,
+                color = color,
                 priority = priority.name,
                 category = category
             )
@@ -273,10 +272,9 @@ class TodoViewModel @Inject constructor(
 
     private fun TodoItemEntity.toTaskUi(): TaskUi {
         val accentColor = when (this.color) {
-            "LIGHT_PINK" -> Color(0xFFFFB9D5)
-            "LIGHT_YELLOW" -> Color(0xFFFFF9B9)
-            "BURGUNDY" -> Color(0xFFC41E3A)
-            "LIGHT_BLUE" -> Color(0xFFB9E4FF)
+            "red" -> Color(0xFFC41E3A)
+            "blue" -> Color(0xFF82C8FF)
+            "yellow" -> Color(0xFFFFF9B9)
             else -> Color(0xFF82C8FF)
         }
 
