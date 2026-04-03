@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Checklist
 import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.ViewAgenda
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,7 +49,8 @@ private data class FeatureCard(
 
 private val features = listOf(
     FeatureCard("To-Do", "Manage tasks", Icons.Rounded.Checklist, "todo"),
-    FeatureCard("Calendar", "Plan your schedule", Icons.Rounded.CalendarMonth, "calendar")
+    FeatureCard("Calendar", "Plan your schedule", Icons.Rounded.CalendarMonth, "calendar"),
+    FeatureCard("Pomodoro", "Focus timer", Icons.Rounded.Timer, "pomodoro")
 )
 
 @OptIn(ExperimentalLayoutApi::class)

@@ -24,6 +24,9 @@ class TodoRepository @Inject constructor(
 
     suspend fun deleteTodoItem(todoItem: TodoItemEntity) = todoItemDao.deleteTodoItem(todoItem)
 
+    fun getTodoItemsInRange(startDate: String, endDate: String): Flow<List<TodoItemEntity>> =
+        todoItemDao.getTodoItemsInRange(startDate, endDate)
+
     suspend fun toggleTodoItemCompletion(id: String) {
         val item = todoItemDao.getTodoItemById(id) ?: return
         todoItemDao.updateTodoItem(item.copy(isCompleted = !item.isCompleted))

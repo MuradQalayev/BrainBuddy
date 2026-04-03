@@ -18,7 +18,8 @@ data class TodoItemEntity(
     val endTime: String,
     val priority: String = TodoPriority.MEDIUM.name,
     val attendees: Int = 0,
-    val color: String = TodoColor.LIGHT_PINK.name
+    val color: String = TodoColor.LIGHT_PINK.name,
+    val category: String = "personal"
 )
 
 enum class TodoPriority {

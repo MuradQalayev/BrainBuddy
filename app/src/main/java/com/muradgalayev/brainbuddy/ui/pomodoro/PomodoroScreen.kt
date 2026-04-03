@@ -1,0 +1,860 @@
+package com.muradgalayev.brainbuddy.ui.pomodoro
+
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.NotificationsOff
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.muradgalayev.brainbuddy.data.local.AmbientSound
+import com.muradgalayev.brainbuddy.data.local.TimerState
+import com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionType
+import com.muradgalayev.brainbuddy.ui.theme.AiButtonDark
+import com.muradgalayev.brainbuddy.ui.theme.AiButtonDarkEnd
+import com.muradgalayev.brainbuddy.ui.theme.AiButtonLight
+import com.muradgalayev.brainbuddy.ui.theme.AiButtonLightEnd
+
+// Focus accent — uses AI purple gradient
+private val FocusPurpleLight = AiButtonLight       // #6366F1
+private val FocusPurpleLightEnd = AiButtonLightEnd // #8B5CF6
+private val FocusPurpleDark = AiButtonDark         // #818CF8
+private val FocusPurpleDarkEnd = AiButtonDarkEnd   // #A78BFA
+
+// Break accent
+private val BreakGreen = Color(0xFF4CAF50)
+private val BreakBlue = Color(0xFF42A5F5)
+
+@Composable
+fun PomodoroScreen(
+    onBackClick: () -> Unit,
+    viewModel: PomodoroViewModel = hiltViewModel()
+) {
+    val timerState by viewModel.timerState.collectAsState()
+    val uiExtra by viewModel.uiExtra.collectAsState()
+    val focusModeSetting by viewModel.focusModeSetting.collectAsState()
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        viewModel.refreshFocusModePermission()
+        viewModel.dismissPermissionDialog()
+    }
+
+    // Request POST_NOTIFICATIONS permission for Android 13+
+    val context = LocalContext.current
+    val notifPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { /* granted or not, service will still work but notification may not show */ }
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+
+    val focusGradient = if (isDark)
+        Brush.linearGradient(listOf(FocusPurpleDark, FocusPurpleDarkEnd))
+    else
+        Brush.linearGradient(listOf(FocusPurpleLight, FocusPurpleLightEnd))
+
+    val arcColor = when (timerState.sessionType) {
+        PomodoroSessionType.FOCUS -> if (isDark) FocusPurpleDark else FocusPurpleLight
+        PomodoroSessionType.SHORT_BREAK -> BreakGreen
+        PomodoroSessionType.LONG_BREAK -> BreakBlue
+    }
+    val arcColorEnd = when (timerState.sessionType) {
+        PomodoroSessionType.FOCUS -> if (isDark) FocusPurpleDarkEnd else FocusPurpleLightEnd
+        PomodoroSessionType.SHORT_BREAK -> BreakGreen
+        PomodoroSessionType.LONG_BREAK -> BreakBlue
+    }
+
+    val trackColor = if (isDark) Color.White.copy(alpha = 0.08f) else Color(0xFFF0F0F0)
+
+    val animatedProgress by animateFloatAsState(
+        targetValue = timerState.progress,
+        animationSpec = tween(150),
+        label = "progress"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+    ) {
+        // Top bar
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Text(
+                text = "Focus Timer",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            if (focusModeSetting) {
+                IconButton(onClick = {
+                    if (!uiExtra.focusModePermissionGranted) {
+                        viewModel.requestFocusModePermission()
+                    }
+                }) {
+                    Icon(
+                        imageVector = if (timerState.focusModeActive)
+                            Icons.Rounded.NotificationsOff
+                        else Icons.Rounded.Notifications,
+                        contentDescription = "Focus Mode",
+                        tint = if (timerState.focusModeActive) arcColor
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Session type pills
+            SessionTypePills(
+                currentType = timerState.sessionType,
+                onSelect = viewModel::selectSessionType,
+                enabled = timerState.timerState == TimerState.IDLE,
+                accentColor = arcColor
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Focus Progress card
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                tonalElevation = 2.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Focus Progress",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        // Edit duration button (only when idle)
+                        if (timerState.timerState == TimerState.IDLE) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = arcColor.copy(alpha = 0.12f),
+                                onClick = { viewModel.showDurationPicker() }
+                            ) {
+                                Text(
+                                    text = "${timerState.totalDurationMs / 60000} min",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = arcColor,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Circular timer
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.7f)
+                            .aspectRatio(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            val strokeWidth = 12.dp.toPx()
+                            val radius = (size.minDimension - strokeWidth) / 2f
+                            val topLeft = Offset(
+                                (size.width - radius * 2) / 2f,
+                                (size.height - radius * 2) / 2f
+                            )
+                            val arcSize = Size(radius * 2, radius * 2)
+
+                            // Background track
+                            drawArc(
+                                color = trackColor,
+                                startAngle = -90f,
+                                sweepAngle = 360f,
+                                useCenter = false,
+                                topLeft = topLeft,
+                                size = arcSize,
+                                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                            )
+
+                            // Progress arc with gradient brush
+                            drawArc(
+                                brush = Brush.sweepGradient(
+                                    colors = listOf(arcColor, arcColorEnd, arcColor)
+                                ),
+                                startAngle = -90f,
+                                sweepAngle = 360f * animatedProgress,
+                                useCenter = false,
+                                topLeft = topLeft,
+                                size = arcSize,
+                                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                            )
+                        }
+
+                        // Timer text — tappable when idle to edit
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = if (timerState.timerState == TimerState.IDLE)
+                                Modifier
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .clickable { viewModel.showDurationPicker() }
+                                    .padding(12.dp)
+                            else Modifier.padding(12.dp)
+                        ) {
+                            val minutes = (timerState.remainingMs / 1000) / 60
+                            val seconds = (timerState.remainingMs / 1000) % 60
+                            Text(
+                                text = "%02d.%02d".format(minutes, seconds),
+                                fontSize = 44.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = when (timerState.timerState) {
+                                    TimerState.IDLE -> "Tap to edit"
+                                    TimerState.RUNNING -> "Focus"
+                                    TimerState.PAUSED -> "Paused"
+                                    TimerState.COMPLETED -> "Done!"
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (timerState.timerState == TimerState.IDLE) arcColor
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Session info
+                    val sessionLabel = when (timerState.sessionType) {
+                        PomodoroSessionType.FOCUS -> "Stay focus for ${timerState.totalDurationMs / 60000} min"
+                        PomodoroSessionType.SHORT_BREAK -> "Short break for ${timerState.totalDurationMs / 60000} min"
+                        PomodoroSessionType.LONG_BREAK -> "Long break for ${timerState.totalDurationMs / 60000} min"
+                    }
+                    Text(
+                        text = sessionLabel,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    if (timerState.completedSessions > 0) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "${timerState.completedSessions} session${if (timerState.completedSessions > 1) "s" else ""} completed",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = arcColor,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Add / Subtract time
+            AnimatedVisibility(
+                visible = timerState.timerState == TimerState.RUNNING || timerState.timerState == TimerState.PAUSED,
+                enter = fadeIn(tween(200)),
+                exit = fadeOut(tween(200))
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    SmallControlButton(
+                        icon = Icons.Rounded.Remove,
+                        label = "-5 min",
+                        onClick = viewModel::subtractTime,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(32.dp))
+                    SmallControlButton(
+                        icon = Icons.Rounded.Add,
+                        label = "+5 min",
+                        onClick = viewModel::addTime,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Ambient Music section
+            AmbientMusicSection(
+                selectedSound = timerState.selectedAmbientSound,
+                onSoundSelect = viewModel::selectAmbientSound,
+                accentColor = arcColor
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Bottom controls
+            BottomControls(
+                timerState = timerState.timerState,
+                accentColor = arcColor,
+                accentGradient = if (timerState.sessionType == PomodoroSessionType.FOCUS) focusGradient
+                else Brush.linearGradient(listOf(arcColor, arcColor)),
+                onStart = viewModel::start,
+                onPause = viewModel::pause,
+                onResume = viewModel::resume,
+                onReset = viewModel::reset,
+                onStop = viewModel::stop,
+                onSkip = viewModel::skipToNext
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+
+    // Duration picker dialog
+    if (uiExtra.showDurationPicker) {
+        DurationPickerDialog(
+            currentMinutes = (timerState.totalDurationMs / 60000).toInt(),
+            onConfirm = { viewModel.setCustomDuration(it) },
+            onDismiss = viewModel::dismissDurationPicker,
+            accentColor = arcColor
+        )
+    }
+
+    // DND permission dialog
+    if (uiExtra.showPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = viewModel::dismissPermissionDialog,
+            title = { Text("Focus Mode Permission") },
+            text = {
+                Text(
+                    "To silence notifications during focus sessions, BrainBuddy needs " +
+                    "Do Not Disturb access. This lets the app temporarily mute notifications " +
+                    "while your timer is running and restore them when it ends."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    permissionLauncher.launch(viewModel.getFocusModePermissionIntent())
+                }) { Text("Open Settings") }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::dismissPermissionDialog) { Text("Not Now") }
+            }
+        )
+    }
+}
+
+// ─── Duration Picker Dialog ────────────────────────────────────────
+
+@Composable
+private fun DurationPickerDialog(
+    currentMinutes: Int,
+    onConfirm: (Int) -> Unit,
+    onDismiss: () -> Unit,
+    accentColor: Color
+) {
+    var selectedMinutes by rememberSaveable { mutableIntStateOf(currentMinutes) }
+    val presets = listOf(5, 10, 15, 20, 25, 30, 45, 60, 90, 120)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Set Duration", fontWeight = FontWeight.SemiBold)
+        },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Current selection
+                Text(
+                    text = "$selectedMinutes min",
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = accentColor
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // +/- buttons
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        onClick = { if (selectedMinutes > 1) selectedMinutes -= 1 },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Icon(Icons.Rounded.Remove, "Decrease", modifier = Modifier.size(20.dp))
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        onClick = { if (selectedMinutes < 180) selectedMinutes += 1 },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Icon(Icons.Rounded.Add, "Increase", modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Preset chips
+                Text(
+                    text = "Quick presets",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    presets.forEach { mins ->
+                        val isSelected = mins == selectedMinutes
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isSelected) accentColor.copy(alpha = 0.15f)
+                            else MaterialTheme.colorScheme.surfaceContainerHigh,
+                            onClick = { selectedMinutes = mins }
+                        ) {
+                            Text(
+                                text = "${mins}m",
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (isSelected) accentColor
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(selectedMinutes) }) {
+                Text("Set", color = accentColor, fontWeight = FontWeight.SemiBold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
+}
+
+// ─── Ambient Music Section ─────────────────────────────────────────
+
+@Composable
+private fun AmbientMusicSection(
+    selectedSound: AmbientSound?,
+    onSoundSelect: (AmbientSound?) -> Unit,
+    accentColor: Color
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 1.dp
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Rounded.MusicNote,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Ambient Sound",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                if (selectedSound != null) {
+                    Text(
+                        text = selectedSound.label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = accentColor,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .clickable { onSoundSelect(null) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Close,
+                            contentDescription = "Clear",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "Optional",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                AmbientSound.entries.forEach { sound ->
+                    val isSelected = sound == selectedSound
+                    val bgColor by animateColorAsState(
+                        targetValue = if (isSelected) accentColor.copy(alpha = 0.15f)
+                        else MaterialTheme.colorScheme.surfaceContainerHigh,
+                        animationSpec = tween(200),
+                        label = "soundBg"
+                    )
+                    val textColor by animateColorAsState(
+                        targetValue = if (isSelected) accentColor
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        animationSpec = tween(200),
+                        label = "soundText"
+                    )
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = bgColor,
+                        onClick = {
+                            onSoundSelect(if (isSelected) null else sound)
+                        }
+                    ) {
+                        Text(
+                            text = sound.label,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            color = textColor,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ─── Session Type Pills ────────────────────────────────────────────
+
+@Composable
+private fun SessionTypePills(
+    currentType: PomodoroSessionType,
+    onSelect: (PomodoroSessionType) -> Unit,
+    enabled: Boolean,
+    accentColor: Color
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        PomodoroSessionType.entries.forEach { type ->
+            val selected = type == currentType
+            val label = when (type) {
+                PomodoroSessionType.FOCUS -> "Focus"
+                PomodoroSessionType.SHORT_BREAK -> "Short Break"
+                PomodoroSessionType.LONG_BREAK -> "Long Break"
+            }
+            val bgColor by animateColorAsState(
+                targetValue = if (selected) accentColor.copy(alpha = 0.15f)
+                else Color.Transparent,
+                animationSpec = tween(250),
+                label = "pillBg"
+            )
+            val textColor by animateColorAsState(
+                targetValue = if (selected) accentColor
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                animationSpec = tween(250),
+                label = "pillText"
+            )
+
+            Surface(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(14.dp),
+                color = bgColor,
+                onClick = { if (enabled) onSelect(type) }
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp)
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        color = textColor,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ─── Small +/- Control Button ──────────────────────────────────────
+
+@Composable
+private fun SmallControlButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    tint: Color
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(8.dp)
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = Modifier.size(40.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Icon(imageVector = icon, contentDescription = label, tint = tint, modifier = Modifier.size(20.dp))
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(text = label, style = MaterialTheme.typography.labelSmall, color = tint)
+    }
+}
+
+// ─── Bottom Controls ───────────────────────────────────────────────
+
+@Composable
+private fun BottomControls(
+    timerState: TimerState,
+    accentColor: Color,
+    accentGradient: Brush,
+    onStart: () -> Unit,
+    onPause: () -> Unit,
+    onResume: () -> Unit,
+    onReset: () -> Unit,
+    onStop: () -> Unit,
+    onSkip: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        when (timerState) {
+            TimerState.IDLE -> {
+                GradientCircleButton(
+                    icon = Icons.Rounded.PlayArrow,
+                    label = "Start",
+                    gradient = accentGradient,
+                    size = 72,
+                    onClick = onStart
+                )
+            }
+            TimerState.RUNNING -> {
+                ControlCircle(Icons.Rounded.Refresh, "Reset", onReset,
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                    MaterialTheme.colorScheme.surfaceContainerHigh)
+                Spacer(modifier = Modifier.width(20.dp))
+                GradientCircleButton(Icons.Rounded.Pause, "Pause", accentGradient, 72, onPause)
+                Spacer(modifier = Modifier.width(20.dp))
+                ControlCircle(Icons.Rounded.SkipNext, "Skip", onSkip,
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                    MaterialTheme.colorScheme.surfaceContainerHigh)
+            }
+            TimerState.PAUSED -> {
+                ControlCircle(Icons.Rounded.Stop, "Stop", onStop,
+                    MaterialTheme.colorScheme.error,
+                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f))
+                Spacer(modifier = Modifier.width(20.dp))
+                GradientCircleButton(Icons.Rounded.PlayArrow, "Resume", accentGradient, 72, onResume)
+                Spacer(modifier = Modifier.width(20.dp))
+                ControlCircle(Icons.Rounded.Refresh, "Reset", onReset,
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                    MaterialTheme.colorScheme.surfaceContainerHigh)
+            }
+            TimerState.COMPLETED -> {
+                ControlCircle(Icons.Rounded.Refresh, "Restart", onReset,
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                    MaterialTheme.colorScheme.surfaceContainerHigh)
+                Spacer(modifier = Modifier.width(20.dp))
+                GradientCircleButton(Icons.Rounded.SkipNext, "Next", accentGradient, 72, onSkip)
+            }
+        }
+    }
+}
+
+@Composable
+private fun GradientCircleButton(
+    icon: ImageVector,
+    label: String,
+    gradient: Brush,
+    size: Int,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(size.dp)
+            .clip(CircleShape)
+            .background(gradient)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = Color.White,
+            modifier = Modifier.size((size / 2).dp)
+        )
+    }
+}
+
+@Composable
+private fun ControlCircle(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    tint: Color,
+    bgColor: Color
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Surface(
+            modifier = Modifier.size(52.dp),
+            shape = CircleShape,
+            color = bgColor,
+            onClick = onClick
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Icon(imageVector = icon, contentDescription = label, tint = tint, modifier = Modifier.size(24.dp))
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}

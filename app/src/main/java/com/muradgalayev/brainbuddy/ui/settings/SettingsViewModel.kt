@@ -25,6 +25,9 @@ class SettingsViewModel @Inject constructor(
     val enabledNavItems = preferencesManager.enabledNavItems
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
+    val focusModeEnabled = preferencesManager.focusModeEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { preferencesManager.setThemeMode(mode) }
     }
@@ -35,5 +38,9 @@ class SettingsViewModel @Inject constructor(
 
     fun toggleNavItem(route: String, enabled: Boolean) {
         viewModelScope.launch { preferencesManager.setNavItemEnabled(route, enabled) }
+    }
+
+    fun toggleFocusMode(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setFocusModeEnabled(enabled) }
     }
 }

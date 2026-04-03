@@ -36,6 +36,7 @@ import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -61,8 +62,8 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.muradgalayev.brainbuddy.data.local.FontMode
 import com.muradgalayev.brainbuddy.data.local.ThemeMode
-import com.muradgalayev.brainbuddy.ui.navigation.optionalNavItems
 import com.muradgalayev.brainbuddy.ui.components.ProfileHeaderCard
+import com.muradgalayev.brainbuddy.ui.navigation.optionalNavItems
 
 @Composable
 fun SettingsScreen(
@@ -71,6 +72,7 @@ fun SettingsScreen(
     val themeMode by viewModel.themeMode.collectAsState()
     val fontMode by viewModel.fontMode.collectAsState()
     val enabledNavItems by viewModel.enabledNavItems.collectAsState()
+    val focusModeEnabled by viewModel.focusModeEnabled.collectAsState()
     var appearanceOpen by rememberSaveable { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -139,6 +141,14 @@ fun SettingsScreen(
             QuickAccessSection(
                 enabledRoutes = enabledNavItems,
                 onToggle = { route, enabled -> viewModel.toggleNavItem(route, enabled) }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // --- Focus Mode ---
+            FocusModeSection(
+                enabled = focusModeEnabled,
+                onToggle = { viewModel.toggleFocusMode(it) }
             )
         }
     }
@@ -399,6 +409,96 @@ private fun QuickAccessSection(
                         )
                     )
                 }
+            }
+        }
+    }
+}
+
+// ─── Focus Mode Section ────────────────────────────────────────────
+
+@Composable
+private fun FocusModeSection(
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.NotificationsOff,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Pomodoro",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            color = if (enabled)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+            else
+                MaterialTheme.colorScheme.surfaceContainer,
+            onClick = { onToggle(!enabled) }
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (enabled)
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                    else
+                        MaterialTheme.colorScheme.surfaceContainerHighest,
+                    modifier = Modifier.size(42.dp)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.NotificationsOff,
+                            contentDescription = null,
+                            tint = if (enabled)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Silence notifications during focus",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = if (enabled) "DND will activate during Pomodoro sessions"
+                        else "Enable to mute notifications during focus",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = enabled,
+                    onCheckedChange = { onToggle(it) },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
             }
         }
     }

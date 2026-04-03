@@ -40,7 +40,8 @@ data class TaskEditData(
     val startTime: String,
     val endTime: String,
     val priority: String,
-    val color: String
+    val color: String,
+    val category: String
 )
 
 @HiltViewModel
@@ -76,15 +77,18 @@ class TodoViewModel @Inject constructor(
             }.collect { (activeItems, completedItems) ->
                 val todayDate = LocalDate.now().toString()
                 val query = _uiState.value.searchQuery.lowercase().trim()
+                val selectedCategory = _uiState.value.selectedCategory
 
                 val todayActive = activeItems
                     .filter { it.date == todayDate }
                     .filter { matchesSearch(it, query) }
+                    .filter { matchesCategory(it, selectedCategory) }
                     .map { it.toTaskUi() }
 
                 val todayCompleted = completedItems
                     .filter { it.date == todayDate }
                     .filter { matchesSearch(it, query) }
+                    .filter { matchesCategory(it, selectedCategory) }
                     .map { it.toTaskUi() }
 
                 val allToday = activeItems.count { it.date == todayDate } +
@@ -102,6 +106,9 @@ class TodoViewModel @Inject constructor(
                 }
             }
         }
+    }
+    private fun matchesCategory(item: TodoItemEntity, selectedCategory: String): Boolean {
+        return selectedCategory == "all" || item.category == selectedCategory
     }
 
     private fun matchesSearch(item: TodoItemEntity, query: String): Boolean {
@@ -129,6 +136,7 @@ class TodoViewModel @Inject constructor(
                 categories = state.categories.map { it.copy(selected = it.id == categoryId) }
             )
         }
+        observeTodoItems()
     }
 
     // ── Search ──
@@ -180,6 +188,7 @@ class TodoViewModel @Inject constructor(
         description: String,
         startTime: String,
         endTime: String,
+        category: String,
         priority: TodoPriority = TodoPriority.MEDIUM,
         color: TodoColor = TodoColor.LIGHT_PINK
     ) {
@@ -192,7 +201,8 @@ class TodoViewModel @Inject constructor(
                 endTime = endTime,
                 date = LocalDate.now().toString(),
                 color = color.name,
-                priority = priority.name
+                priority = priority.name,
+                category = category
             )
             todoRepository.insertTodoItem(newTask)
             _uiState.update { it.copy(showAddTaskDialog = false) }
@@ -213,7 +223,8 @@ class TodoViewModel @Inject constructor(
                         startTime = item.startTime,
                         endTime = item.endTime,
                         priority = item.priority,
-                        color = item.color
+                        color = item.color,
+                        category = item.category
                     )
                 )
             }
@@ -231,7 +242,8 @@ class TodoViewModel @Inject constructor(
         startTime: String,
         endTime: String,
         priority: String,
-        color: String
+        color: String,
+        category: String
     ) {
         if (title.isBlank()) return
         viewModelScope.launch {
@@ -243,7 +255,8 @@ class TodoViewModel @Inject constructor(
                     startTime = startTime,
                     endTime = endTime,
                     priority = priority,
-                    color = color
+                    color = color,
+                    category = category
                 )
             )
             _uiState.update { it.copy(editingTask = null) }

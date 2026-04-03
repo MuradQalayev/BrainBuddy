@@ -3,6 +3,7 @@ package com.muradgalayev.brainbuddy.data.local
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
@@ -25,6 +26,7 @@ class PreferencesManager @Inject constructor(
     private val themeKey = stringPreferencesKey("theme_mode")
     private val fontKey = stringPreferencesKey("font_mode")
     private val enabledNavKey = stringSetPreferencesKey("enabled_nav_items")
+    private val focusModeKey = booleanPreferencesKey("focus_mode_enabled")
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
         when (prefs[themeKey]) {
@@ -46,6 +48,10 @@ class PreferencesManager @Inject constructor(
         prefs[enabledNavKey] ?: emptySet()
     }
 
+    val focusModeEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[focusModeKey] ?: false
+    }
+
     suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { prefs ->
             prefs[themeKey] = mode.name
@@ -62,6 +68,12 @@ class PreferencesManager @Inject constructor(
         context.dataStore.edit { prefs ->
             val current = prefs[enabledNavKey] ?: emptySet()
             prefs[enabledNavKey] = if (enabled) current + route else current - route
+        }
+    }
+
+    suspend fun setFocusModeEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[focusModeKey] = enabled
         }
     }
 }

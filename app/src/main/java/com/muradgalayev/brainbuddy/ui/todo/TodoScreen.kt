@@ -99,6 +99,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 
 /* ── Theme-aware palette ── */
 @Immutable
@@ -245,8 +248,8 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
         AddTaskDialog(
             palette = p,
             onDismiss = viewModel::dismissAddTaskDialog,
-            onConfirm = { title, description, startTime, endTime ->
-                viewModel.addTask(title, description, startTime, endTime)
+            onConfirm = { title, description, startTime, endTime, category ->
+                viewModel.addTask(title, description, startTime, endTime, category)
             }
         )
     }
@@ -256,8 +259,8 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
             palette = p,
             task = task,
             onDismiss = viewModel::dismissEditTask,
-            onSave = { id, title, desc, start, end, priority, color ->
-                viewModel.updateTask(id, title, desc, start, end, priority, color)
+            onSave = { id, title, desc, start, end, priority, color, category ->
+                viewModel.updateTask(id, title, desc, start, end, priority, color, category)
             },
             onDelete = { viewModel.deleteTask(it) }
         )
@@ -807,10 +810,10 @@ private fun SwipeableTaskCard(
     )
 
     val backgroundColor by animateColorAsState(
-        targetValue = when (dismissState.targetValue) {
+        targetValue = when (dismissState.dismissDirection) {
             SwipeToDismissBoxValue.StartToEnd -> palette.lavender
             SwipeToDismissBoxValue.EndToStart -> palette.flagRed
-            SwipeToDismissBoxValue.Settled -> palette.cardBg
+            SwipeToDismissBoxValue.Settled, null -> palette.cardBg
         },
         label = "swipeBackground"
     )
@@ -827,7 +830,7 @@ private fun SwipeableTaskCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                when (dismissState.targetValue) {
+                when (dismissState.dismissDirection) {
                     SwipeToDismissBoxValue.StartToEnd -> {
                         Icon(
                             imageVector = Icons.Rounded.Edit,
@@ -848,7 +851,7 @@ private fun SwipeableTaskCard(
                         )
                     }
 
-                    SwipeToDismissBoxValue.Settled -> {
+                    SwipeToDismissBoxValue.Settled, null -> {
                         Box(modifier = Modifier.size(24.dp))
                         Box(modifier = Modifier.size(24.dp))
                     }
@@ -1056,17 +1059,26 @@ private fun EmptyState(palette: TodoPalette, isSearchResult: Boolean = false) {
 }
 
 /* ── Add Task Dialog ── */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddTaskDialog(
     palette: TodoPalette,
     onDismiss: () -> Unit,
-    onConfirm: (title: String, description: String, startTime: String, endTime: String) -> Unit
-) {
+    onConfirm: (
+        title: String,
+        description: String,
+        startTime: String,
+        endTime: String,
+        category: String
+    ) -> Unit) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var startTime by remember { mutableStateOf("") }
     var endTime by remember { mutableStateOf("") }
+    var showStartPicker by remember { mutableStateOf(false) }
+    var showEndPicker by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
+    var selectedCategory by remember { mutableStateOf("personal") }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -1110,35 +1122,85 @@ private fun AddTaskDialog(
                 Spacer(Modifier.height(14.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(Modifier.weight(1f)) {
+                    Box(modifier = Modifier.weight(1f)) {
                         DialogTextField(
                             palette = palette,
                             value = startTime,
-                            onValueChange = { startTime = it },
+                            onValueChange = {},
                             label = "Start",
                             placeholder = "09:00",
-                            imeAction = ImeAction.Next
+                            imeAction = ImeAction.Next,
+                            readOnly = true
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable {
+                                    focusManager.clearFocus()
+                                    showStartPicker = true
+                                }
                         )
                     }
-                    Box(Modifier.weight(1f)) {
+
+                    Box(modifier = Modifier.weight(1f)) {
                         DialogTextField(
                             palette = palette,
                             value = endTime,
-                            onValueChange = { endTime = it },
+                            onValueChange = {},
                             label = "End",
                             placeholder = "10:00",
                             imeAction = ImeAction.Done,
-                            onDone = {
-                                focusManager.clearFocus()
-                                if (title.isNotBlank()) {
-                                    onConfirm(title, description, startTime, endTime)
+                            readOnly = true
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable {
+                                    focusManager.clearFocus()
+                                    showEndPicker = true
                                 }
-                            }
                         )
                     }
                 }
 
+
+                Spacer(Modifier.height(14.dp))
+
+                Text(
+                    text = "Category",
+                    color = palette.muted,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
+
                 Spacer(Modifier.height(24.dp))
+
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(
+                        listOf("work", "education", "personal", "sport", "health")
+                    ) { category ->
+                        val selected = selectedCategory == category
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(if (selected) palette.lavender else palette.pillBg)
+                                .clickable { selectedCategory = category }
+                                .padding(horizontal = 16.dp, vertical = 10.dp)
+                        ) {
+                            Text(
+                                text = category.replaceFirstChar { it.uppercase() },
+                                color = if (selected) Color.White else palette.ink,
+                                fontSize = 13.sp,
+                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(24.dp))
+
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1151,25 +1213,95 @@ private fun AddTaskDialog(
                     TextButton(
                         onClick = {
                             if (title.isNotBlank()) {
-                                onConfirm(title, description, startTime, endTime)
+                                onConfirm(title, description, startTime, endTime, selectedCategory)
                             }
                         }
                     ) {
                         Text("Add Task", color = palette.lavender, fontWeight = FontWeight.Bold)
                     }
                 }
+                Spacer(Modifier.height(14.dp))
+
             }
         }
+
+    }
+    if (showStartPicker) {
+        val startPickerState = rememberTimePickerState(
+            initialHour = 9,
+            initialMinute = 0,
+            is24Hour = true
+        )
+
+        AlertDialog(
+            onDismissRequest = { showStartPicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        startTime = "%02d:%02d".format(
+                            startPickerState.hour,
+                            startPickerState.minute
+                        )
+                        showStartPicker = false
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showStartPicker = false }) {
+                    Text("Cancel")
+                }
+            },
+            text = {
+                TimePicker(state = startPickerState)
+            }
+        )
+    }
+    if (showEndPicker) {
+        val endPickerState = rememberTimePickerState(
+            initialHour = 10,
+            initialMinute = 0,
+            is24Hour = true
+        )
+
+        AlertDialog(
+            onDismissRequest = { showEndPicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        endTime = "%02d:%02d".format(
+                            endPickerState.hour,
+                            endPickerState.minute
+                        )
+                        showEndPicker = false
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEndPicker = false }) {
+                    Text("Cancel")
+                }
+            },
+            text = {
+                TimePicker(state = endPickerState)
+            }
+        )
     }
 }
 
+
 /* ── Edit Task Dialog ── */
+@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 private fun EditTaskDialog(
     palette: TodoPalette,
     task: TaskEditData,
     onDismiss: () -> Unit,
-    onSave: (id: String, title: String, description: String, startTime: String, endTime: String, priority: String, color: String) -> Unit,
+    onSave: (id: String, title: String, description: String, startTime: String, endTime: String, priority: String, color: String,category: String) -> Unit,
     onDelete: (id: String) -> Unit
 ) {
     var title by remember { mutableStateOf(task.title) }
@@ -1177,6 +1309,8 @@ private fun EditTaskDialog(
     var startTime by remember { mutableStateOf(task.startTime) }
     var endTime by remember { mutableStateOf(task.endTime) }
     val focusManager = LocalFocusManager.current
+    var showStartPicker by remember { mutableStateOf(false) }
+    var showEndPicker by remember { mutableStateOf(false) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -1234,30 +1368,45 @@ private fun EditTaskDialog(
                 Spacer(Modifier.height(14.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(Modifier.weight(1f)) {
+                    Box(modifier = Modifier.weight(1f)) {
                         DialogTextField(
                             palette = palette,
                             value = startTime,
-                            onValueChange = { startTime = it },
+                            onValueChange = {},
                             label = "Start",
                             placeholder = "09:00",
-                            imeAction = ImeAction.Next
+                            imeAction = ImeAction.Next,
+                            readOnly = true
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable {
+                                    focusManager.clearFocus()
+                                    showStartPicker = true
+                                }
                         )
                     }
-                    Box(Modifier.weight(1f)) {
+
+                    Box(modifier = Modifier.weight(1f)) {
                         DialogTextField(
                             palette = palette,
                             value = endTime,
-                            onValueChange = { endTime = it },
+                            onValueChange = {},
                             label = "End",
                             placeholder = "10:00",
                             imeAction = ImeAction.Done,
-                            onDone = {
-                                focusManager.clearFocus()
-                                if (title.isNotBlank()) {
-                                    onSave(task.id, title, description, startTime, endTime, task.priority, task.color)
+                            readOnly = true
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable {
+                                    focusManager.clearFocus()
+                                    showEndPicker = true
                                 }
-                            }
                         )
                     }
                 }
@@ -1275,7 +1424,7 @@ private fun EditTaskDialog(
                     TextButton(
                         onClick = {
                             if (title.isNotBlank()) {
-                                onSave(task.id, title, description, startTime, endTime, task.priority, task.color)
+                                onSave(task.id, title, description, startTime, endTime, task.priority, task.color, task.category)
                             }
                         }
                     ) {
@@ -1284,6 +1433,73 @@ private fun EditTaskDialog(
                 }
             }
         }
+
+    }
+    if (showStartPicker) {
+        val startPickerState = rememberTimePickerState(
+            initialHour = 9,
+            initialMinute = 0,
+            is24Hour = true
+        )
+
+        AlertDialog(
+            onDismissRequest = { showStartPicker = false },
+            title = { Text("Select start time") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        startTime = "%02d:%02d".format(
+                            startPickerState.hour,
+                            startPickerState.minute
+                        )
+                        showStartPicker = false
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showStartPicker = false }) {
+                    Text("Cancel")
+                }
+            },
+            text = {
+                TimePicker(state = startPickerState)
+            }
+        )
+    }
+    if (showEndPicker) {
+        val endPickerState = rememberTimePickerState(
+            initialHour = 10,
+            initialMinute = 0,
+            is24Hour = true
+        )
+
+        AlertDialog(
+            onDismissRequest = { showEndPicker = false },
+            title = { Text("Select end time") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        endTime = "%02d:%02d".format(
+                            endPickerState.hour,
+                            endPickerState.minute
+                        )
+                        showEndPicker = false
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEndPicker = false }) {
+                    Text("Cancel")
+                }
+            },
+            text = {
+                TimePicker(state = endPickerState)
+            }
+        )
     }
 }
 
@@ -1296,6 +1512,7 @@ private fun DialogTextField(
     label: String,
     placeholder: String,
     imeAction: ImeAction = ImeAction.Default,
+    readOnly: Boolean = false,
     onDone: (() -> Unit)? = null
 ) {
     OutlinedTextField(
@@ -1303,7 +1520,7 @@ private fun DialogTextField(
         onValueChange = onValueChange,
         label = { Text(label, fontSize = 13.sp) },
         placeholder = { Text(placeholder, color = palette.muted.copy(alpha = 0.5f), fontSize = 14.sp) },
-        modifier = Modifier.fillMaxWidth(),
+        readOnly = readOnly,
         shape = RoundedCornerShape(16.dp),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = palette.lavender,

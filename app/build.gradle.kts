@@ -57,6 +57,7 @@ dependencies {
 
     // === Hilt (Dependency Injection) ===
     implementation(libs.hilt.android)
+    implementation(libs.androidx.material3)
     ksp(libs.hilt.android.compiler)
     implementation(libs.hilt.navigation.compose)
 

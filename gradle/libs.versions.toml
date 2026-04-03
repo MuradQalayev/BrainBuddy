@@ -18,6 +18,7 @@ navigationCompose = "2.8.9"
 datastore = "1.1.7"
 lifecycleViewmodelCompose = "2.9.0"
 kizitonwoseCalendar = "2.6.2"
+material3 = "1.4.0"
 
 [libraries]
 # --- Existing (keep these) ---
@@ -58,6 +59,7 @@ lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-
 
 # --- NEW: Calendar ---
 calendar-compose = { group = "com.kizitonwose.calendar", name = "compose", version.ref = "kizitonwoseCalendar" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

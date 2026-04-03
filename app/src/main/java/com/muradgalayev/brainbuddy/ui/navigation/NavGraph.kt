@@ -68,6 +68,7 @@ import com.muradgalayev.brainbuddy.ui.activity.ActivityScreen
 import com.muradgalayev.brainbuddy.ui.calendar.CalendarScreen
 import com.muradgalayev.brainbuddy.ui.home.HomeScreen
 import com.muradgalayev.brainbuddy.ui.settings.SettingsScreen
+import com.muradgalayev.brainbuddy.ui.pomodoro.PomodoroScreen
 import com.muradgalayev.brainbuddy.ui.todo.TaskDetailScreen
 import com.muradgalayev.brainbuddy.ui.todo.TodoScreen
 
@@ -107,6 +108,10 @@ fun NavGraph(
         if (needsMore) allEnabled.drop(MAX_VISIBLE_NAV_ITEMS - 1) else emptyList()
     }
 
+    // Full-screen routes hide the bottom nav
+    val fullScreenRoutes = setOf(Screen.Pomodoro.route, Screen.Calendar.route)
+    val isFullScreen = currentRoute in fullScreenRoutes
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -117,8 +122,12 @@ fun NavGraph(
             startDestination = Screen.Home.route,
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .padding(bottom = 104.dp),
+                .then(
+                    if (isFullScreen) Modifier
+                    else Modifier
+                        .statusBarsPadding()
+                        .padding(bottom = 104.dp)
+                ),
             enterTransition = { fadeIn(animationSpec = tween(200)) },
             exitTransition = { fadeOut(animationSpec = tween(200)) }
         ) {
@@ -135,9 +144,18 @@ fun NavGraph(
                 )
             }
             composable(Screen.Settings.route) { SettingsScreen() }
-            composable(Screen.Calendar.route) { CalendarScreen() }
+            composable(Screen.Calendar.route) {
+                CalendarScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
             composable(Screen.Todo.route) {
                 TodoScreen()
+            }
+            composable(Screen.Pomodoro.route) {
+                PomodoroScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
             }
             composable(
                 "${Screen.TaskDetail.route}?taskId={taskId}",
@@ -168,7 +186,7 @@ fun NavGraph(
         }
         // Scrim
         AnimatedVisibility(
-            visible = showAiPrompt,
+            visible = showAiPrompt && !isFullScreen,
             enter = fadeIn(tween(250)),
             exit = fadeOut(tween(200)),
             modifier = Modifier.matchParentSize()
@@ -194,7 +212,7 @@ fun NavGraph(
         }
 
         AnimatedVisibility(
-            visible = showAiPrompt,
+            visible = showAiPrompt && !isFullScreen,
             enter = slideInVertically(
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioLowBouncy,
@@ -384,21 +402,23 @@ fun NavGraph(
             }
         }
 
-        BottomNavBar(
-            items = visibleItems,
-            overflowItems = overflowItems,
-            currentRoute = currentRoute,
-            onItemClick = { screen ->
-                navController.navigate(screen.route) {
-                    popUpTo(navController.graph.startDestinationId) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            },
-            onAiClick = { showAiPrompt = !showAiPrompt },
-            isAiOpen = showAiPrompt,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
+        if (!isFullScreen) {
+            BottomNavBar(
+                items = visibleItems,
+                overflowItems = overflowItems,
+                currentRoute = currentRoute,
+                onItemClick = { screen ->
+                    navController.navigate(screen.route) {
+                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onAiClick = { showAiPrompt = !showAiPrompt },
+                isAiOpen = showAiPrompt,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
     }
 }
 

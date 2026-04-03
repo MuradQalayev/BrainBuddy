@@ -3,6 +3,7 @@ package com.muradgalayev.brainbuddy.di
 import android.content.Context
 import androidx.room.Room
 import com.muradgalayev.brainbuddy.data.local.BrainBuddyDatabase
+import com.muradgalayev.brainbuddy.data.local.dao.PomodoroSessionDao
 import com.muradgalayev.brainbuddy.data.local.dao.TodoItemDao
 import dagger.Module
 import dagger.Provides
@@ -24,13 +25,20 @@ object DatabaseModule {
             context,
             BrainBuddyDatabase::class.java,
             BrainBuddyDatabase.DATABASE_NAME
-        ).build()
+        ).fallbackToDestructiveMigration()
+        .build()
     }
 
     @Singleton
     @Provides
     fun provideTodoItemDao(database: BrainBuddyDatabase): TodoItemDao {
         return database.todoItemDao()
+    }
+
+    @Singleton
+    @Provides
+    fun providePomodoroSessionDao(database: BrainBuddyDatabase): PomodoroSessionDao {
+        return database.pomodoroSessionDao()
     }
 }
 

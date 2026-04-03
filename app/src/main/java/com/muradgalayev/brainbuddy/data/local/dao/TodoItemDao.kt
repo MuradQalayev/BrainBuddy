@@ -34,5 +34,8 @@ interface TodoItemDao {
 
     @Query("SELECT * FROM todo_items WHERE isCompleted = 1 ORDER BY date ASC")
     fun getCompletedTodoItems(): Flow<List<TodoItemEntity>>
+
+    @Query("SELECT * FROM todo_items WHERE date >= :startDate AND date <= :endDate ORDER BY startTime ASC")
+    fun getTodoItemsInRange(startDate: String, endDate: String): Flow<List<TodoItemEntity>>
 }
 

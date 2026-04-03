@@ -7,6 +7,7 @@ import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(
@@ -20,8 +21,11 @@ sealed class Screen(
     object Calendar : Screen("calendar", "Calendar", Icons.Rounded.CalendarMonth)
     object Settings : Screen("settings", "Settings", Icons.Rounded.Settings)
 
-    // Optional screens (not in nav bar)
+    // Optional screens (toggled via Quick Access in Settings)
     object Todo : Screen("todo", "Todo", Icons.Rounded.CheckCircle)
+    object Pomodoro : Screen("pomodoro", "Pomodoro", Icons.Rounded.Timer)
+
+    // Detail screens
     object TaskDetail : Screen("task_detail", "Task Detail", Icons.Rounded.CheckCircle)
 
     // More — shown when overflow is needed
@@ -30,4 +34,4 @@ sealed class Screen(
 
 val fixedNavItems = listOf(Screen.Home, Screen.Activity, Screen.Calendar, Screen.Settings)
 
-val optionalNavItems = listOf<Screen>()
+val optionalNavItems = listOf(Screen.Todo, Screen.Pomodoro)
