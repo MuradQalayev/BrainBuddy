@@ -97,20 +97,6 @@ fun AppSearchBar(
             keyboardActions = KeyboardActions(onSearch = { })
         )
 
-        AnimatedVisibility(
-            visible = query.isNotEmpty(),
-            enter = fadeIn() + expandHorizontally(),
-            exit = fadeOut() + shrinkHorizontally()
-        ) {
-            IconButton(onClick = { onQueryChange("") }) {
-                Icon(
-                    imageVector = Icons.Outlined.Close,
-                    contentDescription = "Clear",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
 
         IconButton(onClick = onClose) {
             Icon(

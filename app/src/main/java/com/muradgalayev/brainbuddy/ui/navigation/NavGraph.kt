@@ -72,6 +72,9 @@ import com.muradgalayev.brainbuddy.ui.pomodoro.PomodoroScreen
 import com.muradgalayev.brainbuddy.ui.todo.TaskDetailScreen
 import com.muradgalayev.brainbuddy.ui.todo.TodoScreen
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+
 private const val MAX_VISIBLE_NAV_ITEMS = 4
 
 @Composable
@@ -126,8 +129,30 @@ fun NavGraph(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .padding(bottom = bottomPadding),
-            enterTransition = { fadeIn(animationSpec = tween(200)) },
-            exitTransition = { fadeOut(animationSpec = tween(200)) }
+            enterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { it / 2 },
+                    animationSpec = tween(350)
+                ) + fadeIn(animationSpec = tween(350))
+            },
+            exitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { -it / 4 },
+                    animationSpec = tween(300)
+                ) + fadeOut(animationSpec = tween(300))
+            },
+            popEnterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { -it / 4 },
+                    animationSpec = tween(300)
+                ) + fadeIn(animationSpec = tween(300))
+            },
+            popExitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { it / 2 },
+                    animationSpec = tween(300)
+                ) + fadeOut(animationSpec = tween(300))
+            }
         ) {
             composable(Screen.Home.route) { HomeScreen() }
             composable(Screen.Activity.route) {
@@ -403,9 +428,11 @@ fun NavGraph(
                 currentRoute = currentRoute,
                 onItemClick = { screen ->
                     navController.navigate(screen.route) {
-                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = false
+                        }
                         launchSingleTop = true
-                        restoreState = true
+                        restoreState = false
                     }
                 },
                 onAiClick = { showAiPrompt = !showAiPrompt },

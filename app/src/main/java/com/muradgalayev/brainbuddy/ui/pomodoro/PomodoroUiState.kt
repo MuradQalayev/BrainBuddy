@@ -5,5 +5,6 @@ data class PomodoroUiExtra(
     val showPermissionDialog: Boolean = false,
     val focusModeEnabled: Boolean = false,
     val focusModePermissionGranted: Boolean = false,
-    val todayFocusMinutes: Int = 0
+    val todayFocusMinutes: Int = 0,
+    val todaySessionsCount: Int = 0
 )
