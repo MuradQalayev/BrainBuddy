@@ -6,7 +6,6 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -14,7 +13,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,14 +34,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Remove
-import androidx.compose.material.icons.rounded.SkipNext
-import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,7 +46,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -78,7 +68,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.muradgalayev.brainbuddy.R
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.muradgalayev.brainbuddy.data.local.AmbientSound
 import com.muradgalayev.brainbuddy.data.local.TimerState
 import com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionType
 import com.muradgalayev.brainbuddy.ui.theme.AiButtonDark
@@ -96,8 +85,14 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
+import com.muradgalayev.brainbuddy.ui.pomodoro.components.AmbientMusicSection
+import com.muradgalayev.brainbuddy.ui.pomodoro.components.SessionTypePills
+import com.muradgalayev.brainbuddy.ui.pomodoro.components.BottomControls
+import com.muradgalayev.brainbuddy.ui.pomodoro.components.HistorySummarySwitcher
+import com.muradgalayev.brainbuddy.ui.pomodoro.dialogs.PomodoroHistoryDialog
+import com.muradgalayev.brainbuddy.ui.pomodoro.dialogs.DurationPickerDialog
 
-// Focus accent — uses AI purple gradient
+
 private val FocusPurpleLight = AiButtonLight       // #6366F1
 private val FocusPurpleLightEnd = AiButtonLightEnd // #8B5CF6
 private val FocusPurpleDark = AiButtonDark         // #818CF8
@@ -113,8 +108,10 @@ fun PomodoroScreen(
     viewModel: PomodoroViewModel = hiltViewModel()
 ) {
     val timerState by viewModel.timerState.collectAsState()
+    val recentSessions by viewModel.recentSessions.collectAsState()
     val uiExtra by viewModel.uiExtra.collectAsState()
     var showFocusStatus by rememberSaveable { mutableStateOf(false) }
+    var showHistoryDialog by rememberSaveable { mutableStateOf(false) }
     val sessionTypes = PomodoroSessionType.entries
     val pagerState = rememberPagerState(
         initialPage = sessionTypes.indexOf(timerState.sessionType).coerceAtLeast(0),
@@ -129,7 +126,6 @@ fun PomodoroScreen(
         viewModel.dismissPermissionDialog()
     }
 
-    // Request POST_NOTIFICATIONS permission for Android 13+
     val context = LocalContext.current
     val notifPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -228,6 +224,16 @@ fun PomodoroScreen(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
+            HistorySummarySwitcher(
+                todayFocusMinutes = uiExtra.todayFocusMinutes,
+                accentColor = arcColor,
+                onClick = {
+                    showHistoryDialog = true
+                }
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
             IconButton(
                 onClick = {
                     if (!uiExtra.focusModePermissionGranted) {
@@ -239,7 +245,7 @@ fun PomodoroScreen(
             ) {
                 Icon(
                     modifier = Modifier.size(30.dp),
-                            painter = painterResource(
+                    painter = painterResource(
                         id = if (uiExtra.focusModeEnabled)
                             R.drawable.ic_dnd_on
                         else
@@ -332,13 +338,6 @@ fun PomodoroScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-
-
-
-
-
-
-            // Focus Progress card
             HorizontalPager(
                 state = pagerState,
                 userScrollEnabled = timerState.timerState == TimerState.IDLE,
@@ -554,6 +553,12 @@ fun PomodoroScreen(
             accentColor = arcColor
         )
     }
+    if (showHistoryDialog) {
+        PomodoroHistoryDialog(
+            sessions = recentSessions.take(5),
+            onDismiss = { showHistoryDialog = false }
+        )
+    }
 
     // DND permission dialog
     if (uiExtra.showPermissionDialog) {
@@ -579,272 +584,6 @@ fun PomodoroScreen(
     }
 }
 
-// ─── Duration Picker Dialog ────────────────────────────────────────
-
-@Composable
-private fun DurationPickerDialog(
-    currentMinutes: Int,
-    onConfirm: (Int) -> Unit,
-    onDismiss: () -> Unit,
-    accentColor: Color
-) {
-    var selectedMinutes by rememberSaveable { mutableIntStateOf(currentMinutes) }
-    val presets = listOf(5, 10, 15, 20, 25, 30, 45, 60, 90, 120)
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text("Set Duration", fontWeight = FontWeight.SemiBold)
-        },
-        text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // Current selection
-                Text(
-                    text = "$selectedMinutes min",
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = accentColor
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // +/- buttons
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        onClick = { if (selectedMinutes > 1) selectedMinutes -= 1 },
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                            Icon(Icons.Rounded.Remove, "Decrease", modifier = Modifier.size(20.dp))
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        onClick = { if (selectedMinutes < 180) selectedMinutes += 1 },
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                            Icon(Icons.Rounded.Add, "Increase", modifier = Modifier.size(20.dp))
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Preset chips
-                Text(
-                    text = "Quick presets",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    presets.forEach { mins ->
-                        val isSelected = mins == selectedMinutes
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (isSelected) accentColor.copy(alpha = 0.15f)
-                            else MaterialTheme.colorScheme.surfaceContainerHigh,
-                            onClick = { selectedMinutes = mins }
-                        ) {
-                            Text(
-                                text = "${mins}m",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) accentColor
-                                else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(selectedMinutes) }) {
-                Text("Set", color = accentColor, fontWeight = FontWeight.SemiBold)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
-    )
-}
-
-// ─── Ambient Music Section ─────────────────────────────────────────
-
-@Composable
-private fun AmbientMusicSection(
-    selectedSound: AmbientSound?,
-    onSoundSelect: (AmbientSound?) -> Unit,
-    accentColor: Color
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        tonalElevation = 1.dp
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Rounded.MusicNote,
-                    contentDescription = null,
-                    tint = accentColor,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Ambient Sound",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f)
-                )
-                if (selectedSound != null) {
-                    Text(
-                        text = selectedSound.label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = accentColor,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                            .clickable { onSoundSelect(null) },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Close,
-                            contentDescription = "Clear",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                } else {
-                    Text(
-                        text = "Optional",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AmbientSound.entries.forEach { sound ->
-                    val isSelected = sound == selectedSound
-                    val bgColor by animateColorAsState(
-                        targetValue = if (isSelected) accentColor.copy(alpha = 0.15f)
-                        else MaterialTheme.colorScheme.surfaceContainerHigh,
-                        animationSpec = tween(200),
-                        label = "soundBg"
-                    )
-                    val textColor by animateColorAsState(
-                        targetValue = if (isSelected) accentColor
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                        animationSpec = tween(200),
-                        label = "soundText"
-                    )
-
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = bgColor,
-                        onClick = {
-                            onSoundSelect(if (isSelected) null else sound)
-                        }
-                    ) {
-                        Text(
-                            text = sound.label,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                            color = textColor,
-                            maxLines = 1
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-// ─── Session Type Pills ────────────────────────────────────────────
-
-@Composable
-private fun SessionTypePills(
-    currentType: PomodoroSessionType,
-    onSelect: (PomodoroSessionType) -> Unit,
-    enabled: Boolean,
-    accentColor: Color
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        PomodoroSessionType.entries.forEach { type ->
-            val selected = type == currentType
-            val label = when (type) {
-                PomodoroSessionType.FOCUS -> "Focus"
-                PomodoroSessionType.SHORT_BREAK -> "Short Break"
-                PomodoroSessionType.LONG_BREAK -> "Long Break"
-            }
-            val bgColor by animateColorAsState(
-                targetValue = if (selected) accentColor.copy(alpha = 0.15f)
-                else Color.Transparent,
-                animationSpec = tween(250),
-                label = "pillBg"
-            )
-            val textColor by animateColorAsState(
-                targetValue = if (selected) accentColor
-                else MaterialTheme.colorScheme.onSurfaceVariant,
-                animationSpec = tween(250),
-                label = "pillText"
-            )
-
-            Surface(
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(14.dp),
-                color = bgColor,
-                onClick = { if (enabled) onSelect(type) }
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp)
-                ) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                        color = textColor,
-                        maxLines = 1
-                    )
-                }
-            }
-        }
-    }
-}
-
-// ─── Small +/- Control Button ──────────────────────────────────────
 
 @Composable
 private fun SmallControlButton(
@@ -874,70 +613,8 @@ private fun SmallControlButton(
     }
 }
 
-// ─── Bottom Controls ───────────────────────────────────────────────
-
 @Composable
-private fun BottomControls(
-    timerState: TimerState,
-    accentColor: Color,
-    accentGradient: Brush,
-    onStart: () -> Unit,
-    onPause: () -> Unit,
-    onResume: () -> Unit,
-    onReset: () -> Unit,
-    onStop: () -> Unit,
-    onSkip: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        when (timerState) {
-            TimerState.IDLE -> {
-                GradientCircleButton(
-                    icon = Icons.Rounded.PlayArrow,
-                    label = "Start",
-                    gradient = accentGradient,
-                    size = 72,
-                    onClick = onStart
-                )
-            }
-            TimerState.RUNNING -> {
-                ControlCircle(Icons.Rounded.Refresh, "Reset", onReset,
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                    MaterialTheme.colorScheme.surfaceContainerHigh)
-                Spacer(modifier = Modifier.width(20.dp))
-                GradientCircleButton(Icons.Rounded.Pause, "Pause", accentGradient, 72, onPause)
-                Spacer(modifier = Modifier.width(20.dp))
-                ControlCircle(Icons.Rounded.SkipNext, "Skip", onSkip,
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                    MaterialTheme.colorScheme.surfaceContainerHigh)
-            }
-            TimerState.PAUSED -> {
-                ControlCircle(Icons.Rounded.Stop, "Stop", onStop,
-                    MaterialTheme.colorScheme.error,
-                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f))
-                Spacer(modifier = Modifier.width(20.dp))
-                GradientCircleButton(Icons.Rounded.PlayArrow, "Resume", accentGradient, 72, onResume)
-                Spacer(modifier = Modifier.width(20.dp))
-                ControlCircle(Icons.Rounded.Refresh, "Reset", onReset,
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                    MaterialTheme.colorScheme.surfaceContainerHigh)
-            }
-            TimerState.COMPLETED -> {
-                ControlCircle(Icons.Rounded.Refresh, "Restart", onReset,
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                    MaterialTheme.colorScheme.surfaceContainerHigh)
-                Spacer(modifier = Modifier.width(20.dp))
-                GradientCircleButton(Icons.Rounded.SkipNext, "Next", accentGradient, 72, onSkip)
-            }
-        }
-    }
-}
-
-@Composable
-private fun GradientCircleButton(
+fun GradientCircleButton(
     icon: ImageVector,
     label: String,
     gradient: Brush,
@@ -962,7 +639,7 @@ private fun GradientCircleButton(
 }
 
 @Composable
-private fun ControlCircle(
+fun ControlCircle(
     icon: ImageVector,
     label: String,
     onClick: () -> Unit,

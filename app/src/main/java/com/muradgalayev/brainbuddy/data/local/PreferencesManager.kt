@@ -19,11 +19,13 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 enum class ThemeMode { Light, Dark, System }
 enum class FontMode { Classic, Modern, Rounded }
 
+enum class FontSize { Small, Medium, Large }
 @Singleton
 class PreferencesManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private val themeKey = stringPreferencesKey("theme_mode")
+    private val fontSizeKey = stringPreferencesKey("font_size")
     private val fontKey = stringPreferencesKey("font_mode")
     private val enabledNavKey = stringSetPreferencesKey("enabled_nav_items")
     private val focusModeKey = booleanPreferencesKey("focus_mode_enabled")
@@ -33,6 +35,13 @@ class PreferencesManager @Inject constructor(
             "Light" -> ThemeMode.Light
             "Dark" -> ThemeMode.Dark
             else -> ThemeMode.System
+        }
+    }
+    val fontSize: Flow<FontSize> = context.dataStore.data.map { prefs ->
+        when (prefs[fontSizeKey]) {
+            "Small" -> FontSize.Small
+            "Large" -> FontSize.Large
+            else -> FontSize.Medium
         }
     }
 
@@ -55,6 +64,11 @@ class PreferencesManager @Inject constructor(
     suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { prefs ->
             prefs[themeKey] = mode.name
+        }
+    }
+    suspend fun setFontSize(size: FontSize) {
+        context.dataStore.edit { prefs ->
+            prefs[fontSizeKey] = size.name
         }
     }
 

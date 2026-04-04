@@ -31,4 +31,42 @@ interface PomodoroSessionDao {
 
     @Query("DELETE FROM pomodoro_sessions WHERE id = :id")
     suspend fun deleteSession(id: String)
+    @Query("""
+    SELECT COALESCE(SUM(actualDurationMs), 0)
+    FROM pomodoro_sessions
+    WHERE sessionType = :sessionType
+      AND completionStatus = :completionStatus
+      AND endTime BETWEEN :startOfDay AND :endOfDay
+""")
+    suspend fun getCompletedDurationForDay(
+        sessionType: String,
+        completionStatus: String,
+        startOfDay: Long,
+        endOfDay: Long
+    ): Long
+
+    @Query("""
+    SELECT COUNT(*)
+    FROM pomodoro_sessions
+    WHERE sessionType = :sessionType
+      AND completionStatus = :completionStatus
+      AND endTime BETWEEN :startOfDay AND :endOfDay
+""")
+
+    suspend fun getCompletedSessionsCountForDay(
+        sessionType: String,
+        completionStatus: String,
+        startOfDay: Long,
+        endOfDay: Long
+    ): Int
+    @Query("""
+    SELECT * FROM pomodoro_sessions
+    WHERE completionStatus = :status
+    ORDER BY endTime DESC
+    LIMIT :limit
+""")
+    fun getRecentCompletedSessions(
+        status: String,
+        limit: Int
+    ): Flow<List<PomodoroSessionEntity>>
 }

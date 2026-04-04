@@ -14,6 +14,7 @@ import com.muradgalayev.brainbuddy.ui.navigation.NavGraph
 import com.muradgalayev.brainbuddy.ui.theme.BrainBuddyTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import com.muradgalayev.brainbuddy.data.local.FontSize
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -28,9 +29,11 @@ class MainActivity : ComponentActivity() {
             val themeMode by preferencesManager.themeMode.collectAsState(initial = ThemeMode.System)
             val fontMode by preferencesManager.fontMode.collectAsState(initial = FontMode.Classic)
             val enabledNavItems by preferencesManager.enabledNavItems.collectAsState(initial = emptySet())
+            val fontSize by preferencesManager.fontSize.collectAsState(initial = FontSize.Medium)
 
-            BrainBuddyTheme(themeMode = themeMode, fontMode = fontMode) {
+            BrainBuddyTheme(themeMode = themeMode, fontMode = fontMode,fontSize = fontSize) {
                 val navController = rememberNavController()
+
                 NavGraph(
                     navController = navController,
                     enabledOptionalRoutes = enabledNavItems

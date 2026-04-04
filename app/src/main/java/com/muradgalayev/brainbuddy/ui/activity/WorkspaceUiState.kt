@@ -11,5 +11,8 @@ data class WorkspaceUiState(
     val pomodoroStatusText: String = "Ready",
     val pomodoroTimeText: String = "25:00",
     val pomodoroProgress: Float = 0f,
-    val pomodoroIsActive: Boolean = false
+    val pomodoroIsActive: Boolean = false,
+    val todayFocusMinutes: Int = 0,
+    val yesterdayFocusMinutes: Int = 0,
+    val focusComparisonText: String = "No focus sessions yet"
 )

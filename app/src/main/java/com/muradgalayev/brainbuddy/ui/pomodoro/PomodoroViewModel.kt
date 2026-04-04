@@ -19,19 +19,14 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-data class PomodoroUiExtra(
-    val showDurationPicker: Boolean = false,
-    val showPermissionDialog: Boolean = false,
-    val focusModeEnabled: Boolean = false,
-    val focusModePermissionGranted: Boolean = false
-)
+import com.muradgalayev.brainbuddy.data.repository.PomodoroRepository
 
 @HiltViewModel
 class PomodoroViewModel @Inject constructor(
     private val timerManager: PomodoroTimerManager,
     private val focusModeManager: FocusModeManager,
     private val preferencesManager: PreferencesManager,
+    private val pomodoroRepository: PomodoroRepository,
     @ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
@@ -55,7 +50,8 @@ class PomodoroViewModel @Inject constructor(
             }
         }
 
-        // Wire service lifecycle to timer manager
+        observeTodayFocusMinutes()
+
         timerManager.onTimerStarted = {
             PomodoroTimerService.start(appContext)
         }
@@ -107,6 +103,32 @@ class PomodoroViewModel @Inject constructor(
     }
 
     fun getFocusModePermissionIntent() = focusModeManager.getPermissionIntent()
+
+    private fun observeTodayFocusMinutes() {
+        viewModelScope.launch {
+            while (true) {
+                val today = java.time.LocalDate.now()
+                val zone = java.time.ZoneId.systemDefault()
+
+                val startOfDay = today.atStartOfDay(zone).toInstant().toEpochMilli()
+                val endOfDay = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+
+                val todayMinutes = pomodoroRepository.getCompletedFocusMinutesForDay(
+                    startOfDay = startOfDay,
+                    endOfDay = endOfDay
+                )
+
+                _uiExtra.update {
+                    it.copy(todayFocusMinutes = todayMinutes)
+                }
+
+                kotlinx.coroutines.delay(5000)
+            }
+        }
+    }
+
+    val recentSessions = pomodoroRepository.getRecentCompletedSessions(5)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
 }
 

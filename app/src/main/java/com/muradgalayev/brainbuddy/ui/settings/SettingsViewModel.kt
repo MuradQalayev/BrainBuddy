@@ -3,6 +3,7 @@ package com.muradgalayev.brainbuddy.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.muradgalayev.brainbuddy.data.local.FontMode
+import com.muradgalayev.brainbuddy.data.local.FontSize
 import com.muradgalayev.brainbuddy.data.local.PreferencesManager
 import com.muradgalayev.brainbuddy.data.local.ThemeMode
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,6 +17,8 @@ class SettingsViewModel @Inject constructor(
     private val preferencesManager: PreferencesManager
 ) : ViewModel() {
 
+    val fontSize = preferencesManager.fontSize
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FontSize.Medium)
     val themeMode = preferencesManager.themeMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.System)
 
@@ -42,5 +45,10 @@ class SettingsViewModel @Inject constructor(
 
     fun toggleFocusMode(enabled: Boolean) {
         viewModelScope.launch { preferencesManager.setFocusModeEnabled(enabled) }
+    }
+    fun setFontSize(fontSize: FontSize) {
+        viewModelScope.launch {
+            preferencesManager.setFontSize(fontSize)
+        }
     }
 }

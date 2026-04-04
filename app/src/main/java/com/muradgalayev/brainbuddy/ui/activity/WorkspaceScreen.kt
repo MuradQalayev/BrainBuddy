@@ -433,41 +433,51 @@ private fun FeatureCardItem(
                         }
                     }
 
-                } else if (feature.route == "pomodoro") {
+                }else if (feature.route == "pomodoro") {
 
                     Column(
-                        horizontalAlignment = Alignment.Start
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+
                         Text(
                             text = pomodoroTimeText ?: "25:00",
-                            style = MaterialTheme.typography.titleSmall,
+                            style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             color = colorScheme.primary
                         )
 
                         Spacer(modifier = Modifier.height(6.dp))
 
+                        Text(
+                            text = displayStatus ?: "Ready",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         Box(
                             modifier = Modifier
-                                .width(52.dp)
-                                .height(4.dp)
+                                .width(80.dp)
+                                .height(6.dp)
                                 .background(
-                                    color = colorScheme.onSurface.copy(alpha = 0.10f),
-                                    shape = RoundedCornerShape(2.dp)
+                                    color = colorScheme.onSurface.copy(alpha = 0.08f),
+                                    shape = RoundedCornerShape(999.dp)
                                 )
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth(pomodoroProgress ?: 0f)
-                                    .height(4.dp)
+                                    .fillMaxWidth((pomodoroProgress ?: 0f).coerceIn(0f, 1f))
+                                    .height(6.dp)
                                     .background(
                                         color = colorScheme.primary,
-                                        shape = RoundedCornerShape(2.dp)
+                                        shape = RoundedCornerShape(999.dp)
                                     )
                             )
                         }
                     }
-
                 } else {
                     Surface(
                         shape = RoundedCornerShape(14.dp),
@@ -585,7 +595,7 @@ fun CircularTaskProgress(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.size(36.dp)) {
+        Canvas(modifier = Modifier.size(48.dp)) {
             val strokeWidth = 4.dp.toPx()
             val inset = strokeWidth / 2
 

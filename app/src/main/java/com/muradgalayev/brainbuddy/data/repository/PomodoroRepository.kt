@@ -1,6 +1,8 @@
 package com.muradgalayev.brainbuddy.data.repository
 
 import com.muradgalayev.brainbuddy.data.local.dao.PomodoroSessionDao
+import com.muradgalayev.brainbuddy.data.local.entity.PomodoroCompletionStatus
+import com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionType
 import com.muradgalayev.brainbuddy.data.mapper.toDomain
 import com.muradgalayev.brainbuddy.data.mapper.toEntity
 import com.muradgalayev.brainbuddy.domain.model.PomodoroSession
@@ -14,6 +16,13 @@ class PomodoroRepository @Inject constructor(
     fun getAllSessions(): Flow<List<PomodoroSession>> =
         pomodoroSessionDao.getAllSessions().map { sessions ->
             sessions.map { it.toDomain() }
+        }
+    fun getRecentCompletedSessions(limit: Int): Flow<List<PomodoroSession>> =
+        pomodoroSessionDao.getRecentCompletedSessions(
+            status = PomodoroCompletionStatus.COMPLETED.name,
+            limit = limit
+        ).map { list ->
+            list.map { it.toDomain() }
         }
 
     fun getSessionsByType(type: String): Flow<List<PomodoroSession>> =
@@ -37,4 +46,20 @@ class PomodoroRepository @Inject constructor(
 
     suspend fun deleteSession(id: String) =
         pomodoroSessionDao.deleteSession(id)
+
+    suspend fun getCompletedFocusMinutesForDay(
+        startOfDay: Long,
+        endOfDay: Long
+    ): Int {
+        val totalMs = pomodoroSessionDao.getCompletedDurationForDay(
+            sessionType = PomodoroSessionType.FOCUS.name,
+            completionStatus = PomodoroCompletionStatus.COMPLETED.name,
+            startOfDay = startOfDay,
+            endOfDay = endOfDay
+        )
+        return (totalMs / 60000L).toInt()
+    }
+
+
+
 }

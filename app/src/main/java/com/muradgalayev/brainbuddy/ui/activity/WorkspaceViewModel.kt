@@ -19,11 +19,14 @@ import java.time.format.DateTimeFormatter
 import com.muradgalayev.brainbuddy.data.local.PomodoroTimerManager
 import com.muradgalayev.brainbuddy.data.local.TimerState
 import com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionType
+import com.muradgalayev.brainbuddy.data.repository.PomodoroRepository
+
 @HiltViewModel
 class WorkspaceViewModel @Inject constructor(
     private val todoRepository: TodoRepository,
-    private val pomodoroTimerManager: PomodoroTimerManager
-) : ViewModel() {
+    private val pomodoroTimerManager: PomodoroTimerManager,
+    private val pomodoroRepository: PomodoroRepository
+) : ViewModel(){
 
     private val _uiState = MutableStateFlow(WorkspaceUiState())
     val uiState: StateFlow<WorkspaceUiState> = _uiState.asStateFlow()
@@ -31,6 +34,7 @@ class WorkspaceViewModel @Inject constructor(
     init {
         observeWorkspaceData()
         observePomodoroState()
+        observePomodoroHistory()
     }
 
 
@@ -74,7 +78,8 @@ class WorkspaceViewModel @Inject constructor(
                 }
             }
         }
-    }    private fun observeWorkspaceData() {
+    }
+    private fun observeWorkspaceData() {
         viewModelScope.launch {
             combine(
                 todoRepository.getActiveTodoItems(),
@@ -151,6 +156,41 @@ class WorkspaceViewModel @Inject constructor(
                         todayCompletedText = completedText
                     )
                 }
+            }
+        }
+    }
+    private fun observePomodoroHistory() {
+        viewModelScope.launch {
+            while (true) {
+                val today = java.time.LocalDate.now()
+                val yesterday = today.minusDays(1)
+                val zone = java.time.ZoneId.systemDefault()
+
+                val todayStart = today.atStartOfDay(zone).toInstant().toEpochMilli()
+                val todayEnd = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+
+                val yesterdayStart = yesterday.atStartOfDay(zone).toInstant().toEpochMilli()
+                val yesterdayEnd = today.atStartOfDay(zone).toInstant().toEpochMilli() - 1
+
+                val todayMinutes = pomodoroRepository.getCompletedFocusMinutesForDay(todayStart, todayEnd)
+                val yesterdayMinutes = pomodoroRepository.getCompletedFocusMinutesForDay(yesterdayStart, yesterdayEnd)
+
+                val comparisonText = when {
+                    todayMinutes == 0 && yesterdayMinutes == 0 -> "No focus sessions yet"
+                    todayMinutes > yesterdayMinutes -> "${todayMinutes - yesterdayMinutes} min more than yesterday"
+                    todayMinutes < yesterdayMinutes -> "${yesterdayMinutes - todayMinutes} min less than yesterday"
+                    else -> "Same as yesterday"
+                }
+
+                _uiState.update {
+                    it.copy(
+                        todayFocusMinutes = todayMinutes,
+                        yesterdayFocusMinutes = yesterdayMinutes,
+                        focusComparisonText = comparisonText
+                    )
+                }
+
+                kotlinx.coroutines.delay(5000)
             }
         }
     }

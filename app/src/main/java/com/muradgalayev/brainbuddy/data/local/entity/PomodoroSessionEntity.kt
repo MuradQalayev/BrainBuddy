@@ -27,3 +27,4 @@ data class PomodoroSessionEntity(
     val focusModeOffTimestamp: Long = 0L,
     val focusModeRestoredSuccessfully: Boolean = false
 )
+
