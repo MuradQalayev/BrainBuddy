@@ -1,5 +1,4 @@
 package com.muradgalayev.brainbuddy.ui.todo
-import android.R
 import com.muradgalayev.brainbuddy.ui.searchbar.AppSearchBar
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -69,7 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
-
+import com.muradgalayev.brainbuddy.ui.sharedcomponents.SuccessPopup
 @Composable
 private fun rememberTodoPalette(): TodoPalette {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
@@ -90,6 +89,7 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
         label = "fabScale"
     )
 
+
     Box(modifier = Modifier.fillMaxSize()) {
         TodoListContent(
             palette = p,
@@ -109,7 +109,7 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
             onSearchClick = viewModel::toggleSearch,
             onSearchQueryChange = viewModel::onSearchQueryChange,
             onDeleteTask = { taskToDelete = it },
-            )
+        )
 
         FloatingActionButton(
             onClick = { viewModel.showAddTaskDialog() },
@@ -158,6 +158,12 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
                 viewModel.updateTask(id, title, desc, start, end, priority, color, category)
             },
             onDelete = { viewModel.deleteTask(it) }
+        )
+    }
+    uiState.successMessage?.let { message ->
+        SuccessPopup(
+            message = message,
+            onDismiss = { viewModel.clearSuccessMessage() }
         )
     }
     taskToDelete?.let { taskId ->

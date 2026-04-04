@@ -246,9 +246,9 @@ fun AddTaskDialog(
                                 }
                             )
                             TimePickerField(
-                                value = startTime,
-                                label = "Start",
-                                placeholder = "09:00",
+                                value = endTime,
+                                label = "End",
+                                placeholder = "10:00",
                                 mutedColor = palette.muted,
                                 accentColor = palette.lavender,
                                 borderColor = palette.dialogBorder,
@@ -256,14 +256,13 @@ fun AddTaskDialog(
                                 modifier = Modifier.weight(1f),
                                 onClick = {
                                     focusManager.clearFocus()
-                                    showStartPicker = true
+                                    showEndPicker = true
                                 }
                             )
                         }
                     }
 
                     Spacer(Modifier.height(20.dp))
-
                     // Category — section 3
                     Column(
                         modifier = Modifier
@@ -566,8 +565,8 @@ fun EditTaskDialog(
                                 }
                             )
                             TimePickerField(
-                                value = startTime,
-                                label = "Start",
+                                value = endTime,
+                                label = "End",
                                 placeholder = "09:00",
                                 mutedColor = palette.muted,
                                 accentColor = palette.lavender,

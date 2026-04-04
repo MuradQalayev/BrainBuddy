@@ -64,7 +64,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import com.muradgalayev.brainbuddy.data.local.entity.TodoItemEntity
-import com.muradgalayev.brainbuddy.ui.activity.ActivityScreen
+import com.muradgalayev.brainbuddy.ui.activity.WorkspaceScreen
 import com.muradgalayev.brainbuddy.ui.calendar.CalendarScreen
 import com.muradgalayev.brainbuddy.ui.home.HomeScreen
 import com.muradgalayev.brainbuddy.ui.settings.SettingsScreen
@@ -82,7 +82,6 @@ fun NavGraph(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     var showAiPrompt by remember { mutableStateOf(false) }
-    // Build the visible nav items: fixed + enabled optional
     val enabledOptional = remember(enabledOptionalRoutes) {
         optionalNavItems.filter { it.route in enabledOptionalRoutes }
     }
@@ -132,13 +131,9 @@ fun NavGraph(
         ) {
             composable(Screen.Home.route) { HomeScreen() }
             composable(Screen.Activity.route) {
-                ActivityScreen(
+                WorkspaceScreen(
                     onNavigate = { route ->
-                        navController.navigate(route) {
-                            popUpTo(navController.graph.startDestinationId) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+                        navController.navigate(route)
                     }
                 )
             }

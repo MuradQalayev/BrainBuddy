@@ -3,7 +3,6 @@ package com.muradgalayev.brainbuddy.data.local.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.time.LocalDate
-import java.time.LocalTime
 import java.util.UUID
 
 @Entity(tableName = "todo_items")
@@ -28,8 +27,6 @@ enum class TodoPriority {
 
 enum class TodoColor {
     LIGHT_PINK,
-    LIGHT_YELLOW,
-    BURGUNDY,
-    LIGHT_BLUE
+
 }
 

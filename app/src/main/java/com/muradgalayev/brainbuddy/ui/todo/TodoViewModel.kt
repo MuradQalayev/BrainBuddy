@@ -3,8 +3,7 @@ package com.muradgalayev.brainbuddy.ui.todo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.compose.ui.graphics.Color
-import com.muradgalayev.brainbuddy.data.local.entity.TodoColor
-import com.muradgalayev.brainbuddy.data.local.entity.TodoItemEntity
+import com.muradgalayev.brainbuddy.domain.model.TodoItem
 import com.muradgalayev.brainbuddy.data.local.entity.TodoPriority
 import com.muradgalayev.brainbuddy.data.repository.TodoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,7 +31,8 @@ data class TodoScreenUiState(
     val showAddTaskDialog: Boolean = false,
     val searchQuery: String = "",
     val isSearchActive: Boolean = false,
-    val editingTask: TaskEditData? = null
+    val editingTask: TaskEditData? = null,
+    val successMessage: String? = null
 )
 
 data class TaskEditData(
@@ -109,11 +109,11 @@ class TodoViewModel @Inject constructor(
             }
         }
     }
-    private fun matchesCategory(item: TodoItemEntity, selectedCategory: String): Boolean {
+    private fun matchesCategory(item: TodoItem, selectedCategory: String): Boolean {
         return selectedCategory == "all" || item.category == selectedCategory
     }
 
-    private fun matchesSearch(item: TodoItemEntity, query: String): Boolean {
+    private fun matchesSearch(item: TodoItem, query: String): Boolean {
         if (query.isEmpty()) return true
         return item.title.lowercase().contains(query) ||
                 item.description.lowercase().contains(query)
@@ -138,7 +138,7 @@ class TodoViewModel @Inject constructor(
                 categories = state.categories.map { it.copy(selected = it.id == categoryId) }
             )
         }
-        observeTodoItems()
+        //observeTodoItems()
     }
 
     // ── Search ──
@@ -151,14 +151,14 @@ class TodoViewModel @Inject constructor(
                 searchQuery = if (!newActive) "" else it.searchQuery
             )
         }
-        if (!_uiState.value.isSearchActive) {
-            observeTodoItems()
-        }
+//        if (!_uiState.value.isSearchActive) {
+//            //observeTodoItems()
+//        }
     }
 
     fun onSearchQueryChange(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
-        observeTodoItems()
+        //observeTodoItems()
     }
 
     // ── Flag / Priority ──
@@ -194,23 +194,38 @@ class TodoViewModel @Inject constructor(
         priority: TodoPriority = TodoPriority.MEDIUM
     ) {
         if (title.isBlank()) return
+
         viewModelScope.launch {
-            val newTask = TodoItemEntity(
+            val newTask = TodoItem(
+                id = java.util.UUID.randomUUID().toString(),
                 title = title.trim(),
                 description = description.trim(),
+                isCompleted = false,
                 startTime = startTime,
                 endTime = endTime,
                 date = LocalDate.now().toString(),
                 color = color,
                 priority = priority.name,
+                attendees = 0,
                 category = category
             )
+            _uiState.update {
+                it.copy(showAddTaskDialog = false)
+            }
             todoRepository.insertTodoItem(newTask)
-            _uiState.update { it.copy(showAddTaskDialog = false) }
+
+            _uiState.update {
+                it.copy(
+                    showAddTaskDialog = false,
+                    successMessage = "Your task has been added"
+                )
+            }
+
         }
     }
-
-    // ── Edit Task ──
+    fun clearSuccessMessage() {
+        _uiState.update { it.copy(successMessage = null) }
+    }
 
     fun openEditTask(taskId: String) {
         viewModelScope.launch {
@@ -272,7 +287,7 @@ class TodoViewModel @Inject constructor(
         }
     }
 
-    private fun TodoItemEntity.toTaskUi(): TaskUi {
+    private fun TodoItem.toTaskUi(): TaskUi {
         val accentColor = when (this.color) {
             "red" -> Color(0xFFC41E3A)
             "blue" -> Color(0xFF82C8FF)

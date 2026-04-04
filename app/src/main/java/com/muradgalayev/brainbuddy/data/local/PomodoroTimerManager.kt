@@ -1,7 +1,7 @@
 package com.muradgalayev.brainbuddy.data.local
 
 import com.muradgalayev.brainbuddy.data.local.entity.PomodoroCompletionStatus
-import com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionEntity
+import com.muradgalayev.brainbuddy.domain.model.PomodoroSession
 import com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionType
 import com.muradgalayev.brainbuddy.data.repository.PomodoroRepository
 import kotlinx.coroutines.CoroutineScope
@@ -67,7 +67,7 @@ class PomodoroTimerManager @Inject constructor(
     var onTimerCompleted: (() -> Unit)? = null
 
     private var timerJob: Job? = null
-    private var currentSession: PomodoroSessionEntity? = null
+    private var currentSession: PomodoroSession? = null
     private var sessionStartTimeMs: Long = 0L
     private var pauseStartTimeMs: Long = 0L
     private var totalPausedMs: Long = 0L
@@ -81,12 +81,24 @@ class PomodoroTimerManager @Inject constructor(
         totalPausedMs = 0L
         focusModeEnabledForSession = focusModeEnabled
 
-        val session = PomodoroSessionEntity(
+        val session = PomodoroSession(
+            id = java.util.UUID.randomUUID().toString(),
             sessionType = s.sessionType.name,
             plannedDurationMs = s.totalDurationMs,
+            actualDurationMs = 0L,
+            pausedDurationMs = 0L,
+            extraTimeAddedMs = 0L,
             startTime = sessionStartTimeMs,
+            endTime = 0L,
             completionStatus = PomodoroCompletionStatus.IN_PROGRESS.name,
-            focusModeEnabled = focusModeEnabled
+            resetCount = 0,
+            wasInterrupted = false,
+            focusModeEnabled = focusModeEnabled,
+            focusModePermissionGranted = false,
+            focusModeActivated = false,
+            focusModeOnTimestamp = 0L,
+            focusModeOffTimestamp = 0L,
+            focusModeRestoredSuccessfully = false
         )
         currentSession = session
         scope.launch { pomodoroRepository.insertSession(session) }

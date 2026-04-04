@@ -122,7 +122,7 @@ fun MonthDay(
 
     Column(
         modifier = Modifier
-            .height(48.dp)
+            .height(56.dp)
             .fillMaxWidth()
             .padding(1.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

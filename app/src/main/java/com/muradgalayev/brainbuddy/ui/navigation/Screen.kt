@@ -18,8 +18,7 @@ sealed class Screen(
 ) {
     // Fixed — always in the navbar
     object Home : Screen("home", "Home", R.drawable.ic_house)
-    object Activity : Screen("activity", "Activity", R.drawable.ic_activity)
-
+    object Activity : Screen("activity", "Workspace", R.drawable.ic_activity)
     object Calendar : Screen("calendar", "Calendar", R.drawable.ic_calendar)
     object Settings : Screen("settings", "Settings", R.drawable.ic_settings)
 

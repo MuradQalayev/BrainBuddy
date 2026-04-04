@@ -3,8 +3,6 @@ package com.muradgalayev.brainbuddy.ui.calendar
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.muradgalayev.brainbuddy.data.local.entity.TodoColor
-import com.muradgalayev.brainbuddy.data.local.entity.TodoItemEntity
 import com.muradgalayev.brainbuddy.data.local.entity.TodoPriority
 import com.muradgalayev.brainbuddy.data.repository.TodoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,7 +15,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.format.DateTimeFormatter
+import com.muradgalayev.brainbuddy.domain.model.TodoItem
 import javax.inject.Inject
 
 data class CalendarTaskUi(
@@ -113,14 +111,17 @@ class CalendarViewModel @Inject constructor(
     ) {
         if (title.isBlank()) return
         viewModelScope.launch {
-            val newTask = TodoItemEntity(
+            val newTask = TodoItem(
+                id = java.util.UUID.randomUUID().toString(),
                 title = title.trim(),
                 description = description.trim(),
+                isCompleted = false,
+                date = _uiState.value.selectedDate.toString(),
                 startTime = startTime,
                 endTime = endTime,
-                date = _uiState.value.selectedDate.toString(),
-                color = color,
                 priority = priority.name,
+                attendees = 0,
+                color = color,
                 category = category
             )
             todoRepository.insertTodoItem(newTask)
@@ -141,7 +142,7 @@ class CalendarViewModel @Inject constructor(
         }
     }
 
-    private fun TodoItemEntity.toCalendarTaskUi(): CalendarTaskUi {
+    private fun TodoItem.toCalendarTaskUi(): CalendarTaskUi {
         val accentColor = when (this.color.lowercase()) {
             "red" -> Color(0xFFC41E3A)
             "blue" -> Color(0xFF82C8FF)
@@ -164,5 +165,4 @@ class CalendarViewModel @Inject constructor(
             completed = this.isCompleted,
             flagged = this.priority == TodoPriority.HIGH.name
         )
-    }
-}
+    }}
