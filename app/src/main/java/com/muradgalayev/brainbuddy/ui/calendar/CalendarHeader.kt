@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ChevronLeft
 import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import java.time.DayOfWeek
 import java.time.YearMonth
 import java.time.format.TextStyle
@@ -47,7 +49,7 @@ fun CalendarHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 15.dp),
+            .padding(top = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBackClick, modifier = Modifier.size(40.dp)) {
@@ -61,10 +63,19 @@ fun CalendarHeader(
         Text(
             text = "Calendar",
             style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
         ModePill(currentMode = mode, onModeChange = onModeChange)
+        Spacer(modifier = Modifier.width(8.dp))
+        IconButton(onClick = { /* search */ }, modifier = Modifier.size(40.dp)) {
+            Icon(
+                imageVector = Icons.Rounded.Search,
+                contentDescription = "Search",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
@@ -100,7 +111,7 @@ fun ModePill(
                         .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
                     Text(
-                        text = mode.name,
+                        text = if (mode == CalendarMode.Monthly) "M" else "W",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                         color = fg
@@ -114,35 +125,35 @@ fun ModePill(
 /* ── Month navigator ── */
 @Composable
 fun MonthNavigator(
+    palette: CalendarPalette,
     currentMonth: YearMonth,
     onPrevious: () -> Unit,
     onNext: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        // Large month + year title like the reference
+        Text(
+            text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${currentMonth.year}",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = palette.ink,
+            modifier = Modifier.weight(1f)
+        )
         IconButton(onClick = onPrevious, modifier = Modifier.size(36.dp)) {
             Icon(
                 imageVector = Icons.Rounded.ChevronLeft,
                 contentDescription = "Previous",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = palette.muted
             )
         }
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = "${currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${currentMonth.year}",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Spacer(modifier = Modifier.width(12.dp))
         IconButton(onClick = onNext, modifier = Modifier.size(36.dp)) {
             Icon(
                 imageVector = Icons.Rounded.ChevronRight,
                 contentDescription = "Next",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = palette.muted
             )
         }
     }
@@ -156,15 +167,22 @@ fun DayOfWeekHeader(firstDayOfWeek: DayOfWeek) {
         val index = days.indexOf(firstDayOfWeek)
         days.subList(index, days.size) + days.subList(0, index)
     }
-    Row(modifier = Modifier.fillMaxWidth()) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
         daysOfWeek.forEach { day ->
             Text(
-                text = day.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                text = day.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+                    .uppercase()
+                    .take(2),
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                letterSpacing = 0.5.sp
             )
         }
     }

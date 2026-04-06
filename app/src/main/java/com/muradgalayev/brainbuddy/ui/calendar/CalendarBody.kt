@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,10 +17,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,11 +34,18 @@ import com.kizitonwose.calendar.core.CalendarDay
 import com.kizitonwose.calendar.core.DayPosition
 import com.kizitonwose.calendar.core.WeekDay
 import com.kizitonwose.calendar.core.WeekDayPosition
-import androidx.compose.runtime.remember
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
+// Dot colors for multi-event indicators (like the reference shows)
+private val dotColors = listOf(
+    Color(0xFF9A7CF3), // lavender
+    Color(0xFF82C8FF), // sky
+    Color(0xFFE53E3E), // red
+    Color(0xFFD0DB56), // lime
+    Color(0xFFD8A4FF), // lilac
+)
 
 /* ── Calendar body (month or week) ── */
 @Composable
@@ -52,42 +60,37 @@ fun CalendarBody(
 ) {
     val today = remember { LocalDate.now() }
 
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = modifier.fillMaxWidth()
-    ) {
-        when (mode) {
-            CalendarMode.Monthly -> {
-                HorizontalCalendar(
-                    state = monthState,
-                    dayContent = { day ->
-                        MonthDay(
-                            day = day,
-                            isSelected = day.date == selectedDate,
-                            isToday = day.date == today,
-                            hasEvents = day.date in datesWithTasks,
-                            onClick = { onDateSelect(day.date) }
-                        )
-                    },
-                    modifier = Modifier.padding(8.dp)
-                )
-            }
-            CalendarMode.Weekly -> {
-                WeekCalendar(
-                    state = weekState,
-                    dayContent = { day ->
-                        WeekDayItem(
-                            day = day,
-                            isSelected = day.date == selectedDate,
-                            isToday = day.date == today,
-                            hasEvents = day.date in datesWithTasks,
-                            onClick = { onDateSelect(day.date) }
-                        )
-                    },
-                    modifier = Modifier.padding(8.dp)
-                )
-            }
+    when (mode) {
+        CalendarMode.Monthly -> {
+            HorizontalCalendar(
+                state = monthState,
+                dayContent = { day ->
+                    MonthDay(
+                        day = day,
+                        isSelected = day.date == selectedDate,
+                        isToday = day.date == today,
+                        hasEvents = day.date in datesWithTasks,
+                        onClick = { onDateSelect(day.date) }
+                    )
+                },
+                modifier = modifier.padding(horizontal = 4.dp)
+            )
+        }
+
+        CalendarMode.Weekly -> {
+            WeekCalendar(
+                state = weekState,
+                dayContent = { day ->
+                    WeekDayItem(
+                        day = day,
+                        isSelected = day.date == selectedDate,
+                        isToday = day.date == today,
+                        hasEvents = day.date in datesWithTasks,
+                        onClick = { onDateSelect(day.date) }
+                    )
+                },
+                modifier = modifier.padding(horizontal = 4.dp)
+            )
         }
     }
 }
@@ -105,8 +108,7 @@ fun MonthDay(
 
     val bgColor by animateColorAsState(
         targetValue = when {
-            isSelected -> MaterialTheme.colorScheme.primary
-            isToday -> MaterialTheme.colorScheme.primaryContainer
+            isSelected -> Color(0xFF9A7CF3) // lavender accent
             else -> Color.Transparent
         },
         animationSpec = tween(200),
@@ -114,15 +116,15 @@ fun MonthDay(
     )
 
     val textColor = when {
-        isSelected -> MaterialTheme.colorScheme.onPrimary
-        isToday -> MaterialTheme.colorScheme.onPrimaryContainer
+        isSelected -> Color.White
+        isToday -> Color(0xFF9A7CF3)
         inMonth -> MaterialTheme.colorScheme.onSurface
-        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
     }
 
     Column(
         modifier = Modifier
-            .height(56.dp)
+            .height(52.dp)
             .fillMaxWidth()
             .padding(1.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -138,22 +140,38 @@ fun MonthDay(
         ) {
             Text(
                 text = day.date.dayOfMonth.toString(),
-                fontSize = 13.sp,
-                fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal,
+                fontSize = 14.sp,
+                fontWeight = when {
+                    isSelected -> FontWeight.Bold
+                    isToday -> FontWeight.Bold
+                    else -> FontWeight.Normal
+                },
                 color = textColor
             )
         }
+
+        // Colored event dots (like the reference image)
         if (hasEvents && inMonth) {
             Spacer(Modifier.height(2.dp))
-            Box(
-                modifier = Modifier
-                    .size(5.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isSelected) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-                        else MaterialTheme.colorScheme.primary
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Show 1-3 colored dots based on day hash for visual variety
+                val dotCount = ((day.date.dayOfMonth % 3) + 1).coerceIn(1, 3)
+                repeat(dotCount) { i ->
+                    val colorIndex = (day.date.dayOfMonth + i) % dotColors.size
+                    Box(
+                        modifier = Modifier
+                            .size(4.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (isSelected) Color.White.copy(alpha = 0.8f)
+                                else dotColors[colorIndex]
+                            )
                     )
-            )
+                }
+            }
         }
     }
 }
@@ -171,8 +189,7 @@ fun WeekDayItem(
 
     val bgColor by animateColorAsState(
         targetValue = when {
-            isSelected -> MaterialTheme.colorScheme.primary
-            isToday -> MaterialTheme.colorScheme.primaryContainer
+            isSelected -> Color(0xFF9A7CF3)
             else -> Color.Transparent
         },
         animationSpec = tween(200),
@@ -180,10 +197,10 @@ fun WeekDayItem(
     )
 
     val textColor = when {
-        isSelected -> MaterialTheme.colorScheme.onPrimary
-        isToday -> MaterialTheme.colorScheme.onPrimaryContainer
+        isSelected -> Color.White
+        isToday -> Color(0xFF9A7CF3)
         inWeek -> MaterialTheme.colorScheme.onSurface
-        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
     }
 
     Column(
@@ -193,14 +210,17 @@ fun WeekDayItem(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+            text = day.date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+                .uppercase()
+                .take(2),
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         Box(
             modifier = Modifier
-                .size(38.dp)
+                .size(40.dp)
                 .clip(CircleShape)
                 .background(bgColor)
                 .clickable(enabled = inWeek) { onClick() },
@@ -208,22 +228,31 @@ fun WeekDayItem(
         ) {
             Text(
                 text = day.date.dayOfMonth.toString(),
-                fontSize = 14.sp,
+                fontSize = 15.sp,
                 fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal,
                 color = textColor
             )
         }
         if (hasEvents && inWeek) {
-            Spacer(Modifier.height(2.dp))
-            Box(
-                modifier = Modifier
-                    .size(5.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isSelected) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-                        else MaterialTheme.colorScheme.primary
+            Spacer(Modifier.height(3.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val dotCount = ((day.date.dayOfMonth % 3) + 1).coerceIn(1, 3)
+                repeat(dotCount) { i ->
+                    val colorIndex = (day.date.dayOfMonth + i) % dotColors.size
+                    Box(
+                        modifier = Modifier
+                            .size(4.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (isSelected) Color.White.copy(alpha = 0.8f)
+                                else dotColors[colorIndex]
+                            )
                     )
-            )
+                }
+            }
         }
     }
 }

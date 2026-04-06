@@ -29,14 +29,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.EventNote
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -58,7 +60,126 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 
-/* ── Events section ── */
+/* ── Bottom Sheet Content (Portrait mode) ── */
+@Composable
+fun EventsBottomSheet(
+    palette: CalendarPalette,
+    selectedDate: LocalDate,
+    tasks: List<CalendarTaskUi>,
+    onTaskClick: (String) -> Unit,
+    onTaskDelete: (String) -> Unit,
+    onAddTask: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // ── Drag handle ──
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(40.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(palette.muted.copy(alpha = 0.3f))
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // ── Dark date header (like reference) ──
+        DateHeader(palette = palette, selectedDate = selectedDate)
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // ── Task list ──
+        Box(modifier = Modifier.fillMaxWidth()) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                if (tasks.isEmpty()) {
+                    item {
+                        EmptyTasksState(palette = palette)
+                    }
+                } else {
+                    items(tasks, key = { it.id }) { task ->
+                        SwipeableCalendarTaskCard(
+                            palette = palette,
+                            task = task,
+                            onClick = { onTaskClick(task.id) },
+                            onDelete = { onTaskDelete(task.id) }
+                        )
+                    }
+                }
+
+                // Bottom spacing for FAB
+                item { Spacer(modifier = Modifier.height(88.dp)) }
+            }
+
+            // FAB inside sheet
+            FloatingActionButton(
+                onClick = onAddTask,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 20.dp, bottom = 24.dp),
+                shape = CircleShape,
+                containerColor = palette.lavender,
+                contentColor = Color.White,
+                elevation = FloatingActionButtonDefaults.elevation(
+                    defaultElevation = 6.dp
+                )
+            ) {
+                Icon(Icons.Outlined.Add, "Add task", Modifier.size(28.dp))
+            }
+        }
+    }
+}
+
+/* ── Dark date header ── */
+@Composable
+fun DateHeader(
+    palette: CalendarPalette,
+    selectedDate: LocalDate,
+) {
+    val dayOfWeek = selectedDate.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())
+    val dayNum = selectedDate.dayOfMonth
+    val month = selectedDate.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
+    val year = selectedDate.year
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(palette.dateHeaderBg)
+            .padding(horizontal = 20.dp, vertical = 16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Red dot indicator
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(palette.flagRed)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = "$dayOfWeek, $dayNum $month $year",
+                color = palette.dateHeaderText,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.2.sp
+            )
+        }
+    }
+}
+
+/* ── Events section (landscape fallback) ── */
 @Composable
 fun EventsSection(
     palette: CalendarPalette,
@@ -69,49 +190,18 @@ fun EventsSection(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        Text(
-            text = "Tasks",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = palette.ink,
-            modifier = Modifier.padding(horizontal = 4.dp)
-        )
+        DateHeader(palette = palette, selectedDate = selectedDate)
 
         Spacer(modifier = Modifier.height(12.dp))
 
         LazyColumn(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            // Selected date header
-            item {
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = selectedDate.dayOfWeek.getDisplayName(
-                                TextStyle.FULL, Locale.getDefault()
-                            ),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = palette.lavender
-                        )
-                        Text(
-                            text = "${selectedDate.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${selectedDate.dayOfMonth}, ${selectedDate.year}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = palette.muted
-                        )
-                    }
-                }
-            }
-
             if (tasks.isEmpty()) {
-                item {
-                    EmptyTasksState(palette = palette)
-                }
+                item { EmptyTasksState(palette = palette) }
             } else {
                 items(tasks, key = { it.id }) { task ->
                     SwipeableCalendarTaskCard(
@@ -132,7 +222,7 @@ fun EmptyTasksState(palette: CalendarPalette) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 36.dp),
+            .padding(vertical = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -164,6 +254,16 @@ fun EmptyTasksState(palette: CalendarPalette) {
             fontSize = 13.sp
         )
     }
+}
+
+/* ── Category tag colors ── */
+private fun categoryColor(category: String): Color = when (category.lowercase()) {
+    "work" -> Color(0xFFE8A838)
+    "personal" -> Color(0xFF4CAF50)
+    "education" -> Color(0xFF42A5F5)
+    "sport" -> Color(0xFFEF5350)
+    "health" -> Color(0xFFAB47BC)
+    else -> Color(0xFF78909C)
 }
 
 /* ── Swipeable task card ── */
@@ -199,7 +299,7 @@ private fun SwipeableCalendarTaskCard(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(backgroundColor)
                     .padding(horizontal = 24.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -224,6 +324,7 @@ private fun SwipeableCalendarTaskCard(
     }
 }
 
+/* ── Task Card (reference style) ── */
 @Composable
 fun CalendarTaskCard(
     palette: CalendarPalette,
@@ -238,66 +339,77 @@ fun CalendarTaskCard(
                 indication = null,
                 onClick = onClick
             ),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = palette.cardBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(76.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Accent bar
-            Box(
-                modifier = Modifier
-                    .width(8.dp)
-                    .height(76.dp)
-                    .clip(RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp))
-                    .background(task.accent)
-            )
+            // Completion circle
+            TaskStatusCircle(palette = palette, completed = task.completed)
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 14.dp, end = 14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Completion circle
-                TaskStatusCircle(palette = palette, completed = task.completed)
-                Spacer(Modifier.width(14.dp))
+            Spacer(Modifier.width(14.dp))
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = task.title,
-                        color = if (task.completed) palette.muted else palette.ink,
-                        fontSize = 15.sp,
-                        lineHeight = 20.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    if (!task.subtitle.isNullOrEmpty()) {
-                        Spacer(Modifier.height(3.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                // Category tag pill
+                if (!task.subtitle.isNullOrEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(
+                                categoryColor(task.subtitle).copy(alpha = 0.15f)
+                            )
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
                         Text(
-                            text = task.subtitle,
-                            color = palette.muted,
-                            fontSize = 12.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            text = task.subtitle.uppercase(),
+                            color = categoryColor(task.subtitle),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp
                         )
                     }
+                    Spacer(Modifier.height(6.dp))
                 }
 
-                if (!task.timeRange.isNullOrEmpty()) {
+                // Task title
+                Text(
+                    text = task.title,
+                    color = if (task.completed) palette.muted else palette.ink,
+                    fontSize = 15.sp,
+                    lineHeight = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            // Time range
+            if (!task.timeRange.isNullOrEmpty()) {
+                Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = task.timeRange,
-                        color = palette.muted.copy(alpha = 0.7f),
+                        color = palette.muted.copy(alpha = 0.8f),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
+            }
+
+            // Flag indicator
+            if (task.flagged) {
+                Spacer(Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(palette.flagRed)
+                )
             }
         }
     }
@@ -314,12 +426,12 @@ fun TaskStatusCircle(palette: CalendarPalette, completed: Boolean) {
 
     Box(
         modifier = Modifier
-            .size(28.dp)
+            .size(26.dp)
             .clip(CircleShape)
             .background(bgColor)
             .then(
                 if (!completed) {
-                    Modifier.border(1.5.dp, palette.muted.copy(alpha = 0.4f), CircleShape)
+                    Modifier.border(1.5.dp, palette.muted.copy(alpha = 0.35f), CircleShape)
                 } else {
                     Modifier
                 }

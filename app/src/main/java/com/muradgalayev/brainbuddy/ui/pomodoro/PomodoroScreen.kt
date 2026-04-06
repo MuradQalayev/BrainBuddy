@@ -425,187 +425,238 @@ fun PomodoroScreen(
                 userScrollEnabled = timerState.timerState == TimerState.IDLE,
                 modifier = Modifier.fillMaxWidth()
             ) { _ ->
-                Surface(
+                val cardBackground = if (isDark) {
+                    Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surfaceContainerHigh,
+                            MaterialTheme.colorScheme.surfaceContainer
+                        )
+                    )
+                } else {
+                    Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surfaceContainerHigh
+                        )
+                    )
+                }
+
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .scale(cardScale)
-                        .animateContentSize(),
+                        .clip(RoundedCornerShape(32.dp))
+                        .background(cardBackground)
+                        .padding(1.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Focus Progress",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.weight(1f)
-                            )
-
-                            if (timerState.timerState == TimerState.IDLE) {
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = arcColor.copy(alpha = 0.12f),
-                                    onClick = { viewModel.showDurationPicker() }
-                                ) {
-                                    Text(
-                                        text = "${timerState.totalDurationMs / 60000} min",
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = arcColor,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(31.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        arcColor.copy(alpha = if (isDark) 0.14f else 0.10f),
+                                        MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        MaterialTheme.colorScheme.surfaceContainer
                                     )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(0.7f)
-                                .aspectRatio(1f)
-                                .scale(timerScale),
-                            contentAlignment = Alignment.Center
+                                )
+                            )
+                            .padding(horizontal = 24.dp, vertical = 26.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
+                            // top badge
+                            Surface(
+                                shape = RoundedCornerShape(999.dp),
+                                color = arcColor.copy(alpha = 0.14f)
+                            ) {
+                                Text(
+                                    text = when (timerState.sessionType) {
+                                        PomodoroSessionType.FOCUS -> "FOCUS SESSION"
+                                        PomodoroSessionType.SHORT_BREAK -> "SHORT BREAK"
+                                        PomodoroSessionType.LONG_BREAK -> "LONG BREAK"
+                                    },
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    color = arcColor,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
                             Box(
                                 modifier = Modifier
-                                    .fillMaxSize(0.88f)
-                                    .clip(CircleShape)
-                                    .background(arcColor.copy(alpha = glowAlpha))
-                                    .alpha(if (timerState.timerState == TimerState.RUNNING) 1f else 0.6f)
-                            )
-                            Canvas(modifier = Modifier.fillMaxSize()) {
-                                val strokeWidth = 12.dp.toPx()
-                                val radius = (size.minDimension - strokeWidth) / 2f
-                                val topLeft = Offset(
-                                    (size.width - radius * 2) / 2f,
-                                    (size.height - radius * 2) / 2f
-                                )
-                                val arcSize = Size(radius * 2, radius * 2)
-
-                                drawArc(
-                                    color = trackColor,
-                                    startAngle = -90f,
-                                    sweepAngle = 360f,
-                                    useCenter = false,
-                                    topLeft = topLeft,
-                                    size = arcSize,
-                                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                                )
-
-                                drawArc(
-                                    brush = Brush.sweepGradient(
-                                        colors = listOf(arcColor, arcColorEnd, arcColor)
-                                    ),
-                                    startAngle = -90f,
-                                    sweepAngle = 360f * animatedProgress,
-                                    useCenter = false,
-                                    topLeft = topLeft,
-                                    size = arcSize,
-                                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                                )
-                            }
-
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = if (timerState.timerState == TimerState.IDLE) {
-                                    Modifier
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .clickable { viewModel.showDurationPicker() }
-                                        .padding(12.dp)
-                                } else {
-                                    Modifier.padding(12.dp)
-                                }
+                                    .fillMaxWidth(0.76f)
+                                    .aspectRatio(1f)
+                                    .scale(timerScale),
+                                contentAlignment = Alignment.Center
                             ) {
-                                val minutes = (timerState.remainingMs / 1000) / 60
-                                val seconds = (timerState.remainingMs / 1000) % 60
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize(0.86f)
+                                        .clip(CircleShape)
+                                        .background(
+                                            Brush.radialGradient(
+                                                colors = listOf(
+                                                    arcColor.copy(alpha = glowAlpha + 0.10f),
+                                                    arcColor.copy(alpha = 0.05f),
+                                                    Color.Transparent
+                                                )
+                                            )
+                                        )
+                                )
 
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
+                                Canvas(modifier = Modifier.fillMaxSize()) {
+                                    val strokeWidth = 14.dp.toPx()
+                                    val radius = (size.minDimension - strokeWidth) / 2f
+                                    val topLeft = Offset(
+                                        (size.width - radius * 2) / 2f,
+                                        (size.height - radius * 2) / 2f
+                                    )
+                                    val arcSize = Size(radius * 2, radius * 2)
+
+                                    drawArc(
+                                        color = trackColor,
+                                        startAngle = -90f,
+                                        sweepAngle = 360f,
+                                        useCenter = false,
+                                        topLeft = topLeft,
+                                        size = arcSize,
+                                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                                    )
+
+                                    drawArc(
+                                        brush = Brush.sweepGradient(
+                                            listOf(
+                                                arcColor,
+                                                arcColorEnd,
+                                                arcColor
+                                            )
+                                        ),
+                                        startAngle = -90f,
+                                        sweepAngle = 360f * animatedProgress,
+                                        useCenter = false,
+                                        topLeft = topLeft,
+                                        size = arcSize,
+                                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                                    )
+                                }
+
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = if (timerState.timerState == TimerState.IDLE) {
+                                        Modifier
+                                            .clip(RoundedCornerShape(20.dp))
+                                            .clickable { viewModel.showDurationPicker() }
+                                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                                    } else {
+                                        Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                                    }
                                 ) {
+                                    val minutes = (timerState.remainingMs / 1000) / 60
+                                    val seconds = (timerState.remainingMs / 1000) % 60
                                     val minuteText = "%02d".format(minutes)
                                     val secondText = "%02d".format(seconds)
 
-                                    AnimatedDigit(minuteText[0], "min1")
-                                    AnimatedDigit(minuteText[1], "min2")
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        AnimatedDigit(minuteText[0], "min1")
+                                        AnimatedDigit(minuteText[1], "min2")
 
-                                    Text(
-                                        text = ".",
-                                        fontSize = 44.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
+                                        Text(
+                                            text = ":",
+                                            fontSize = 48.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
 
-                                    AnimatedDigit(secondText[0], "sec1")
-                                    AnimatedDigit(secondText[1], "sec2")
+                                        AnimatedDigit(secondText[0], "sec1")
+                                        AnimatedDigit(secondText[1], "sec2")
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    AnimatedContent(
+                                        targetState = when (timerState.timerState) {
+                                            TimerState.IDLE -> "Tap to set duration"
+                                            TimerState.RUNNING -> "Stay locked in"
+                                            TimerState.PAUSED -> "Paused"
+                                            TimerState.COMPLETED -> "Session completed"
+                                        },
+                                        transitionSpec = {
+                                            fadeIn(tween(180)) togetherWith fadeOut(tween(120))
+                                        },
+                                        label = "statusText"
+                                    ) { statusText ->
+                                        Text(
+                                            text = statusText,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = if (timerState.timerState == TimerState.IDLE) arcColor
+                                            else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
+                            }
 
-                                AnimatedContent(
-                                    targetState = when (timerState.timerState) {
-                                        TimerState.IDLE -> "Tap to edit"
-                                        TimerState.RUNNING -> "Focus"
-                                        TimerState.PAUSED -> "Paused"
-                                        TimerState.COMPLETED -> "Done!"
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Surface(
+                                shape = RoundedCornerShape(18.dp),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (isDark) 0.08f else 0.05f)
+                            ) {
+                                Text(
+                                    text = when (timerState.sessionType) {
+                                        PomodoroSessionType.FOCUS -> "${timerState.totalDurationMs / 60000} min deep focus"
+                                        PomodoroSessionType.SHORT_BREAK -> "${timerState.totalDurationMs / 60000} min short recharge"
+                                        PomodoroSessionType.LONG_BREAK -> "${timerState.totalDurationMs / 60000} min long recharge"
                                     },
-                                    transitionSpec = {
-                                        fadeIn(tween(180)) togetherWith fadeOut(tween(120))
-                                    },
-                                    label = "statusText"
-                                ) { statusText ->
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+
+                            if (timerState.completedSessions > 0) {
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Text(
+                                    text = "${timerState.completedSessions} session${if (timerState.completedSessions > 1) "s" else ""} completed",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = arcColor,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+
+                            if (timerState.timerState == TimerState.IDLE) {
+                                Spacer(modifier = Modifier.height(18.dp))
+
+                                Surface(
+                                    shape = RoundedCornerShape(999.dp),
+                                    color = arcColor.copy(alpha = 0.14f),
+                                    onClick = { viewModel.showDurationPicker() }
+                                ) {
                                     Text(
-                                        text = statusText,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = if (timerState.timerState == TimerState.IDLE) arcColor
-                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                                        text = "Duration: ${timerState.totalDurationMs / 60000} min",
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = arcColor,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
                             }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        val sessionLabel = when (timerState.sessionType) {
-                            PomodoroSessionType.FOCUS -> "Stay focused for ${timerState.totalDurationMs / 60000} min"
-                            PomodoroSessionType.SHORT_BREAK -> "Short break for ${timerState.totalDurationMs / 60000} min"
-                            PomodoroSessionType.LONG_BREAK -> "Long break for ${timerState.totalDurationMs / 60000} min"
-                        }
-
-                        AnimatedContent(
-                            targetState = sessionLabel,
-                            transitionSpec = {
-                                fadeIn(tween(220)) + slideInVertically { it / 2 } togetherWith
-                                        fadeOut(tween(180)) + slideOutVertically { -it / 2 }
-                            },
-                            label = "sessionLabel"
-                        ) { label ->
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        if (timerState.completedSessions > 0) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "${timerState.completedSessions} session${if (timerState.completedSessions > 1) "s" else ""} completed",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = arcColor,
-                                fontWeight = FontWeight.Medium
-                            )
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
 
             Spacer(modifier = Modifier.height(20.dp))
 

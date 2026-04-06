@@ -1,5 +1,5 @@
 package com.muradgalayev.brainbuddy.ui.todo
-import com.muradgalayev.brainbuddy.ui.searchbar.AppSearchBar
+import com.muradgalayev.brainbuddy.ui.sharedcomponents.AppSearchBar
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState

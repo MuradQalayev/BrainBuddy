@@ -11,6 +11,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -110,70 +111,128 @@ fun BottomNavBar(
                 visible = moreExpanded,
                 enter = expandVertically(
                     animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
                         stiffness = Spring.StiffnessMediumLow
                     ),
                     expandFrom = Alignment.Bottom
-                ) + fadeIn(tween(150)),
+                ) + fadeIn(tween(200)),
                 exit = shrinkVertically(
-                    animationSpec = tween(200),
+                    animationSpec = tween(180),
                     shrinkTowards = Alignment.Bottom
-                ) + fadeOut(tween(150))
+                ) + fadeOut(tween(120))
             ) {
-                Surface(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                        .padding(bottom = 6.dp)
-                        .shadow(
-                            elevation = 24.dp,
-                            shape = RoundedCornerShape(22.dp),
-                            ambientColor = Color.Black.copy(alpha = 0.1f),
-                            spotColor = Color.Black.copy(alpha = 0.15f)
-                        ),
-                    shape = RoundedCornerShape(22.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh
+                        .padding(horizontal = 24.dp)
+                        .padding(bottom = 10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        overflowItems.forEach { screen ->
-                            val isActive = currentRoute == screen.route
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(
-                                        if (isActive) MaterialTheme.colorScheme.primaryContainer
-                                        else Color.Transparent
-                                    )
-                                    .clickable {
-                                        moreExpanded = false
-                                        onItemClick(screen)
+                    // Main panel
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .shadow(
+                                elevation = 16.dp,
+                                shape = RoundedCornerShape(20.dp),
+                                ambientColor = Color.Black.copy(alpha = 0.06f),
+                                spotColor = Color.Black.copy(alpha = 0.10f)
+                            ),
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (isDark)
+                            MaterialTheme.colorScheme.surfaceContainerHigh
+                        else
+                            MaterialTheme.colorScheme.surface
+                    ) {
+                        Column(modifier = Modifier.padding(8.dp)) {
+                            overflowItems.forEachIndexed { index, screen ->
+                                val isActive = currentRoute == screen.route
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(
+                                            if (isActive)
+                                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                            else Color.Transparent
+                                        )
+                                        .clickable {
+                                            moreExpanded = false
+                                            onItemClick(screen)
+                                        }
+                                        .padding(horizontal = 16.dp, vertical = 13.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = if (isActive)
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                        else
+                                            MaterialTheme.colorScheme.surfaceContainer,
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier.fillMaxSize()
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(id = screen.icon),
+                                                contentDescription = screen.label,
+                                                tint = if (isActive)
+                                                    MaterialTheme.colorScheme.primary
+                                                else
+                                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
                                     }
-                                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-//                                    imageVector = screen.icon
-                                    painter = painterResource(id = screen.icon),
-                                    contentDescription = screen.label,
-                                    tint = if (isActive)
-                                        MaterialTheme.colorScheme.onPrimaryContainer
-                                    else
-                                        MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                                Spacer(modifier = Modifier.width(14.dp))
-                                Text(
-                                    text = screen.label,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (isActive)
-                                        MaterialTheme.colorScheme.onPrimaryContainer
-                                    else
-                                        MaterialTheme.colorScheme.onSurface
-                                )
+                                    Spacer(modifier = Modifier.width(14.dp))
+                                    Text(
+                                        text = screen.label,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
+                                        color = if (isActive)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                // Subtle divider between items
+                                if (index < overflowItems.size - 1) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp)
+                                            .height(0.5.dp)
+                                            .background(
+                                                MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
+                                            )
+                                    )
+                                }
                             }
                         }
+                    }
+
+                    // Arrow pointing down toward the More/Settings button (right side)
+                    Canvas(
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .padding(end = 40.dp)
+                            .width(16.dp)
+                            .height(8.dp)
+                    ) {
+                        val arrowColor = if (isDark)
+                            Color(0xFF282B34) // matches surfaceContainerHigh dark
+                        else
+                            Color.White // matches surface light
+
+                        val path = androidx.compose.ui.graphics.Path().apply {
+                            moveTo(0f, 0f)
+                            lineTo(size.width / 2f, size.height)
+                            lineTo(size.width, 0f)
+                            close()
+                        }
+                        drawPath(path, arrowColor)
                     }
                 }
             }
@@ -183,14 +242,12 @@ fun BottomNavBar(
             val notchShape = NavBarNotchShape(
                 fabSize = fabSize,
                 notchGap = 8.dp,
-                cornerRadius = 28.dp
+                cornerRadius = 0.dp
             )
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
-                    .padding(bottom = 12.dp)
                     .navigationBarsPadding()
             ) {
                 // The pill-shaped navbar with concave notch
@@ -199,13 +256,16 @@ fun BottomNavBar(
                         .fillMaxWidth()
                         .padding(top = 16.dp) // room for FAB to poke above
                         .shadow(
-                            elevation = 20.dp,
+                            elevation = 12.dp,
                             shape = notchShape,
-                            ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-                            spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                            ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                            spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
                         ),
                     shape = notchShape,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    color = if (isDark)
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+                    else
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
                     tonalElevation = 0.dp
                 ) {
                     Row(
@@ -349,8 +409,8 @@ private fun NavBarItem(
 
     val pillColor by animateColorAsState(
         targetValue = if (selected) {
-            if (isDark) Color.White.copy(alpha = 0.1f)
-            else MaterialTheme.colorScheme.primaryContainer
+            if (isDark) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+            else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
         } else Color.Transparent,
         animationSpec = tween(250),
         label = "pill"
@@ -360,7 +420,7 @@ private fun NavBarItem(
         targetValue = if (selected) {
             MaterialTheme.colorScheme.primary
         } else {
-            if (isDark) Color.White else Color.Black
+            MaterialTheme.colorScheme.onSurfaceVariant
         },
         animationSpec = tween(250),
         label = "iconColor"
@@ -368,9 +428,9 @@ private fun NavBarItem(
 
     val textColor by animateColorAsState(
         targetValue = if (selected) {
-            if (isDark) Color.White else MaterialTheme.colorScheme.primary
+            MaterialTheme.colorScheme.primary
         } else {
-            if (isDark) Color.White else Color.Black
+            MaterialTheme.colorScheme.onSurfaceVariant
         },
         animationSpec = tween(250),
         label = "textColor"

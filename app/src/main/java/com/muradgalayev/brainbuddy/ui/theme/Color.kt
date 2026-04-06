@@ -7,7 +7,7 @@ val BrandBlue = Color(0xFF4A90D9)
 val BrandBlueLight = Color(0xFF8AB8F0)
 
 // ─── Light palette ───
-val LightBackground = Color(0xFFF8F9FC)
+val LightBackground = Color(0xFFFFFFFF)
 val LightSurface = Color(0xFFFFFFFF)
 val LightSurfaceContainer = Color(0xFFF0F2F7)
 val LightSurfaceContainerHigh = Color(0xFFE4E7EF)

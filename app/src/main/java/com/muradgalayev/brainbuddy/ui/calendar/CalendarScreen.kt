@@ -1,22 +1,33 @@
 package com.muradgalayev.brainbuddy.ui.calendar
 
 import android.content.res.Configuration
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kizitonwose.calendar.compose.rememberCalendarState
@@ -45,7 +57,7 @@ import java.time.YearMonth
 enum class CalendarMode { Monthly, Weekly }
 
 @Immutable
- data class CalendarPalette(
+data class CalendarPalette(
     val bg: Color,
     val ink: Color,
     val muted: Color,
@@ -59,6 +71,9 @@ enum class CalendarMode { Monthly, Weekly }
     val lime: Color,
     val periwinkle: Color,
     val dialogBorder: Color,
+    val sheetBg: Color,
+    val dateHeaderBg: Color,
+    val dateHeaderText: Color,
 )
 
 val LightCalendarPalette = CalendarPalette(
@@ -75,6 +90,9 @@ val LightCalendarPalette = CalendarPalette(
     lime = Color(0xFFD0DB56),
     periwinkle = Color(0xFFB9C5FF),
     dialogBorder = Color(0xFFF0EEF5),
+    sheetBg = Color(0xFFF9F8FB),
+    dateHeaderBg = Color(0xFF1E1B2E),
+    dateHeaderText = Color(0xFFFFFFFF),
 )
 
 val DarkCalendarPalette = CalendarPalette(
@@ -91,15 +109,19 @@ val DarkCalendarPalette = CalendarPalette(
     lime = Color(0xFFB8C244),
     periwinkle = Color(0xFF8E9DE0),
     dialogBorder = Color(0xFF32353F),
+    sheetBg = Color(0xFF16181D),
+    dateHeaderBg = Color(0xFF1A1C24),
+    dateHeaderText = Color(0xFFE4E5EA),
 )
 
 @Composable
-private fun rememberCalendarPalette(): CalendarPalette {
+fun rememberCalendarPalette(): CalendarPalette {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     return if (isDark) DarkCalendarPalette else LightCalendarPalette
 }
 
 /* ── Main Screen ── */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(
     onBackClick: () -> Unit = {},
@@ -133,7 +155,7 @@ fun CalendarScreen(
         firstDayOfWeek = firstDayOfWeek
     )
 
-    // Sync visible month to ViewModel for dot indicators
+    // Sync visible month to ViewModel
     LaunchedEffect(monthState.firstVisibleMonth.yearMonth) {
         viewModel.updateVisibleMonth(monthState.firstVisibleMonth.yearMonth)
     }
@@ -157,15 +179,14 @@ fun CalendarScreen(
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (isLandscape) {
-            // Landscape: side-by-side
+    if (isLandscape) {
+        // ── Landscape: side-by-side (no bottom sheet) ──
+        Box(modifier = Modifier.fillMaxSize().background(p.bg)) {
             Row(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                // Left: calendar
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -174,6 +195,7 @@ fun CalendarScreen(
                     CalendarHeader(mode = mode, onModeChange = { mode = it }, onBackClick = onBackClick)
                     Spacer(modifier = Modifier.height(12.dp))
                     MonthNavigator(
+                        palette = p,
                         currentMonth = if (mode == CalendarMode.Monthly)
                             monthState.firstVisibleMonth.yearMonth
                         else YearMonth.from(uiState.selectedDate),
@@ -220,7 +242,6 @@ fun CalendarScreen(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // Right: events
                 EventsSection(
                     palette = p,
                     selectedDate = uiState.selectedDate,
@@ -232,16 +253,75 @@ fun CalendarScreen(
                         .fillMaxHeight()
                 )
             }
-        } else {
-            // Portrait: stacked
+
+            FloatingActionButton(
+                onClick = { viewModel.showAddTaskDialog() },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(24.dp),
+                shape = CircleShape,
+                containerColor = p.lavender,
+                contentColor = Color.White
+            ) {
+                Icon(Icons.Outlined.Add, "Add task", Modifier.size(28.dp))
+            }
+        }
+    } else {
+        // ── Portrait: Bottom Sheet layout ──
+        val density = LocalDensity.current
+        val screenHeight = configuration.screenHeightDp.dp
+
+        // Sheet peek = date header + ~2 task cards visible
+        val sheetPeekHeight = remember(screenHeight) {
+            (screenHeight * 0.38f).coerceIn(260.dp, 380.dp)
+        }
+
+        val bottomSheetState = rememberStandardBottomSheetState(
+            initialValue = SheetValue.PartiallyExpanded,
+            skipHiddenState = true
+        )
+        val scaffoldState = rememberBottomSheetScaffoldState(
+            bottomSheetState = bottomSheetState
+        )
+
+        BottomSheetScaffold(
+            scaffoldState = scaffoldState,
+            sheetPeekHeight = sheetPeekHeight,
+            sheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            sheetContainerColor = p.sheetBg,
+            sheetShadowElevation = 16.dp,
+            sheetDragHandle = null, // We use our own custom date header as handle
+            containerColor = p.bg,
+            sheetContent = {
+                // ── Bottom Sheet: date header + events ──
+                EventsBottomSheet(
+                    palette = p,
+                    selectedDate = uiState.selectedDate,
+                    tasks = uiState.tasksForSelectedDate,
+                    onTaskClick = { viewModel.toggleTaskCompletion(it) },
+                    onTaskDelete = { viewModel.deleteTask(it) },
+                    onAddTask = { viewModel.showAddTaskDialog() }
+                )
+            }
+        ) { innerPadding ->
+            // ── Calendar area above the sheet ──
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp, vertical = 20.dp)
+                    .padding(innerPadding)
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 16.dp)
             ) {
-                CalendarHeader(mode = mode, onModeChange = { mode = it }, onBackClick = onBackClick)
-                Spacer(modifier = Modifier.height(20.dp))
+                CalendarHeader(
+                    mode = mode,
+                    onModeChange = { mode = it },
+                    onBackClick = onBackClick
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 MonthNavigator(
+                    palette = p,
                     currentMonth = if (mode == CalendarMode.Monthly)
                         monthState.firstVisibleMonth.yearMonth
                     else YearMonth.from(uiState.selectedDate),
@@ -272,9 +352,12 @@ fun CalendarScreen(
                         }
                     }
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 DayOfWeekHeader(firstDayOfWeek)
-                Spacer(modifier = Modifier.height(8.dp))
+
+                Spacer(modifier = Modifier.height(6.dp))
 
                 CalendarBody(
                     mode = mode,
@@ -283,33 +366,11 @@ fun CalendarScreen(
                     selectedDate = uiState.selectedDate,
                     datesWithTasks = uiState.datesWithTasks,
                     onDateSelect = { viewModel.selectDate(it) },
-                    modifier = Modifier.height(if (mode == CalendarMode.Monthly) 340.dp else 130.dp)
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                EventsSection(
-                    palette = p,
-                    selectedDate = uiState.selectedDate,
-                    tasks = uiState.tasksForSelectedDate,
-                    onTaskClick = { viewModel.toggleTaskCompletion(it) },
-                    onTaskDelete = { viewModel.deleteTask(it) },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, fill = false)
                 )
             }
-        }
-
-        // FAB
-        FloatingActionButton(
-            onClick = { viewModel.showAddTaskDialog() },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(24.dp),
-            shape = CircleShape,
-            containerColor = p.lavender,
-            contentColor = Color.White
-        ) {
-            Icon(Icons.Outlined.Add, "Add task", Modifier.size(28.dp))
         }
     }
 }
