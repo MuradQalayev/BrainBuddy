@@ -260,7 +260,7 @@ fun EmptyTasksState(palette: CalendarPalette) {
 private fun categoryColor(category: String): Color = when (category.lowercase()) {
     "work" -> Color(0xFFE8A838)
     "personal" -> Color(0xFF4CAF50)
-    "education" -> Color(0xFF42A5F5)
+    "education" -> Color(0xFF6366F1)
     "sport" -> Color(0xFFEF5350)
     "health" -> Color(0xFFAB47BC)
     else -> Color(0xFF78909C)

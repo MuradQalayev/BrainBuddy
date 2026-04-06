@@ -27,6 +27,7 @@ private val DarkColorScheme = darkColorScheme(
     surfaceContainerHigh = DarkSurfaceContainerHigh,
     surfaceContainerHighest = DarkSurfaceContainerHighest,
     outline = DarkOutline,
+    outlineVariant = DarkOutlineVariant,
     scrim = DarkScrim
 )
 
@@ -47,7 +48,8 @@ private val LightColorScheme = lightColorScheme(
     surfaceContainer = LightSurfaceContainer,
     surfaceContainerHigh = LightSurfaceContainerHigh,
     surfaceContainerHighest = LightSurfaceContainerHighest,
-    outline = LightOutline
+    outline = LightOutline,
+    outlineVariant = LightOutlineVariant
 )
 
 private fun getScaledTypography(

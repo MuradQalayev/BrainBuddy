@@ -232,7 +232,7 @@ fun AddTaskDialog(
                         onClick = { selectedColor = "red" }
                     )
                     ColorOption(
-                        color = Color(0xFF82C8FF),
+                        color = Color(0xFF8B8CF8),
                         selected = selectedColor == "blue",
                         onClick = { selectedColor = "blue" }
                     )

@@ -116,7 +116,7 @@ private val FocusPurpleDarkEnd = AiButtonDarkEnd   // #A78BFA
 
 // Break accent
 private val BreakGreen = Color(0xFF4CAF50)
-private val BreakBlue = Color(0xFF42A5F5)
+private val BreakBlue = Color(0xFF818CF8)
 
 @Composable
 fun PomodoroScreen(

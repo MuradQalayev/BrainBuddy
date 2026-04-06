@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Stop
@@ -311,40 +312,62 @@ fun NavGraph(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 126.dp),
-                shape = RoundedCornerShape(28.dp),
-                tonalElevation = 6.dp,
-                shadowElevation = 24.dp,
+                    .padding(horizontal = 12.dp)
+                    .padding(bottom = 120.dp),
+                shape = RoundedCornerShape(32.dp),
+                tonalElevation = 2.dp,
+                shadowElevation = 28.dp,
                 color = MaterialTheme.colorScheme.surface
             ) {
                 Column {
-                    // Gradient header
+                    // Modern gradient header with sparkle icon
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(
                                 brush = aiGradient,
-                                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
                             )
-                            .padding(horizontal = 20.dp, vertical = 16.dp)
+                            .padding(horizontal = 20.dp, vertical = 18.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(
-                                text = "Ask BrainBuddy",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.White,
-                                modifier = Modifier.weight(1f)
-                            )
+                            // AI sparkle icon
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.White.copy(alpha = 0.18f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.size(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "BrainBuddy AI",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = "Your personal assistant",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.7f)
+                                )
+                            }
                             Box(
                                 modifier = Modifier
                                     .size(32.dp)
                                     .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.2f))
+                                    .background(Color.White.copy(alpha = 0.15f))
                                     .clickable { showAiPrompt = false },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -352,7 +375,7 @@ fun NavGraph(
                                     imageVector = Icons.Rounded.Close,
                                     contentDescription = "Close",
                                     tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                         }
@@ -360,15 +383,8 @@ fun NavGraph(
 
                     // Input area
                     Column(
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
                     ) {
-                        Text(
-                            text = "What can I help you with?",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
 
                         // Text field with send button
                         Row(
@@ -388,19 +404,23 @@ fun NavGraph(
                                     modifier = Modifier.fillMaxWidth(),
                                     placeholder = {
                                         Text(
-                                            "Ask anything...",
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                            "What can I help you with?",
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                            style = MaterialTheme.typography.bodyMedium
                                         )
                                     },
-                                    shape = RoundedCornerShape(20.dp),
+                                    shape = RoundedCornerShape(22.dp),
                                     colors = TextFieldDefaults.colors(
-                                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
+                                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
                                         focusedIndicatorColor = Color.Transparent,
                                         unfocusedIndicatorColor = Color.Transparent,
                                         cursorColor = MaterialTheme.colorScheme.primary
                                     ),
-                                    maxLines = 4
+                                    maxLines = 4,
+                                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
                                 )
                             }
 
@@ -643,7 +663,7 @@ fun NavGraph(
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(48.dp)
+                                        .size(52.dp)
                                         .clip(CircleShape)
                                         .background(brush = aiGradient)
                                         .clickable {
@@ -661,14 +681,33 @@ fun NavGraph(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Divider
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                                )
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
 
                         // Suggestion chips
+                        Text(
+                            text = "Suggestions",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                         Row(
                             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
                         ) {
-                            AiSuggestionChip("Summarize my day")
-                            AiSuggestionChip("Help me focus")
+                            AiSuggestionChip("Summarize my day", aiGradient)
+                            AiSuggestionChip("Help me focus", aiGradient)
                         }
                     }
                 }
@@ -698,18 +737,35 @@ fun NavGraph(
 }
 
 @Composable
-private fun AiSuggestionChip(text: String) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        onClick = { /* TODO: fill prompt with suggestion */ }
+private fun AiSuggestionChip(text: String, gradient: Brush) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .border(
+                width = 1.dp,
+                brush = gradient,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clickable { /* TODO: fill prompt with suggestion */ }
+            .padding(horizontal = 14.dp, vertical = 9.dp)
     ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.AutoAwesome,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
 

@@ -40,11 +40,11 @@ import java.util.Locale
 
 // Dot colors for multi-event indicators (like the reference shows)
 private val dotColors = listOf(
-    Color(0xFF9A7CF3), // lavender
+    Color(0xFF6366F1), // indigo
     Color(0xFF82C8FF), // sky
     Color(0xFFE53E3E), // red
     Color(0xFFD0DB56), // lime
-    Color(0xFFD8A4FF), // lilac
+    Color(0xFF6366F1), // lilac
 )
 
 /* ── Calendar body (month or week) ── */
@@ -108,7 +108,7 @@ fun MonthDay(
 
     val bgColor by animateColorAsState(
         targetValue = when {
-            isSelected -> Color(0xFF9A7CF3) // lavender accent
+            isSelected -> Color(0xFF6366F1) // lavender accent
             else -> Color.Transparent
         },
         animationSpec = tween(200),
@@ -117,7 +117,7 @@ fun MonthDay(
 
     val textColor = when {
         isSelected -> Color.White
-        isToday -> Color(0xFF9A7CF3)
+        isToday -> Color(0xFF6366F1)
         inMonth -> MaterialTheme.colorScheme.onSurface
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
     }
@@ -189,7 +189,7 @@ fun WeekDayItem(
 
     val bgColor by animateColorAsState(
         targetValue = when {
-            isSelected -> Color(0xFF9A7CF3)
+            isSelected -> Color(0xFF6366F1)
             else -> Color.Transparent
         },
         animationSpec = tween(200),
@@ -198,7 +198,7 @@ fun WeekDayItem(
 
     val textColor = when {
         isSelected -> Color.White
-        isToday -> Color(0xFF9A7CF3)
+        isToday -> Color(0xFF6366F1)
         inWeek -> MaterialTheme.colorScheme.onSurface
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
     }

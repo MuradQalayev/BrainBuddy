@@ -145,9 +145,9 @@ class CalendarViewModel @Inject constructor(
     private fun TodoItem.toCalendarTaskUi(): CalendarTaskUi {
         val accentColor = when (this.color.lowercase()) {
             "red" -> Color(0xFFC41E3A)
-            "blue" -> Color(0xFF82C8FF)
+            "blue" -> Color(0xFF8B8CF8)
             "yellow" -> Color(0xFFFFF9B9)
-            else -> Color(0xFF82C8FF)
+            else -> Color(0xFF8B8CF8)
         }
 
         val timeRange = if (startTime.isNotEmpty() && endTime.isNotEmpty()) {
