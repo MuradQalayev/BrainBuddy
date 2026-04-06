@@ -81,7 +81,6 @@ fun BottomNavBar(
 ) {
     var moreExpanded by remember { mutableStateOf(false) }
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    // Split: first 2 left of AI button, rest right of AI button
     val leftItems = items.take(2)
     val rightItems = items.drop(2)
 
@@ -128,7 +127,6 @@ fun BottomNavBar(
                         .padding(bottom = 10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Main panel
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -327,14 +325,12 @@ fun BottomNavBar(
                     }
                 }
 
-                // Floating AI button — centered, overlapping the top of the navbar
                 val aiGradient = if (isDark) {
                     Brush.linearGradient(listOf(AiButtonDark, AiButtonDarkEnd))
                 } else {
                     Brush.linearGradient(listOf(AiButtonLight, AiButtonLightEnd))
                 }
 
-                // Icon spin animation when AI prompt opens / closes
                 val aiRotation by animateFloatAsState(
                     targetValue = if (isAiOpen) 180f else 0f,
                     animationSpec = spring(

@@ -1,11 +1,14 @@
 package com.muradgalayev.brainbuddy.ui.activity
 
-
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.muradgalayev.brainbuddy.data.local.PomodoroTimerManager
+import com.muradgalayev.brainbuddy.data.local.TimerState
+import com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionType
+import com.muradgalayev.brainbuddy.data.repository.PomodoroRepository
 import com.muradgalayev.brainbuddy.data.repository.TodoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,13 +16,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import javax.inject.Inject
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import com.muradgalayev.brainbuddy.data.local.PomodoroTimerManager
-import com.muradgalayev.brainbuddy.data.local.TimerState
-import com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionType
-import com.muradgalayev.brainbuddy.data.repository.PomodoroRepository
+import javax.inject.Inject
 
 @HiltViewModel
 class WorkspaceViewModel @Inject constructor(
@@ -162,9 +162,9 @@ class WorkspaceViewModel @Inject constructor(
     private fun observePomodoroHistory() {
         viewModelScope.launch {
             while (true) {
-                val today = java.time.LocalDate.now()
+                val today = LocalDate.now()
                 val yesterday = today.minusDays(1)
-                val zone = java.time.ZoneId.systemDefault()
+                val zone = ZoneId.systemDefault()
 
                 val todayStart = today.atStartOfDay(zone).toInstant().toEpochMilli()
                 val todayEnd = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
@@ -190,7 +190,7 @@ class WorkspaceViewModel @Inject constructor(
                     )
                 }
 
-                kotlinx.coroutines.delay(5000)
+                delay(5000)
             }
         }
     }

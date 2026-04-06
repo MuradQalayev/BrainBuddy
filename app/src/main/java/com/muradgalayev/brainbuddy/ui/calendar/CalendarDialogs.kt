@@ -167,9 +167,9 @@ fun AddTaskDialog(
 
                     Box(Modifier.weight(1f)) {
                         TimePickerField(
-                            value = startTime,
-                            label = "Start",
-                            placeholder = "09:00",
+                            value = endTime,
+                            label = "End",
+                            placeholder = "10:00",
                             mutedColor = palette.muted,
                             accentColor = palette.lavender,
                             borderColor = palette.dialogBorder,
@@ -177,7 +177,7 @@ fun AddTaskDialog(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = {
                                 focusManager.clearFocus()
-                                showStartPicker = true
+                                showEndPicker = true
                             }
                         )
                     }

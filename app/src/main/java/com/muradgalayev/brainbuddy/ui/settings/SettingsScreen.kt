@@ -3,20 +3,27 @@ package com.muradgalayev.brainbuddy.ui.settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -29,13 +36,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.muradgalayev.brainbuddy.ui.components.ProfileHeaderCard
-import com.muradgalayev.brainbuddy.ui.settings.components.QuickAccessSection
 import com.muradgalayev.brainbuddy.ui.settings.components.AppearanceRow
 import com.muradgalayev.brainbuddy.ui.settings.components.FocusModeSection
+import com.muradgalayev.brainbuddy.ui.settings.components.QuickAccessSection
+
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
@@ -50,6 +61,7 @@ fun SettingsScreen(
     val fontSize by viewModel.fontSize.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Scrim when appearance panel is open
         if (appearanceOpen) {
             Box(
                 modifier = Modifier
@@ -68,52 +80,50 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 28.dp)
+                .padding(horizontal = 20.dp, vertical = 24.dp)
                 .zIndex(if (appearanceOpen) 2f else 0f)
         ) {
+            // ── Header ──
             Text(
                 text = "Settings",
                 style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ── Account ──
+            SectionHeader(title = "Account")
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            ProfileHeaderCard(
+                name = "Welcome",
+                subtitle = "Sign in to sync your data",
+                isLoggedIn = false,
+                onClick = { /* navigate to login/profile */ }
             )
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            //profile view
+            // ── Customization ──
+            SectionHeader(title = "Customization")
 
-            val isLoggedIn = false
-            val userName = if (isLoggedIn) "Murad Galayev" else "Welcome"
-            val userSubtitle = if (isLoggedIn) "murad@example.com" else "Sign in to sync your data"
+            Spacer(modifier = Modifier.height(10.dp))
 
-            ProfileHeaderCard(
-                name = userName,
-                subtitle = userSubtitle,
-                isLoggedIn = isLoggedIn,
-                onClick = {
-                    // later: navigate to login/profile
-                }
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // --- Appearance ---
             AppearanceRow(
                 themeMode = themeMode,
                 fontMode = fontMode,
                 fontSize = fontSize,
                 expanded = appearanceOpen,
                 onToggle = { appearanceOpen = !appearanceOpen },
-                onThemeChange = {
-                    viewModel.setThemeMode(it)
-                },
-                onFontChange = {
-                    viewModel.setFontMode(it)
-                },
-                onFontSizeChange = {
-                    viewModel.setFontSize(it)
-                }
+                onThemeChange = { viewModel.setThemeMode(it) },
+                onFontChange = { viewModel.setFontMode(it) },
+                onFontSizeChange = { viewModel.setFontSize(it) }
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             QuickAccessSection(
                 enabledRoutes = enabledNavItems,
@@ -122,7 +132,12 @@ fun SettingsScreen(
                 onToggle = { route, enabled -> viewModel.toggleNavItem(route, enabled) }
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // ── Focus ──
+            SectionHeader(title = "Focus")
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             FocusModeSection(
                 enabled = focusModeEnabled,
@@ -130,10 +145,107 @@ fun SettingsScreen(
                 onToggleExpanded = { pomodoroOpen = !pomodoroOpen },
                 onToggle = { viewModel.toggleFocusMode(it) }
             )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // ── About ──
+            SectionHeader(title = "About")
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            AboutSection()
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // ── Footer ──
+            Text(
+                text = "BrainBuddy v1.0",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
+// ── Section Header ──
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title.uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+        letterSpacing = 1.2.sp,
+        modifier = Modifier.padding(start = 4.dp)
+    )
+}
+
+// ── About Section ──
+
+@Composable
+private fun AboutSection() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        Column {
+            AboutRow(
+                icon = Icons.Outlined.Info,
+                title = "Version",
+                value = "1.0"
+            )
+        }
+    }
+}
+
+@Composable
+private fun AboutRow(
+    icon: ImageVector,
+    title: String,
+    value: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            modifier = Modifier.size(40.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(14.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+// ── Shared settings components ──
 
 @Composable
 fun SectionLabel(icon: ImageVector, label: String) {

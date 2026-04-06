@@ -800,7 +800,6 @@ fun PomodoroScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Bottom controls
             BottomControls(
                 timerState = timerState.timerState,
                 accentColor = arcColor,
