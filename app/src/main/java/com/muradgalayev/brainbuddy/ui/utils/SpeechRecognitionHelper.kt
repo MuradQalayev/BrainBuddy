@@ -3,6 +3,8 @@ package com.muradgalayev.brainbuddy.ui.utils
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -16,6 +18,8 @@ class SpeechRecognitionHelper(
     private val onListeningStarted: () -> Unit = {},
     private val onListeningFinished: () -> Unit = {}
 ) {
+    private val mainHandler = Handler(Looper.getMainLooper())
+
     private val speechRecognizer: SpeechRecognizer? =
         if (SpeechRecognizer.isRecognitionAvailable(context)) {
             SpeechRecognizer.createSpeechRecognizer(context)
@@ -24,7 +28,7 @@ class SpeechRecognitionHelper(
     init {
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
-                onListeningStarted()
+                mainHandler.post { onListeningStarted() }
             }
 
             override fun onBeginningOfSpeech() {}
@@ -32,25 +36,29 @@ class SpeechRecognitionHelper(
             override fun onBufferReceived(buffer: ByteArray?) {}
 
             override fun onEndOfSpeech() {
-                onListeningFinished()
+                mainHandler.post { onListeningFinished() }
             }
 
             override fun onError(error: Int) {
-                onListeningFinished()
-                onError(error)
+                mainHandler.post {
+                    onListeningFinished()
+                    onError(error)
+                }
             }
 
             override fun onResults(results: Bundle?) {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
-                    onResult(matches[0])
+                    val text = matches[0]
+                    mainHandler.post { onResult(text) }
                 }
             }
 
             override fun onPartialResults(partialResults: Bundle?) {
                 val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
-                    onPartialResult(matches[0])
+                    val text = matches[0]
+                    mainHandler.post { onPartialResult(text) }
                 }
             }
 
@@ -65,15 +73,15 @@ class SpeechRecognitionHelper(
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
         }
-        speechRecognizer?.startListening(intent)
+        mainHandler.post { speechRecognizer?.startListening(intent) }
     }
 
     fun stopListening() {
-        speechRecognizer?.stopListening()
+        mainHandler.post { speechRecognizer?.stopListening() }
     }
 
     fun destroy() {
-        speechRecognizer?.destroy()
+        mainHandler.post { speechRecognizer?.destroy() }
     }
 
     fun isAvailable(): Boolean = speechRecognizer != null
