@@ -14,5 +14,6 @@ data class WorkspaceUiState(
     val pomodoroIsActive: Boolean = false,
     val todayFocusMinutes: Int = 0,
     val yesterdayFocusMinutes: Int = 0,
-    val focusComparisonText: String = "No focus sessions yet"
+    val focusComparisonText: String = "No focus sessions yet",
+    val isSimplified: Boolean = false
 )

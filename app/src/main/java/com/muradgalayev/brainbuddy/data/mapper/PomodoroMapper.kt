@@ -6,7 +6,7 @@ import com.muradgalayev.brainbuddy.domain.model.PomodoroSession
 fun PomodoroSessionEntity.toDomain(): PomodoroSession {
     return PomodoroSession(
         id = id,
-        sessionType = sessionType,
+        sessionType  = sessionType,
         plannedDurationMs = plannedDurationMs,
         actualDurationMs = actualDurationMs,
         pausedDurationMs = pausedDurationMs,

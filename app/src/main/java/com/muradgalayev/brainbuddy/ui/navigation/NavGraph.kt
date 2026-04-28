@@ -43,6 +43,8 @@ import com.muradgalayev.brainbuddy.ui.components.AiPromptCard
 import com.muradgalayev.brainbuddy.ui.home.HomeScreen
 import com.muradgalayev.brainbuddy.ui.settings.SettingsScreen
 import com.muradgalayev.brainbuddy.ui.pomodoro.PomodoroScreen
+import com.muradgalayev.brainbuddy.ui.auth.AuthScreen
+import com.muradgalayev.brainbuddy.ui.splash.SplashScreen
 import com.muradgalayev.brainbuddy.ui.todo.TaskDetailScreen
 import com.muradgalayev.brainbuddy.ui.todo.TodoScreen
 
@@ -81,7 +83,7 @@ fun NavGraph(
         if (needsMore) allEnabled.drop(MAX_VISIBLE_NAV_ITEMS - 1) else emptyList()
     }
 
-    val fullScreenRoutes = setOf(Screen.Pomodoro.route, Screen.Calendar.route)
+    val fullScreenRoutes = setOf(Screen.Splash.route, Screen.Auth.route, Screen.Pomodoro.route, Screen.Calendar.route)
     val isFullScreen = currentRoute in fullScreenRoutes
     val bottomPadding by animateDpAsState(
         targetValue = if (isFullScreen) 0.dp else 104.dp,
@@ -95,7 +97,7 @@ fun NavGraph(
     ) {
         NavHost(
             navController = navController,
-            startDestination = Screen.Home.route,
+            startDestination = Screen.Splash.route,
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
@@ -125,6 +127,29 @@ fun NavGraph(
                 ) + fadeOut(animationSpec = tween(300))
             }
         ) {
+            composable(Screen.Splash.route) {
+                SplashScreen(
+                    onNavigateToHome = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToAuth = {
+                        navController.navigate(Screen.Auth.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+            composable(Screen.Auth.route) {
+                AuthScreen(
+                    onAuthSuccess = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Auth.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
             composable(Screen.Home.route) { HomeScreen() }
             composable(Screen.Activity.route) {
                 WorkspaceScreen(
@@ -133,7 +158,15 @@ fun NavGraph(
                     }
                 )
             }
-            composable(Screen.Settings.route) { SettingsScreen() }
+            composable(Screen.Settings.route) {
+                SettingsScreen(
+                    onLogout = {
+                        navController.navigate(Screen.Auth.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
             composable(Screen.Calendar.route) {
                 CalendarScreen(
                     onBackClick = { navController.popBackStack() }
@@ -157,9 +190,11 @@ fun NavGraph(
                 )
             ) { backStackEntry ->
                 val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
-                // For now, pass a demo task - later this will come from a ViewModel
+                
+                // Demo task updated with required userId to fix compilation
                 val demoTask = TodoItemEntity(
                     id = taskId,
+                    userId = "demo_user",
                     title = "Sample Task",
                     description = "Sample description",
                     startTime = "10:00",
@@ -226,7 +261,7 @@ fun NavGraph(
                 currentRoute = currentRoute,
                 onItemClick = { screen ->
                     navController.navigate(screen.route) {
-                        popUpTo(navController.graph.startDestinationId) {
+                        popUpTo(Screen.Home.route) {
                             saveState = false
                         }
                         launchSingleTop = true

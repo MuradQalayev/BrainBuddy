@@ -29,6 +29,12 @@ sealed class Screen(
     // Detail screens
     object TaskDetail : Screen("task_detail", "Task Detail", R.drawable.ic_check)
 
+    // Auth
+    object Auth : Screen("auth", "Login", R.drawable.ic_ai)
+
+    // Splash
+    object Splash : Screen("splash", "Splash", R.drawable.ic_ai)
+
     // More — shown when overflow is needed
     object More : Screen("more", "More", R.drawable.ic_more)
 }

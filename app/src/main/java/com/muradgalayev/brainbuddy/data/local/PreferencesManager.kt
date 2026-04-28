@@ -29,6 +29,7 @@ class PreferencesManager @Inject constructor(
     private val fontKey = stringPreferencesKey("font_mode")
     private val enabledNavKey = stringSetPreferencesKey("enabled_nav_items")
     private val focusModeKey = booleanPreferencesKey("focus_mode_enabled")
+    private val simplifiedWorkspaceKey = booleanPreferencesKey("simplified_workspace")
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
         when (prefs[themeKey]) {
@@ -61,6 +62,10 @@ class PreferencesManager @Inject constructor(
         prefs[focusModeKey] ?: false
     }
 
+    val simplifiedWorkspace: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[simplifiedWorkspaceKey] ?: false
+    }
+
     suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { prefs ->
             prefs[themeKey] = mode.name
@@ -78,6 +83,13 @@ class PreferencesManager @Inject constructor(
         }
     }
 
+    // Replace the whole enabled nav items set
+    suspend fun setEnabledNavItems(items: Set<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[enabledNavKey] = items
+        }
+    }
+
     suspend fun setNavItemEnabled(route: String, enabled: Boolean) {
         context.dataStore.edit { prefs ->
             val current = prefs[enabledNavKey] ?: emptySet()
@@ -88,6 +100,12 @@ class PreferencesManager @Inject constructor(
     suspend fun setFocusModeEnabled(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[focusModeKey] = enabled
+        }
+    }
+
+    suspend fun setSimplifiedWorkspace(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[simplifiedWorkspaceKey] = enabled
         }
     }
 }

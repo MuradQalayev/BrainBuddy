@@ -3,6 +3,7 @@ package com.muradgalayev.brainbuddy.ui.activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.muradgalayev.brainbuddy.data.local.PomodoroTimerManager
+import com.muradgalayev.brainbuddy.data.local.PreferencesManager
 import com.muradgalayev.brainbuddy.data.local.TimerState
 import com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionType
 import com.muradgalayev.brainbuddy.data.repository.PomodoroRepository
@@ -25,7 +26,8 @@ import javax.inject.Inject
 class WorkspaceViewModel @Inject constructor(
     private val todoRepository: TodoRepository,
     private val pomodoroTimerManager: PomodoroTimerManager,
-    private val pomodoroRepository: PomodoroRepository
+    private val pomodoroRepository: PomodoroRepository,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel(){
 
     private val _uiState = MutableStateFlow(WorkspaceUiState())
@@ -35,6 +37,22 @@ class WorkspaceViewModel @Inject constructor(
         observeWorkspaceData()
         observePomodoroState()
         observePomodoroHistory()
+        observeSimplifiedMode()
+    }
+
+    private fun observeSimplifiedMode() {
+        viewModelScope.launch {
+            preferencesManager.simplifiedWorkspace.collect { simplified ->
+                _uiState.update { it.copy(isSimplified = simplified) }
+            }
+        }
+    }
+
+    fun toggleSimplifiedMode() {
+        viewModelScope.launch {
+            val current = _uiState.value.isSimplified
+            preferencesManager.setSimplifiedWorkspace(!current)
+        }
     }
 
 

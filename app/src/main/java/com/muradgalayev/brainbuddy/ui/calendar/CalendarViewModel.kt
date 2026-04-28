@@ -52,6 +52,13 @@ class CalendarViewModel @Inject constructor(
     init {
         observeTasksForSelectedDate()
         observeDatesWithTasks()
+        syncRemoteData()
+    }
+
+    private fun syncRemoteData() {
+        viewModelScope.launch {
+            todoRepository.sync()
+        }
     }
 
     private fun observeTasksForSelectedDate() {

@@ -9,7 +9,7 @@ import com.muradgalayev.brainbuddy.data.local.entity.TodoItemEntity
 
 @Database(
     entities = [TodoItemEntity::class, PomodoroSessionEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class BrainBuddyDatabase : RoomDatabase() {

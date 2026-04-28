@@ -21,11 +21,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Logout
+import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,16 +54,23 @@ import com.muradgalayev.brainbuddy.ui.settings.components.QuickAccessSection
 
 @Composable
 fun SettingsScreen(
+    onLogout: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val themeMode by viewModel.themeMode.collectAsState()
     val fontMode by viewModel.fontMode.collectAsState()
     val enabledNavItems by viewModel.enabledNavItems.collectAsState()
     val focusModeEnabled by viewModel.focusModeEnabled.collectAsState()
+    val simplifiedWorkspace by viewModel.simplifiedWorkspace.collectAsState()
     var appearanceOpen by rememberSaveable { mutableStateOf(false) }
     var quickAccessOpen by rememberSaveable { mutableStateOf(false) }
     var pomodoroOpen by rememberSaveable { mutableStateOf(false) }
     val fontSize by viewModel.fontSize.collectAsState()
+    val loggedOut by viewModel.loggedOut.collectAsState()
+
+    LaunchedEffect(loggedOut) {
+        if (loggedOut) onLogout()
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Scrim when appearance panel is open
@@ -98,11 +110,10 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            ProfileHeaderCard(
-                name = "Welcome",
-                subtitle = "Sign in to sync your data",
-                isLoggedIn = false,
-                onClick = { /* navigate to login/profile */ }
+            AccountCard(
+                name = viewModel.userFullName,
+                email = viewModel.userEmail,
+                onSignOut = viewModel::signOut
             )
 
             Spacer(modifier = Modifier.height(28.dp))
@@ -144,6 +155,13 @@ fun SettingsScreen(
                 expanded = pomodoroOpen,
                 onToggleExpanded = { pomodoroOpen = !pomodoroOpen },
                 onToggle = { viewModel.toggleFocusMode(it) }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SimplifiedWorkspaceRow(
+                enabled = simplifiedWorkspace,
+                onToggle = { viewModel.toggleSimplifiedWorkspace(it) }
             )
 
             Spacer(modifier = Modifier.height(28.dp))
@@ -262,6 +280,156 @@ fun SectionLabel(icon: ImageVector, label: String) {
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+// ── Simplified Workspace Toggle ──
+
+@Composable
+private fun SimplifiedWorkspaceRow(
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = if (enabled)
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+        else
+            MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        Row(
+            modifier = Modifier.padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = if (enabled)
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                else
+                    MaterialTheme.colorScheme.surfaceContainerHighest,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.VisibilityOff,
+                        contentDescription = null,
+                        tint = if (enabled)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Simplified Workspace",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = if (enabled)
+                        "Showing only actionable items"
+                    else
+                        "Hide distractions in workspace",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Switch(
+                checked = enabled,
+                onCheckedChange = onToggle
+            )
+        }
+    }
+}
+
+@Composable
+private fun AccountCard(
+    name: String?,
+    email: String?,
+    onSignOut: () -> Unit
+) {
+    val displayName = name ?: email ?: "Not signed in"
+    val initials = name?.split(" ")
+        ?.mapNotNull { it.firstOrNull()?.uppercase() }
+        ?.take(2)
+        ?.joinToString("")
+        ?: (email?.firstOrNull()?.uppercase() ?: "?")
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        Row(
+            modifier = Modifier.padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.size(44.dp)
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Text(
+                        text = initials,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (name != null && email != null) {
+                    Text(
+                        text = email,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Text(
+                        text = "Synced with Supabase",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            TextButton(onClick = onSignOut) {
+                Icon(
+                    imageVector = Icons.Rounded.Logout,
+                    contentDescription = "Sign out",
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Sign Out",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
     }
 }
 

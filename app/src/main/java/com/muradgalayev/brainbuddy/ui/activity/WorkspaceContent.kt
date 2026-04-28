@@ -1,8 +1,11 @@
 package com.muradgalayev.brainbuddy.ui.activity
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
@@ -24,10 +27,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -39,6 +42,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -123,6 +128,7 @@ fun WorkspaceOverviewTab(
     var isSearchActive by rememberSaveable { mutableStateOf(false) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val uiState by viewModel.uiState.collectAsState()
+    val isSimplified = uiState.isSimplified
 
     val heroCards = listOf(
         HeroCardData(
@@ -200,6 +206,32 @@ fun WorkspaceOverviewTab(
 
                     Surface(
                         shape = CircleShape,
+                        color = if (isSimplified)
+                            colorScheme.primaryContainer
+                        else
+                            colorScheme.surfaceContainer,
+                        modifier = Modifier.size(42.dp)
+                    ) {
+                        IconButton(onClick = { viewModel.toggleSimplifiedMode() }) {
+                            Icon(
+                                imageVector = if (isSimplified)
+                                    Icons.Rounded.VisibilityOff
+                                else
+                                    Icons.Rounded.Visibility,
+                                contentDescription = "Simplify view",
+                                tint = if (isSimplified)
+                                    colorScheme.primary
+                                else
+                                    colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Surface(
+                        shape = CircleShape,
                         color = colorScheme.surfaceContainer,
                         modifier = Modifier.size(42.dp)
                     ) {
@@ -254,10 +286,17 @@ fun WorkspaceOverviewTab(
                 )
             }
         } else {
-            // ─── Hero Carousel ───
-            HeroPagerCard(pagerState = pagerState, cards = heroCards)
-
-            Spacer(modifier = Modifier.height(20.dp))
+            // ─── Hero Carousel (hidden in simplified mode) ───
+            AnimatedVisibility(
+                visible = !isSimplified,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column {
+                    HeroPagerCard(pagerState = pagerState, cards = heroCards)
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
+            }
 
             // ─── Calendar Card ───
             filteredFeatures.firstOrNull { it.route == "calendar" }?.let { calendar ->
@@ -299,10 +338,17 @@ fun WorkspaceOverviewTab(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // ─── Activity Banner ───
-            ActivityBannerCard()
+            // ─── Activity Banner (hidden in simplified mode) ───
+            AnimatedVisibility(
+                visible = !isSimplified,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    ActivityBannerCard()
+                }
+            }
         }
     }
 }
@@ -505,7 +551,7 @@ private fun FeatureCardItem(
     }
 
     Surface(
-        modifier = if (isGrid) modifier.aspectRatio(1f) else modifier.fillMaxWidth(),
+        modifier = if (isGrid) modifier.heightIn(max = 200.dp) else modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         color = containerColor,
         onClick = onClick,
