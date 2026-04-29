@@ -19,13 +19,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Logout
 import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,13 +45,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.muradgalayev.brainbuddy.R
 import com.muradgalayev.brainbuddy.ui.components.ProfileHeaderCard
 import com.muradgalayev.brainbuddy.ui.settings.components.AppearanceRow
 import com.muradgalayev.brainbuddy.ui.settings.components.FocusModeSection
@@ -67,9 +78,34 @@ fun SettingsScreen(
     var pomodoroOpen by rememberSaveable { mutableStateOf(false) }
     val fontSize by viewModel.fontSize.collectAsState()
     val loggedOut by viewModel.loggedOut.collectAsState()
+    val exportingToCalendar by viewModel.exportingToCalendar.collectAsState()
+    val calendarExportMessage by viewModel.calendarExportMessage.collectAsState()
+    val calendarAuthorizationRequest by viewModel.calendarAuthorizationRequest.collectAsState()
+    val linkedGoogleEmail by viewModel.linkedGoogleEmail.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val calendarAuthLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        viewModel.onCalendarAuthorizationResult(result.data)
+    }
 
     LaunchedEffect(loggedOut) {
         if (loggedOut) onLogout()
+    }
+
+    LaunchedEffect(calendarAuthorizationRequest) {
+        val pi = calendarAuthorizationRequest ?: return@LaunchedEffect
+        viewModel.consumeCalendarAuthorizationRequest()
+        calendarAuthLauncher.launch(IntentSenderRequest.Builder(pi.intentSender).build())
+    }
+
+    LaunchedEffect(calendarExportMessage) {
+        val msg = calendarExportMessage
+        if (msg != null) {
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearCalendarExportMessage()
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -112,8 +148,7 @@ fun SettingsScreen(
 
             AccountCard(
                 name = viewModel.userFullName,
-                email = viewModel.userEmail,
-                onSignOut = viewModel::signOut
+                email = viewModel.userEmail
             )
 
             Spacer(modifier = Modifier.height(28.dp))
@@ -166,6 +201,25 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
+            // ── Integrations ──
+            SectionHeader(title = "Integrations")
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            GoogleCalendarExportRow(
+                isExporting = exportingToCalendar,
+                linkedEmail = linkedGoogleEmail,
+                onExport = { viewModel.exportToGoogleCalendar() },
+                onDisconnect = { viewModel.disconnectGoogleCalendar() }
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // ── Sign Out ──
+            SignOutRow(onSignOut = viewModel::signOut)
+
+            Spacer(modifier = Modifier.height(28.dp))
+
             // ── About ──
             SectionHeader(title = "About")
 
@@ -185,6 +239,135 @@ fun SettingsScreen(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+                .zIndex(3f)
+        ) { data ->
+            Snackbar(
+                snackbarData = data,
+                containerColor = MaterialTheme.colorScheme.inverseSurface,
+                contentColor = MaterialTheme.colorScheme.inverseOnSurface
+            )
+        }
+    }
+}
+
+// ── Google Calendar Export Row ──
+
+@Composable
+private fun GoogleCalendarExportRow(
+    isExporting: Boolean,
+    linkedEmail: String?,
+    onExport: () -> Unit,
+    onDisconnect: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = !isExporting, onClick = onExport)
+                    .padding(18.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_google_calendar),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Export to Google Calendar",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = linkedEmail?.let { "Tap to export — events go to this account ↓" }
+                            ?: "Tap to connect your Google account",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                if (isExporting) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Rounded.ChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            if (linkedEmail != null) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 0.dp)
+                        .padding(bottom = 12.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Connected",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    .copy(alpha = 0.8f)
+                            )
+                            Text(
+                                text = linkedEmail,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                        TextButton(onClick = onDisconnect) {
+                            Text(
+                                text = "Disconnect",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -355,8 +538,7 @@ private fun SimplifiedWorkspaceRow(
 @Composable
 private fun AccountCard(
     name: String?,
-    email: String?,
-    onSignOut: () -> Unit
+    email: String?
 ) {
     val displayName = name ?: email ?: "Not signed in"
     val initials = name?.split(" ")
@@ -415,20 +597,37 @@ private fun AccountCard(
                 }
             }
 
-            TextButton(onClick = onSignOut) {
-                Icon(
-                    imageVector = Icons.Rounded.Logout,
-                    contentDescription = "Sign out",
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "Sign Out",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
+        }
+    }
+}
+
+@Composable
+private fun SignOutRow(onSignOut: () -> Unit) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .clickable(onClick = onSignOut),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Logout,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.width(14.dp))
+            Text(
+                text = "Sign Out",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }

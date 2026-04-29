@@ -2,6 +2,7 @@ package com.muradgalayev.brainbuddy.data.repository
 
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.Flow
@@ -59,6 +60,10 @@ class AuthRepository @Inject constructor(
             this.email = email
             this.password = password
         }
+    }
+
+    suspend fun signInWithGoogle() {
+        supabaseClient.auth.signInWith(Google)
     }
 
     suspend fun signOut() {

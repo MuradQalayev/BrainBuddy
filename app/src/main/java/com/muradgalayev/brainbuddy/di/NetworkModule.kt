@@ -26,7 +26,10 @@ object NetworkModule {
             supabaseKey = SUPABASE_ANON_KEY
         ) {
             install(Postgrest)
-            install(Auth)
+            install(Auth) {
+                scheme = "brainbuddy"
+                host = "auth-callback"
+            }
         }
     }
 }

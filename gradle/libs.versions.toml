@@ -22,6 +22,7 @@ material3 = "1.4.0"
 supabase = "3.1.4"
 ktor = "3.1.3"
 kotlinxSerialization = "1.8.1"
+playServicesAuth = "21.3.0"
 
 [libraries]
 # --- Existing (keep these) ---
@@ -70,6 +71,9 @@ supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgre
 supabase-auth = { group = "io.github.jan-tennert.supabase", name = "auth-kt" }
 ktor-client-android = { group = "io.ktor", name = "ktor-client-android", version.ref = "ktor" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+
+# --- NEW: Google Identity (OAuth scope authorization for Calendar) ---
+play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

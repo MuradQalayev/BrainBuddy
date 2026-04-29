@@ -86,6 +86,9 @@ dependencies {
     implementation(libs.ktor.client.android)
     implementation(libs.kotlinx.serialization.json)
 
+    // === Google Identity (OAuth for Calendar scope, decoupled from Supabase auth) ===
+    implementation(libs.play.services.auth)
+
     // === Testing ===
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

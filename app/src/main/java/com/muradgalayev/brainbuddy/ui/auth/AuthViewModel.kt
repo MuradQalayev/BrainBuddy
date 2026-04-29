@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -55,6 +56,24 @@ class AuthViewModel @Inject constructor(
 
     fun toggleMode() {
         _uiState.update { it.copy(isLoginMode = !it.isLoginMode, error = null) }
+    }
+
+    fun signInWithGoogle() {
+        _uiState.update { it.copy(isLoading = true, error = null) }
+        viewModelScope.launch {
+            try {
+                authRepository.signInWithGoogle()
+                // Browser OAuth returns via the deep link; wait for the session to flip.
+                authRepository.isLoggedIn.first { it }
+                todoRepository.sync()
+                preferencesRepository.pullRemoteAndApply()
+                _uiState.update { it.copy(isLoading = false, isSuccess = true) }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(isLoading = false, error = e.message ?: "Google sign-in failed")
+                }
+            }
+        }
     }
 
     fun submit() {
