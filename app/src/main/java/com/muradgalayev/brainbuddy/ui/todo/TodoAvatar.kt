@@ -43,7 +43,7 @@ fun AvatarPlaceholder(palette: TodoPalette, size: Dp = 56.dp) {
                 radius = this.size.minDimension * 0.20f,
                 center = Offset(this.size.width * 0.62f, this.size.height * 0.52f)
             )
-            val pupilColor = if (palette.bg.luminance() < 0.5f) Color(0xFFE4E5EA) else Color(0xFF2C295B)
+            val pupilColor = if (palette.bg.luminance() < 0.5f) Color(0xFFEDE7DF) else Color(0xFF2A2A2A)
             drawCircle(
                 color = pupilColor,
                 radius = this.size.minDimension * 0.06f,
@@ -55,26 +55,26 @@ fun AvatarPlaceholder(palette: TodoPalette, size: Dp = 56.dp) {
                 center = Offset(this.size.width * 0.62f, this.size.height * 0.54f)
             )
             drawLine(
-                color = Color(0xFFFFC94D),
+                color = Color(0xFFF5C893),
                 start = Offset(this.size.width * 0.32f, this.size.height * 0.18f),
                 end = Offset(this.size.width * 0.18f, this.size.height * 0.04f),
                 strokeWidth = 4f,
                 cap = StrokeCap.Round
             )
             drawLine(
-                color = Color(0xFFFFC94D),
+                color = Color(0xFFF5C893),
                 start = Offset(this.size.width * 0.68f, this.size.height * 0.18f),
                 end = Offset(this.size.width * 0.82f, this.size.height * 0.04f),
                 strokeWidth = 4f,
                 cap = StrokeCap.Round
             )
             drawCircle(
-                color = Color(0xFFFFC94D),
+                color = Color(0xFFF5C893),
                 radius = this.size.minDimension * 0.045f,
                 center = Offset(this.size.width * 0.17f, this.size.height * 0.03f)
             )
             drawCircle(
-                color = Color(0xFFFFC94D),
+                color = Color(0xFFF5C893),
                 radius = this.size.minDimension * 0.045f,
                 center = Offset(this.size.width * 0.83f, this.size.height * 0.03f)
             )

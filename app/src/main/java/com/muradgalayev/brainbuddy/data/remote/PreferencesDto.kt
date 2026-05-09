@@ -20,4 +20,3 @@ data class PreferencesDto(
     @SerialName("enabled_nav_items")
     val enabledNavItems: String? = null
 )
-

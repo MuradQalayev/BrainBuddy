@@ -10,6 +10,7 @@ enum class PomodoroCompletionStatus { COMPLETED, CANCELLED, RESET, IN_PROGRESS }
 @Entity(tableName = "pomodoro_sessions")
 data class PomodoroSessionEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val userId: String = "",
     val sessionType: String = PomodoroSessionType.FOCUS.name,
     val plannedDurationMs: Long = 25 * 60 * 1000L,
     val actualDurationMs: Long = 0L,

@@ -1,14 +1,20 @@
 package com.muradgalayev.brainbuddy
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.messaging.FirebaseMessaging
 import com.muradgalayev.brainbuddy.data.local.FontMode
 import com.muradgalayev.brainbuddy.data.local.PreferencesManager
 import com.muradgalayev.brainbuddy.data.local.ThemeMode
@@ -29,9 +35,14 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var supabaseClient: SupabaseClient
 
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* result is reflected in checkSelfPermission later */ }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         safeHandleDeeplinks(intent)
+        maybeRequestNotificationPermission()
         enableEdgeToEdge()
         setContent {
             val themeMode by preferencesManager.themeMode.collectAsState(initial = ThemeMode.System)
@@ -46,6 +57,13 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
                     enabledOptionalRoutes = enabledNavItems
                 )
+                FirebaseMessaging.getInstance().token
+                    .addOnSuccessListener { token ->
+                        Log.d("FCM_TEST", "Token: $token")
+                    }
+                    .addOnFailureListener { error ->
+                        Log.e("FCM_TEST", "Failed to get token", error)
+                    }
             }
         }
     }
@@ -54,6 +72,15 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         safeHandleDeeplinks(intent)
+    }
+
+    private fun maybeRequestNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val alreadyGranted = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+        if (alreadyGranted) return
+        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     // Supabase's handleDeeplinks throws if the OAuth redirect URL has no

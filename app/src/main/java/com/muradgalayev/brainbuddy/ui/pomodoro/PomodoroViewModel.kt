@@ -50,7 +50,8 @@ class PomodoroViewModel @Inject constructor(
             }
         }
 
-        observeTodayFocusMinutes()
+        observeFocusMinutes()
+        viewModelScope.launch { pomodoroRepository.sync() }
 
         timerManager.onTimerStarted = {
             PomodoroTimerService.start(appContext)
@@ -104,22 +105,32 @@ class PomodoroViewModel @Inject constructor(
 
     fun getFocusModePermissionIntent() = focusModeManager.getPermissionIntent()
 
-    private fun observeTodayFocusMinutes() {
+    private fun observeFocusMinutes() {
         viewModelScope.launch {
             while (true) {
-                val today = java.time.LocalDate.now()
                 val zone = java.time.ZoneId.systemDefault()
+                val today = java.time.LocalDate.now()
+                val yesterday = today.minusDays(1)
 
-                val startOfDay = today.atStartOfDay(zone).toInstant().toEpochMilli()
-                val endOfDay = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+                val startOfToday = today.atStartOfDay(zone).toInstant().toEpochMilli()
+                val endOfToday = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+                val startOfYesterday = yesterday.atStartOfDay(zone).toInstant().toEpochMilli()
+                val endOfYesterday = today.atStartOfDay(zone).toInstant().toEpochMilli() - 1
 
-                val todayMinutes = pomodoroRepository.getCompletedFocusMinutesForDay(
-                    startOfDay = startOfDay,
-                    endOfDay = endOfDay
+                val todayMinutes = pomodoroRepository.getCompletedFocusMinutesForRange(
+                    startMs = startOfToday,
+                    endMs = endOfToday
+                )
+                val yesterdayMinutes = pomodoroRepository.getCompletedFocusMinutesForRange(
+                    startMs = startOfYesterday,
+                    endMs = endOfYesterday
                 )
 
                 _uiExtra.update {
-                    it.copy(todayFocusMinutes = todayMinutes)
+                    it.copy(
+                        todayFocusMinutes = todayMinutes,
+                        yesterdayFocusMinutes = yesterdayMinutes
+                    )
                 }
 
                 kotlinx.coroutines.delay(5000)

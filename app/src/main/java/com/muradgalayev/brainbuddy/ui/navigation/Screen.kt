@@ -35,6 +35,14 @@ sealed class Screen(
     // Splash
     object Splash : Screen("splash", "Splash", R.drawable.ic_ai)
 
+    // Onboarding (ADHD profile setup)
+    object OnboardingChoice : Screen("onboarding_choice", "Choose Setup", R.drawable.ic_ai)
+    object QuickSetup : Screen("onboarding_quick", "Quick Setup", R.drawable.ic_ai)
+    object DeepDive : Screen("onboarding_deep", "Deep Dive", R.drawable.ic_ai)
+
+    // Care nearby (map + list of clinics, pharmacies, ASL, etc.)
+    object CareNearby : Screen("care_nearby", "Care Nearby", R.drawable.ic_ai)
+
     // More — shown when overflow is needed
     object More : Screen("more", "More", R.drawable.ic_more)
 }

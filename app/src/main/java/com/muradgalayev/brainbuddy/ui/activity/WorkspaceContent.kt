@@ -84,40 +84,40 @@ import kotlinx.coroutines.delay
 private fun isDarkTheme(): Boolean =
     colorScheme.background.luminance() < 0.5f
 
-// ─── Workspace palette (light/dark aware) ───
+// ─── Workspace palette (light/dark aware, calm UI) ───
 private object WsPalette {
-    // Hero gradients – light (blue-based)
-    val heroGradient0Light = listOf(Color(0xFFDCE8FF), Color(0xFFEDF3FF))
-    val heroGradient1Light = listOf(Color(0xFFFFE0C8), Color(0xFFFFF0E6))
-    val heroGradient2Light = listOf(Color(0xFFD4F0FF), Color(0xFFEEF8FF))
-    // Hero gradients – dark (indigo-based)
-    val heroGradient0Dark = listOf(Color(0xFF1A1A40), Color(0xFF151530))
-    val heroGradient1Dark = listOf(Color(0xFF3A2820), Color(0xFF2A1E18))
-    val heroGradient2Dark = listOf(Color(0xFF1A1E3A), Color(0xFF161830))
-    // Hero accent dots (indigo-based primary)
-    val heroDot0 = Color(0xFF6366F1)
-    val heroDot1 = Color(0xFFFF9A5C)
-    val heroDot2 = Color(0xFF8B8CF8)
+    // Hero gradients – light (soft blue & cream)
+    val heroGradient0Light = listOf(Color(0xFFD9E4F0), Color(0xFFEEF3F8))
+    val heroGradient1Light = listOf(Color(0xFFF5E1CB), Color(0xFFFFF1E0))
+    val heroGradient2Light = listOf(Color(0xFFD9E8DC), Color(0xFFEDF5EE))
+    // Hero gradients – dark (warm muted)
+    val heroGradient0Dark = listOf(Color(0xFF2E2A24), Color(0xFF24201C))
+    val heroGradient1Dark = listOf(Color(0xFF3A2E22), Color(0xFF2A2218))
+    val heroGradient2Dark = listOf(Color(0xFF2A2A2A), Color(0xFF202020))
+    // Hero accent dots (warm calm palette)
+    val heroDot0 = Color(0xFFD97A3D)
+    val heroDot1 = Color(0xFFE8A878)
+    val heroDot2 = Color(0xFFF5C893)
 
-    // Calendar card (indigo-purple)
-    val calendarBgLight = Color(0xFFEEEDFF)
-    val calendarBgDark = Color(0xFF1A1A35)
-    val calendarIconBgLight = Color(0xFFE0DFFF)
-    val calendarIconBgDark = Color(0xFF2A2650)
-    val calendarAccent = Color(0xFF6366F1)
+    // Calendar card (warm cream)
+    val calendarBgLight = Color(0xFFF5E8D6)
+    val calendarBgDark = Color(0xFF2E2418)
+    val calendarIconBgLight = Color(0xFFEFD9B8)
+    val calendarIconBgDark = Color(0xFF4A2E1A)
+    val calendarAccent = Color(0xFFD97A3D)
 
     // Pomodoro card
-    val pomodoroBgLight = Color(0xFFFFF3EB)
-    val pomodoroBgDark = Color(0xFF2A2018)
-    val pomodoroAccentLight = Color(0xFFFF8A50)
-    val pomodoroAccentDark = Color(0xFFFFAB80)
-    val pomodoroTrackLight = Color(0xFFFFDCC8)
+    val pomodoroBgLight = Color(0xFFFAEEDC)
+    val pomodoroBgDark = Color(0xFF2A2218)
+    val pomodoroAccentLight = Color(0xFFD97A3D)
+    val pomodoroAccentDark = Color(0xFFE89866)
+    val pomodoroTrackLight = Color(0xFFEFE0C8)
     val pomodoroTrackDark = Color(0xFF3A2E22)
 
-    // Activity banner
-    val bannerGradientLight = listOf(Color(0xFFE8FAE8), Color(0xFFF5FFF5))
-    val bannerGradientDark = listOf(Color(0xFF1A2E1A), Color(0xFF162016))
-    val bannerAccent = Color(0xFF4CAF50)
+    // Activity banner (sage)
+    val bannerGradientLight = listOf(Color(0xFFE5EFDB), Color(0xFFF2F8EA))
+    val bannerGradientDark = listOf(Color(0xFF1F2A1B), Color(0xFF1A2218))
+    val bannerAccent = Color(0xFF8AAE7E)
 }
 
 @Composable
@@ -132,8 +132,8 @@ fun WorkspaceOverviewTab(
 
     val heroCards = listOf(
         HeroCardData(
-            title = "3h 20m focused today",
-            subtitle = "You're doing better than yesterday.",
+            title = uiState.focusHeroTitle,
+            subtitle = uiState.focusHeroSubtitle,
             caption = "Statistics"
         ),
         HeroCardData(
@@ -338,6 +338,10 @@ fun WorkspaceOverviewTab(
                 }
             }
 
+            // ─── Care Nearby Card ───
+            Spacer(modifier = Modifier.height(14.dp))
+            CareNearbyCard(onClick = { onNavigate("care_nearby") })
+
             // ─── Activity Banner (hidden in simplified mode) ───
             AnimatedVisibility(
                 visible = !isSimplified,
@@ -346,7 +350,10 @@ fun WorkspaceOverviewTab(
             ) {
                 Column {
                     Spacer(modifier = Modifier.height(20.dp))
-                    ActivityBannerCard()
+                    ActivityBannerCard(
+                        title = uiState.activityBannerTitle,
+                        message = uiState.activityBannerMessage
+                    )
                 }
             }
         }
@@ -768,7 +775,10 @@ private fun PomodoroMiniTimer(
 // ─── Activity Banner ───
 
 @Composable
-private fun ActivityBannerCard() {
+private fun ActivityBannerCard(
+    title: String,
+    message: String
+) {
     val dark = isDarkTheme()
     val gradientColors = if (dark) WsPalette.bannerGradientDark else WsPalette.bannerGradientLight
 
@@ -797,17 +807,71 @@ private fun ActivityBannerCard() {
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Great work today",
+                    text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "You completed 3 tasks and stayed focused for 3h.",
+                    text = message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = colorScheme.onSurfaceVariant,
                     lineHeight = 20.sp
+                )
+            }
+        }
+    }
+}
+
+// ─── Care Nearby Card ───
+
+@Composable
+private fun CareNearbyCard(onClick: () -> Unit) {
+    val dark = isDarkTheme()
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = colorScheme.surfaceContainer,
+        onClick = onClick,
+        shadowElevation = if (dark) 0.dp else 1.dp,
+        tonalElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = colorScheme.primaryContainer.copy(alpha = 0.5f),
+                modifier = Modifier.size(52.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Text(text = "\ud83c\udfe5", fontSize = 24.sp)
+                }
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Care Nearby",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Find nearby healthcare",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = "Locate services around you",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -822,9 +886,9 @@ fun CircularTaskProgress(
     modifier: Modifier = Modifier
 ) {
     val color = when {
-        progress >= 1f -> Color(0xFF4CAF50)
-        progress > 0.5f -> Color(0xFF2196F3)
-        else -> Color(0xFFFF9800)
+        progress >= 1f -> Color(0xFF8AAE7E)
+        progress > 0.5f -> Color(0xFF7FA3C9)
+        else -> Color(0xFFD97A3D)
     }
     val trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
     val animatedProgress by animateFloatAsState(

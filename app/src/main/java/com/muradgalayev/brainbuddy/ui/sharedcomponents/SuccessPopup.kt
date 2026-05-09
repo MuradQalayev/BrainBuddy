@@ -62,13 +62,13 @@ fun SuccessPopup(
                     modifier = Modifier
                         .size(42.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFEAF8EE)),
+                        .background(Color(0xFFE5EFDB)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Check,
                         contentDescription = null,
-                        tint = Color(0xFF22A447),
+                        tint = Color(0xFF8AAE7E),
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -78,13 +78,13 @@ fun SuccessPopup(
                 Column {
                     Text(
                         text = title,
-                        color = Color(0xFF111111),
+                        color = Color(0xFF2A2A2A),
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
                     Text(
                         text = message,
-                        color = Color(0xFF666666),
+                        color = Color(0xFF6B6B6B),
                         fontSize = 14.sp
                     )
                 }

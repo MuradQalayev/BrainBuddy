@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "640524362765",
+    "project_id": "brainbuddy-494713",
+    "storage_bucket": "brainbuddy-494713.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:640524362765:android:9557eabf85181359f5a144",
+        "android_client_info": {
+          "package_name": "com.muradgalayev.brainbuddy"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "640524362765-lsluq0383o3v8k2jde5sh53hkfaek6ai.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFBekOmQhBIbmme8i1oQWw_y7FsBCkHKs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "640524362765-lsluq0383o3v8k2jde5sh53hkfaek6ai.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

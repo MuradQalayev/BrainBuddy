@@ -1,6 +1,7 @@
 package com.muradgalayev.brainbuddy.data.mapper
 
 import com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionEntity
+import com.muradgalayev.brainbuddy.data.remote.dto.PomodoroSessionDto
 import com.muradgalayev.brainbuddy.domain.model.PomodoroSession
 
 fun PomodoroSessionEntity.toDomain(): PomodoroSession {
@@ -44,5 +45,41 @@ fun PomodoroSession.toEntity(): PomodoroSessionEntity {
         focusModeOnTimestamp = focusModeOnTimestamp,
         focusModeOffTimestamp = focusModeOffTimestamp,
         focusModeRestoredSuccessfully = focusModeRestoredSuccessfully
+    )
+}
+
+fun PomodoroSessionEntity.toDto(userId: String): PomodoroSessionDto {
+    return PomodoroSessionDto(
+        id = id,
+        userId = userId,
+        sessionType = sessionType,
+        plannedDurationMs = plannedDurationMs,
+        actualDurationMs = actualDurationMs,
+        pausedDurationMs = pausedDurationMs,
+        extraTimeAddedMs = extraTimeAddedMs,
+        startTime = startTime,
+        endTime = endTime,
+        completionStatus = completionStatus,
+        resetCount = resetCount,
+        wasInterrupted = wasInterrupted,
+        focusModeEnabled = focusModeEnabled
+    )
+}
+
+fun PomodoroSessionDto.toEntity(): PomodoroSessionEntity {
+    return PomodoroSessionEntity(
+        id = id,
+        userId = userId,
+        sessionType = sessionType,
+        plannedDurationMs = plannedDurationMs,
+        actualDurationMs = actualDurationMs,
+        pausedDurationMs = pausedDurationMs,
+        extraTimeAddedMs = extraTimeAddedMs,
+        startTime = startTime,
+        endTime = endTime,
+        completionStatus = completionStatus,
+        resetCount = resetCount,
+        wasInterrupted = wasInterrupted,
+        focusModeEnabled = focusModeEnabled
     )
 }

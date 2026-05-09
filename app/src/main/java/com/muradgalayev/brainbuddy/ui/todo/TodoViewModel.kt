@@ -289,10 +289,10 @@ class TodoViewModel @Inject constructor(
 
     private fun TodoItem.toTaskUi(): TaskUi {
         val accentColor = when (this.color) {
-            "red" -> Color(0xFFC41E3A)
-            "blue" -> Color(0xFF82C8FF)
-            "yellow" -> Color(0xFFFFF9B9)
-            else -> Color(0xFF82C8FF)
+            "red" -> Color(0xFFC75A4A)
+            "blue" -> Color(0xFF7FA3C9)
+            "yellow" -> Color(0xFFD9B05C)
+            else -> Color(0xFF7FA3C9)
         }
 
         val timeRange = if (startTime.isNotEmpty() && endTime.isNotEmpty()) {

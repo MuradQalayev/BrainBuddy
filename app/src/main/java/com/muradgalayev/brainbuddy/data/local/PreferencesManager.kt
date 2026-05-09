@@ -83,17 +83,16 @@ class PreferencesManager @Inject constructor(
         }
     }
 
-    // Replace the whole enabled nav items set
-    suspend fun setEnabledNavItems(items: Set<String>) {
-        context.dataStore.edit { prefs ->
-            prefs[enabledNavKey] = items
-        }
-    }
-
     suspend fun setNavItemEnabled(route: String, enabled: Boolean) {
         context.dataStore.edit { prefs ->
             val current = prefs[enabledNavKey] ?: emptySet()
             prefs[enabledNavKey] = if (enabled) current + route else current - route
+        }
+    }
+
+    suspend fun setEnabledNavItems(items: Set<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[enabledNavKey] = items
         }
     }
 

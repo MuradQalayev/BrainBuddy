@@ -15,5 +15,9 @@ data class WorkspaceUiState(
     val todayFocusMinutes: Int = 0,
     val yesterdayFocusMinutes: Int = 0,
     val focusComparisonText: String = "No focus sessions yet",
+    val focusHeroTitle: String = "No focus time yet",
+    val focusHeroSubtitle: String = "Start your first focus session today.",
+    val activityBannerTitle: String = "A fresh start",
+    val activityBannerMessage: String = "Plan a task and try a quick focus session to get going.",
     val isSimplified: Boolean = false
 )

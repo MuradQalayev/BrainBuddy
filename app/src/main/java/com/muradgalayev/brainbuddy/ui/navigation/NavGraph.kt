@@ -83,7 +83,16 @@ fun NavGraph(
         if (needsMore) allEnabled.drop(MAX_VISIBLE_NAV_ITEMS - 1) else emptyList()
     }
 
-    val fullScreenRoutes = setOf(Screen.Splash.route, Screen.Auth.route, Screen.Pomodoro.route, Screen.Calendar.route)
+    val fullScreenRoutes = setOf(
+        Screen.Splash.route,
+        Screen.Auth.route,
+        Screen.Pomodoro.route,
+        Screen.Calendar.route,
+        Screen.OnboardingChoice.route,
+        Screen.QuickSetup.route,
+        Screen.DeepDive.route,
+        Screen.CareNearby.route,
+    )
     val isFullScreen = currentRoute in fullScreenRoutes
     val bottomPadding by animateDpAsState(
         targetValue = if (isFullScreen) 0.dp else 104.dp,
@@ -138,16 +147,58 @@ fun NavGraph(
                         navController.navigate(Screen.Auth.route) {
                             popUpTo(Screen.Splash.route) { inclusive = true }
                         }
+                    },
+                    onNavigateToOnboarding = {
+                        navController.navigate(Screen.OnboardingChoice.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
                     }
                 )
             }
             composable(Screen.Auth.route) {
                 AuthScreen(
                     onAuthSuccess = {
-                        navController.navigate(Screen.Home.route) {
+                        // Route through Splash so onboarding gating applies for new users.
+                        navController.navigate(Screen.Splash.route) {
                             popUpTo(Screen.Auth.route) { inclusive = true }
                         }
                     }
+                )
+            }
+            composable(Screen.OnboardingChoice.route) {
+                com.muradgalayev.brainbuddy.ui.onboarding.OnboardingChoiceScreen(
+                    onPickQuick = { navController.navigate(Screen.QuickSetup.route) },
+                    onPickDeep = { navController.navigate(Screen.DeepDive.route) },
+                )
+            }
+            composable(Screen.QuickSetup.route) {
+                com.muradgalayev.brainbuddy.ui.onboarding.QuickSetupScreen(
+                    onBack = { navController.popBackStack() },
+                    onDone = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.OnboardingChoice.route) { inclusive = true }
+                        }
+                    },
+                )
+            }
+            composable(Screen.DeepDive.route) {
+                com.muradgalayev.brainbuddy.ui.onboarding.DeepDiveScreen(
+                    onBack = { navController.popBackStack() },
+                    onDone = {
+                        // If we came from Onboarding, pop the whole onboarding stack;
+                        // if we came from Settings, just pop back to Settings.
+                        val poppedOnboarding = navController.popBackStack(
+                            route = Screen.OnboardingChoice.route,
+                            inclusive = true,
+                        )
+                        if (poppedOnboarding) {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        } else {
+                            navController.popBackStack()
+                        }
+                    },
                 )
             }
             composable(Screen.Home.route) { HomeScreen() }
@@ -164,6 +215,9 @@ fun NavGraph(
                         navController.navigate(Screen.Auth.route) {
                             popUpTo(0) { inclusive = true }
                         }
+                    },
+                    onEditAdhdProfile = {
+                        navController.navigate(Screen.DeepDive.route)
                     }
                 )
             }
@@ -178,6 +232,11 @@ fun NavGraph(
             composable(Screen.Pomodoro.route) {
                 PomodoroScreen(
                     onBackClick = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.CareNearby.route) {
+                com.muradgalayev.brainbuddy.ui.care.CareNearbyScreen(
+                    onBack = { navController.popBackStack() }
                 )
             }
             composable(

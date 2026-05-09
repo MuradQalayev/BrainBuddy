@@ -25,4 +25,3 @@ class SupabasePreferencesDataSource @Inject constructor(
             .upsert(dto)
     }
 }
-

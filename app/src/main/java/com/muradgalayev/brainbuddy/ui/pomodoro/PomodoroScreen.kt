@@ -102,6 +102,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.launch
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.AmbientMusicSection
+import com.muradgalayev.brainbuddy.ui.pomodoro.components.DailyFocusCard
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.SessionTypePills
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.BottomControls
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.HistorySummarySwitcher
@@ -114,9 +115,9 @@ private val FocusPurpleLightEnd = AiButtonLightEnd // #8B5CF6
 private val FocusPurpleDark = AiButtonDark         // #818CF8
 private val FocusPurpleDarkEnd = AiButtonDarkEnd   // #A78BFA
 
-// Break accent
-private val BreakGreen = Color(0xFF4CAF50)
-private val BreakBlue = Color(0xFF818CF8)
+// Break accent (calm UI)
+private val BreakGreen = Color(0xFF8AAE7E)
+private val BreakBlue = Color(0xFF7FA3C9)
 
 @Composable
 fun PomodoroScreen(
@@ -402,6 +403,24 @@ fun PomodoroScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(8.dp))
+
+            AnimatedVisibility(
+                visible = timerState.timerState == TimerState.IDLE,
+                enter = fadeIn(tween(200)) + expandVertically(animationSpec = tween(220)),
+                exit = fadeOut(tween(150)) + shrinkVertically(animationSpec = tween(180))
+            ) {
+                Column {
+                    DailyFocusCard(
+                        hasFocusedToday = uiExtra.hasFocusedToday,
+                        todayLabel = uiExtra.todayFocusLabel,
+                        comparisonMessage = uiExtra.comparisonMessage,
+                        emptyStateTitle = uiExtra.emptyStateTitle,
+                        emptyStateMessage = uiExtra.emptyStateMessage,
+                        accentColor = arcColor
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
 
             SessionTypePills(
                 currentType = timerState.sessionType,

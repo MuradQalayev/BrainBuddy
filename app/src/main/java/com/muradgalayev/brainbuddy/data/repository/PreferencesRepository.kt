@@ -75,4 +75,3 @@ class PreferencesRepository @Inject constructor(
         remote.upsert(PreferencesDto(userId = userId, enabledNavItems = raw))
     }
 }
-

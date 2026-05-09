@@ -4,10 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.muradgalayev.brainbuddy.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -33,6 +33,24 @@ class AuthViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
+
+    private var awaitingExternalAuth = false
+
+    init {
+        // Listen for the OAuth deeplink callback completing. signInWith(Google) launches
+        // a browser and returns immediately; the session only becomes Authenticated when
+        // the deeplink fires. Watch sessionStatus and flip isSuccess at that point.
+        viewModelScope.launch {
+            authRepository.sessionStatus.collect { status ->
+                if (awaitingExternalAuth && status is SessionStatus.Authenticated) {
+                    awaitingExternalAuth = false
+                    _uiState.update { it.copy(isLoading = false, isSuccess = true) }
+                    runCatching { todoRepository.sync() }
+                    runCatching { preferencesRepository.pullRemoteAndApply() }
+                }
+            }
+        }
+    }
 
     fun onFirstNameChanged(value: String) {
         _uiState.update { it.copy(firstName = value, error = null) }
@@ -60,17 +78,20 @@ class AuthViewModel @Inject constructor(
 
     fun signInWithGoogle() {
         _uiState.update { it.copy(isLoading = true, error = null) }
+        awaitingExternalAuth = true
         viewModelScope.launch {
             try {
+                // Launches the browser/CustomTab. Returns immediately — the session
+                // only flips to Authenticated when the deeplink callback fires, which
+                // is handled by the sessionStatus collector in init.
                 authRepository.signInWithGoogle()
-                // Browser OAuth returns via the deep link; wait for the session to flip.
-                authRepository.isLoggedIn.first { it }
-                todoRepository.sync()
-                preferencesRepository.pullRemoteAndApply()
-                _uiState.update { it.copy(isLoading = false, isSuccess = true) }
             } catch (e: Exception) {
+                awaitingExternalAuth = false
                 _uiState.update {
-                    it.copy(isLoading = false, error = e.message ?: "Google sign-in failed")
+                    it.copy(
+                        isLoading = false,
+                        error = e.message ?: "Google sign-in failed"
+                    )
                 }
             }
         }
@@ -106,10 +127,11 @@ class AuthViewModel @Inject constructor(
                         phone = state.phone.trim()
                     )
                 }
-                // After successful authentication, pull remote tasks and preferences for this user
-                todoRepository.sync()
-                preferencesRepository.pullRemoteAndApply()
+                // Auth succeeded synchronously for email/password.
+                // Sync runs in the background; failures shouldn't block the user.
                 _uiState.update { it.copy(isLoading = false, isSuccess = true) }
+                runCatching { todoRepository.sync() }
+                runCatching { preferencesRepository.pullRemoteAndApply() }
             } catch (e: Exception) {
                 val message = when {
                     e.message?.contains("Invalid login", ignoreCase = true) == true ->

@@ -17,12 +17,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
@@ -73,41 +79,41 @@ data class CalendarPalette(
 )
 
 val LightCalendarPalette = CalendarPalette(
-    bg = Color(0xFFFCFCFF),
-    ink = Color(0xFF1B1B21),
-    muted = Color(0xFF5C5B68),
-    cardBg = Color(0xFFFFFFFF),
-    lavender = Color(0xFF6366F1),
-    lavenderSoft = Color(0xFFE0DFFF),
-    pillBg = Color(0xFFF1F0F7),
-    flagRed = Color(0xFFE53E3E),
-    sky = Color(0xFF82C8FF),
-    lilac = Color(0xFF9A7CF3),
-    lime = Color(0xFFD0DB56),
-    periwinkle = Color(0xFFB9C5FF),
-    dialogBorder = Color(0xFFF1F0F7),
-    sheetBg = Color(0xFFF9F8FC),
-    dateHeaderBg = Color(0xFF1B1B2E),
-    dateHeaderText = Color(0xFFFFFFFF),
+    bg = Color(0xFFFAF7F2),
+    ink = Color(0xFF2A2A2A),
+    muted = Color(0xFF6B6B6B),
+    cardBg = Color(0xFFFFFBF6),
+    lavender = Color(0xFFD97A3D),
+    lavenderSoft = Color(0xFFF5E1CB),
+    pillBg = Color(0xFFF0E8DC),
+    flagRed = Color(0xFFC75A4A),
+    sky = Color(0xFF7FA3C9),
+    lilac = Color(0xFFE8A878),
+    lime = Color(0xFFB6C68A),
+    periwinkle = Color(0xFFE8C8A8),
+    dialogBorder = Color(0xFFE5DCCE),
+    sheetBg = Color(0xFFF5EFE6),
+    dateHeaderBg = Color(0xFF2A2A2A),
+    dateHeaderText = Color(0xFFFAF7F2),
 )
 
 val DarkCalendarPalette = CalendarPalette(
-    bg = Color(0xFF0F0F15),
-    ink = Color(0xFFE5E4EC),
-    muted = Color(0xFF9C9BA8),
-    cardBg = Color(0xFF1E1E28),
-    lavender = Color(0xFFA5A4FB),
-    lavenderSoft = Color(0xFF2A2650),
-    pillBg = Color(0xFF282834),
-    flagRed = Color(0xFFFC5555),
-    sky = Color(0xFF5DADEB),
-    lilac = Color(0xFFB49BFF),
-    lime = Color(0xFFB8C244),
-    periwinkle = Color(0xFF8E9DE0),
-    dialogBorder = Color(0xFF33333F),
-    sheetBg = Color(0xFF16161D),
-    dateHeaderBg = Color(0xFF1A1A24),
-    dateHeaderText = Color(0xFFE5E4EC),
+    bg = Color(0xFF1F1F1F),
+    ink = Color(0xFFEDE7DF),
+    muted = Color(0xFFA8A8A8),
+    cardBg = Color(0xFF2B2B2B),
+    lavender = Color(0xFFE89866),
+    lavenderSoft = Color(0xFF4A2E1A),
+    pillBg = Color(0xFF353535),
+    flagRed = Color(0xFFD96A5A),
+    sky = Color(0xFF9CB9D9),
+    lilac = Color(0xFFE8B888),
+    lime = Color(0xFFB6C68A),
+    periwinkle = Color(0xFFD9B894),
+    dialogBorder = Color(0xFF3F3F3F),
+    sheetBg = Color(0xFF2B2B2B),
+    dateHeaderBg = Color(0xFF353535),
+    dateHeaderText = Color(0xFFEDE7DF),
 )
 
 @Composable
@@ -124,6 +130,9 @@ fun CalendarScreen(
     viewModel: CalendarViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val isSyncingToGoogle by viewModel.isSyncingToGoogle.collectAsState()
+    val googleSyncMessage by viewModel.googleSyncMessage.collectAsState()
+    val googleAuthRequest by viewModel.googleAuthRequest.collectAsState()
     val p = rememberCalendarPalette()
 
     var mode by rememberSaveable { mutableStateOf(CalendarMode.Monthly) }
@@ -131,6 +140,27 @@ fun CalendarScreen(
     val scope = rememberCoroutineScope()
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val googleAuthLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        viewModel.onGoogleAuthResult(result.data)
+    }
+
+    LaunchedEffect(googleAuthRequest) {
+        val pi = googleAuthRequest ?: return@LaunchedEffect
+        viewModel.consumeGoogleAuthRequest()
+        googleAuthLauncher.launch(IntentSenderRequest.Builder(pi.intentSender).build())
+    }
+
+    LaunchedEffect(googleSyncMessage) {
+        val msg = googleSyncMessage
+        if (msg != null) {
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearGoogleSyncMessage()
+        }
+    }
 
     val startMonth = remember { YearMonth.now().minusMonths(12) }
     val endMonth = remember { YearMonth.now().plusMonths(12) }
@@ -156,25 +186,28 @@ fun CalendarScreen(
         viewModel.updateVisibleMonth(monthState.firstVisibleMonth.yearMonth)
     }
 
-    // Add task dialog
+    // Add / Edit event dialog
     if (uiState.showAddTaskDialog) {
         AddTaskDialog(
             palette = p,
             selectedDate = uiState.selectedDate,
+            existingEvent = uiState.editingEvent,
             onDismiss = { viewModel.dismissAddTaskDialog() },
-            onConfirm = { title, description, startTime, endTime, category, color ->
-                viewModel.addTask(
+            onConfirm = { title, description, startTime, endTime, location, color, link ->
+                viewModel.saveTask(
                     title = title,
                     description = description,
                     startTime = startTime,
                     endTime = endTime,
-                    category = category,
-                    color = color
+                    location = location,
+                    color = color,
+                    link = link
                 )
             }
         )
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     if (isLandscape) {
         // ── Landscape: side-by-side (no bottom sheet) ──
         Box(modifier = Modifier.fillMaxSize().background(p.bg)) {
@@ -188,7 +221,13 @@ fun CalendarScreen(
                         .weight(1f)
                         .fillMaxHeight()
                 ) {
-                    CalendarHeader(mode = mode, onModeChange = { mode = it }, onBackClick = onBackClick)
+                    CalendarHeader(
+                        mode = mode,
+                        onModeChange = { mode = it },
+                        onBackClick = onBackClick,
+                        isSyncing = isSyncingToGoogle,
+                        onSyncClick = { viewModel.syncToGoogleCalendar() }
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
                     MonthNavigator(
                         palette = p,
@@ -242,7 +281,7 @@ fun CalendarScreen(
                     palette = p,
                     selectedDate = uiState.selectedDate,
                     tasks = uiState.tasksForSelectedDate,
-                    onTaskClick = { viewModel.toggleTaskCompletion(it) },
+                    onTaskClick = { viewModel.editEvent(it) },
                     onTaskDelete = { viewModel.deleteTask(it) },
                     modifier = Modifier
                         .weight(1f)
@@ -293,7 +332,7 @@ fun CalendarScreen(
                     palette = p,
                     selectedDate = uiState.selectedDate,
                     tasks = uiState.tasksForSelectedDate,
-                    onTaskClick = { viewModel.toggleTaskCompletion(it) },
+                    onTaskClick = { viewModel.editEvent(it) },
                     onTaskDelete = { viewModel.deleteTask(it) },
                     onAddTask = { viewModel.showAddTaskDialog() }
                 )
@@ -310,7 +349,9 @@ fun CalendarScreen(
                 CalendarHeader(
                     mode = mode,
                     onModeChange = { mode = it },
-                    onBackClick = onBackClick
+                    onBackClick = onBackClick,
+                    isSyncing = isSyncingToGoogle,
+                    onSyncClick = { viewModel.syncToGoogleCalendar() }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -366,6 +407,20 @@ fun CalendarScreen(
                         .weight(1f, fill = false)
                 )
             }
+        }
+    }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        ) { data ->
+            Snackbar(
+                snackbarData = data,
+                containerColor = MaterialTheme.colorScheme.inverseSurface,
+                contentColor = MaterialTheme.colorScheme.inverseOnSurface
+            )
         }
     }
 }

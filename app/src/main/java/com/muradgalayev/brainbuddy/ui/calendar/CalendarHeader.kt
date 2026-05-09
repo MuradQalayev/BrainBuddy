@@ -17,7 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ChevronLeft
 import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Sync
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,7 +45,9 @@ import java.util.Locale
 fun CalendarHeader(
     mode: CalendarMode,
     onModeChange: (CalendarMode) -> Unit,
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    isSyncing: Boolean = false,
+    onSyncClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -69,12 +72,24 @@ fun CalendarHeader(
         )
         ModePill(currentMode = mode, onModeChange = onModeChange)
         Spacer(modifier = Modifier.width(8.dp))
-        IconButton(onClick = { /* search */ }, modifier = Modifier.size(40.dp)) {
-            Icon(
-                imageVector = Icons.Rounded.Search,
-                contentDescription = "Search",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        IconButton(
+            onClick = onSyncClick,
+            enabled = !isSyncing,
+            modifier = Modifier.size(40.dp)
+        ) {
+            if (isSyncing) {
+                CircularProgressIndicator(
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Rounded.Sync,
+                    contentDescription = "Sync to Google Calendar",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

@@ -12,14 +12,9 @@ class SupabaseTodoDataSource @Inject constructor(
 ) {
     private val table = "todo_items"
 
-    // Fetch only items that belong to the specified userId to avoid mixing data
-    // between different Supabase users when syncing.
-    suspend fun getAll(userId: String): List<TodoItemDto> {
-        // use the actual DB column name (user_id) used by the DTO (@SerialName)
+    suspend fun getAll(): List<TodoItemDto> {
         return supabaseClient.from(table)
-            .select {
-                filter { eq("user_id", userId) }
-            }
+            .select()
             .decodeList()
     }
 

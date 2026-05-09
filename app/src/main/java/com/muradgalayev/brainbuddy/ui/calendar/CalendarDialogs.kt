@@ -45,6 +45,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material3.ExperimentalMaterial3Api
+import com.muradgalayev.brainbuddy.domain.model.CalendarEvent
 import com.muradgalayev.brainbuddy.ui.sharedcomponents.ColorOption
 import com.muradgalayev.brainbuddy.ui.sharedcomponents.TimePickerDialog
 import com.muradgalayev.brainbuddy.ui.sharedcomponents.TimePickerField
@@ -54,24 +55,33 @@ import com.muradgalayev.brainbuddy.ui.sharedcomponents.TimePickerField
 fun AddTaskDialog(
     palette: CalendarPalette,
     selectedDate: LocalDate,
+    existingEvent: CalendarEvent? = null,
     onDismiss: () -> Unit,
     onConfirm: (
         title: String,
         description: String,
         startTime: String,
         endTime: String,
-        category: String,
-        color: String
+        location: String,
+        color: String,
+        link: String,
     ) -> Unit
 ) {
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var startTime by remember { mutableStateOf("") }
-    var endTime by remember { mutableStateOf("") }
+    val isEditing = existingEvent != null
+    val initialStart = existingEvent?.let { extractHourMinute(it.startTime) }.orEmpty()
+    val initialEnd = existingEvent?.let { extractHourMinute(it.endTime) }.orEmpty()
+
+    var title by remember(existingEvent?.id) { mutableStateOf(existingEvent?.title.orEmpty()) }
+    var description by remember(existingEvent?.id) { mutableStateOf(existingEvent?.description.orEmpty()) }
+    var location by remember(existingEvent?.id) { mutableStateOf(existingEvent?.location.orEmpty()) }
+    var link by remember(existingEvent?.id) { mutableStateOf(existingEvent?.link.orEmpty()) }
+    var startTime by remember(existingEvent?.id) { mutableStateOf(initialStart) }
+    var endTime by remember(existingEvent?.id) { mutableStateOf(initialEnd) }
     var showStartPicker by remember { mutableStateOf(false) }
     var showEndPicker by remember { mutableStateOf(false) }
-    var selectedCategory by remember { mutableStateOf("personal") }
-    var selectedColor by remember { mutableStateOf("blue") }
+    var selectedColor by remember(existingEvent?.id) {
+        mutableStateOf(existingEvent?.color?.takeIf { it.isNotBlank() } ?: DefaultEventColorKey)
+    }
 
     val focusManager = LocalFocusManager.current
     val configuration = LocalConfiguration.current
@@ -99,7 +109,7 @@ fun AddTaskDialog(
                     .padding(24.dp)
             ) {
                 Text(
-                    text = "New Task",
+                    text = if (isEditing) "Edit Event" else "New Event",
                     color = palette.ink,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold
@@ -120,8 +130,8 @@ fun AddTaskDialog(
                     palette = palette,
                     value = title,
                     onValueChange = { title = it },
-                    label = "Task name",
-                    placeholder = "e.g. Yoga practice",
+                    label = "Event name",
+                    placeholder = "e.g. Team standup",
                     imeAction = ImeAction.Next
                 )
 
@@ -132,18 +142,49 @@ fun AddTaskDialog(
                     value = description,
                     onValueChange = { description = it },
                     label = "Description (optional)",
-                    placeholder = "e.g. Morning stretch routine",
+                    placeholder = "e.g. Weekly sync with the team",
+                    imeAction = ImeAction.Next
+                )
+
+                Spacer(Modifier.height(14.dp))
+
+                CalendarDialogTextField(
+                    palette = palette,
+                    value = location,
+                    onValueChange = { location = it },
+                    label = "Location (optional)",
+                    placeholder = "e.g. Office, Zoom, Park…",
+                    imeAction = ImeAction.Next
+                )
+
+                Spacer(Modifier.height(14.dp))
+
+                CalendarDialogTextField(
+                    palette = palette,
+                    value = link,
+                    onValueChange = { link = it },
+                    label = "Link (optional)",
+                    placeholder = "https://meet.google.com/…",
                     imeAction = ImeAction.Next
                 )
 
                 Spacer(Modifier.height(18.dp))
 
-                Text(
-                    text = "Time",
-                    color = palette.muted,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text(
+                        text = "Time",
+                        color = palette.muted,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = "*",
+                        color = palette.flagRed,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
                 Spacer(Modifier.height(10.dp))
 
@@ -183,35 +224,25 @@ fun AddTaskDialog(
                     }
                 }
 
-                Spacer(Modifier.height(18.dp))
-
-                Text(
-                    text = "Category",
-                    color = palette.muted,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
-                )
-
-                Spacer(Modifier.height(10.dp))
-
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(listOf("work", "education", "personal", "sport", "health")) { category ->
-                        val selected = selectedCategory == category
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(if (selected) palette.lavender else palette.pillBg)
-                                .clickable { selectedCategory = category }
-                                .padding(horizontal = 16.dp, vertical = 10.dp)
-                        ) {
-                            Text(
-                                text = category.replaceFirstChar { it.uppercase() },
-                                color = if (selected) Color.White else palette.ink,
-                                fontSize = 13.sp,
-                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
-                            )
-                        }
-                    }
+                val timesProvided = startTime.isNotBlank() && endTime.isNotBlank()
+                val endAfterStart = remember(startTime, endTime) {
+                    val s = parseHourMinute(startTime)
+                    val e = parseHourMinute(endTime)
+                    if (s == null || e == null) true
+                    else (e.first * 60 + e.second) > (s.first * 60 + s.second)
+                }
+                val timeError = when {
+                    !timesProvided -> "Pick a start and end time"
+                    !endAfterStart -> "End time must be after start time"
+                    else -> null
+                }
+                if (timeError != null) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = timeError,
+                        color = palette.flagRed,
+                        fontSize = 12.sp
+                    )
                 }
 
                 Spacer(Modifier.height(18.dp))
@@ -225,22 +256,21 @@ fun AddTaskDialog(
 
                 Spacer(Modifier.height(10.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    ColorOption(
-                        color = Color(0xFFC41E3A),
-                        selected = selectedColor == "red",
-                        onClick = { selectedColor = "red" }
-                    )
-                    ColorOption(
-                        color = Color(0xFF8B8CF8),
-                        selected = selectedColor == "blue",
-                        onClick = { selectedColor = "blue" }
-                    )
-                    ColorOption(
-                        color = Color(0xFFFFF9B9),
-                        selected = selectedColor == "yellow",
-                        onClick = { selectedColor = "yellow" }
-                    )
+                val resolvedSelected = remember(selectedColor) {
+                    resolveEventColor(selectedColor).key
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    EventColors.chunked(4).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                            row.forEach { option ->
+                                ColorOption(
+                                    color = option.accent,
+                                    selected = resolvedSelected == option.key,
+                                    onClick = { selectedColor = option.key }
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(Modifier.height(24.dp))
@@ -255,21 +285,26 @@ fun AddTaskDialog(
 
                     Spacer(Modifier.width(8.dp))
 
+                    val canSave = title.isNotBlank() && timeError == null
                     TextButton(
+                        enabled = canSave,
                         onClick = {
-                            if (title.isNotBlank()) {
-                                onConfirm(
-                                    title,
-                                    description,
-                                    startTime,
-                                    endTime,
-                                    selectedCategory,
-                                    selectedColor
-                                )
-                            }
+                            onConfirm(
+                                title,
+                                description,
+                                startTime,
+                                endTime,
+                                location,
+                                selectedColor,
+                                link
+                            )
                         }
                     ) {
-                        Text("Add Task", color = palette.lavender, fontWeight = FontWeight.Bold)
+                        Text(
+                            if (isEditing) "Save Changes" else "Add Event",
+                            color = if (canSave) palette.lavender else palette.muted.copy(alpha = 0.5f),
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
@@ -277,10 +312,11 @@ fun AddTaskDialog(
     }
 
     if (showStartPicker) {
+        val (h0, m0) = parseHourMinute(startTime) ?: (9 to 0)
         TimePickerDialog(
             title = "Select start time",
-            initialHour = 9,
-            initialMinute = 0,
+            initialHour = h0,
+            initialMinute = m0,
             onConfirm = { h, m ->
                 startTime = "%02d:%02d".format(h, m)
                 showStartPicker = false
@@ -290,10 +326,11 @@ fun AddTaskDialog(
     }
 
     if (showEndPicker) {
+        val (h0, m0) = parseHourMinute(endTime) ?: (10 to 0)
         TimePickerDialog(
             title = "Select end time",
-            initialHour = 10,
-            initialMinute = 0,
+            initialHour = h0,
+            initialMinute = m0,
             onConfirm = { h, m ->
                 endTime = "%02d:%02d".format(h, m)
                 showEndPicker = false
@@ -301,6 +338,19 @@ fun AddTaskDialog(
             onDismiss = { showEndPicker = false }
         )
     }
+}
+
+private fun extractHourMinute(iso: String): String {
+    val tIdx = iso.indexOf('T')
+    if (tIdx < 0 || iso.length < tIdx + 6) return ""
+    return iso.substring(tIdx + 1, tIdx + 6)
+}
+
+private fun parseHourMinute(hhmm: String): Pair<Int, Int>? {
+    val parts = hhmm.split(":")
+    val h = parts.getOrNull(0)?.toIntOrNull() ?: return null
+    val m = parts.getOrNull(1)?.toIntOrNull() ?: return null
+    return h to m
 }
 
 /* ── Dialog TextField ── */

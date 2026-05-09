@@ -47,9 +47,9 @@ interface TodoItemDao {
     @Query("DELETE FROM todo_items WHERE id = :id AND userId = :userId")
     suspend fun deleteById(id: String, userId: String)
 
-    @Query("UPDATE todo_items SET syncStatus = :status WHERE id = :id AND userId = :userId")
-    suspend fun updateSyncStatus(id: String, userId: String, status: String)
-
     @Query("DELETE FROM todo_items WHERE userId = :userId")
     suspend fun deleteAllForUser(userId: String)
+
+    @Query("UPDATE todo_items SET syncStatus = :status WHERE id = :id AND userId = :userId")
+    suspend fun updateSyncStatus(id: String, userId: String, status: String)
 }

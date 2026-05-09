@@ -200,16 +200,73 @@ class WorkspaceViewModel @Inject constructor(
                     else -> "Same as yesterday"
                 }
 
+                val (heroTitle, heroSubtitle) = buildFocusHeroCopy(
+                    today = todayMinutes,
+                    yesterday = yesterdayMinutes
+                )
+                val completedToday = _uiState.value.todayCompletedTasks
+                val (bannerTitle, bannerMessage) = buildActivityBannerCopy(
+                    completedToday = completedToday,
+                    todayMinutes = todayMinutes
+                )
+
                 _uiState.update {
                     it.copy(
                         todayFocusMinutes = todayMinutes,
                         yesterdayFocusMinutes = yesterdayMinutes,
-                        focusComparisonText = comparisonText
+                        focusComparisonText = comparisonText,
+                        focusHeroTitle = heroTitle,
+                        focusHeroSubtitle = heroSubtitle,
+                        activityBannerTitle = bannerTitle,
+                        activityBannerMessage = bannerMessage
                     )
                 }
 
                 delay(5000)
             }
         }
+    }
+}
+
+private fun formatFocusMinutes(minutes: Int): String {
+    if (minutes <= 0) return "0m"
+    val hours = minutes / 60
+    val mins = minutes % 60
+    return when {
+        hours == 0 -> "${mins}m"
+        mins == 0 -> "${hours}h"
+        else -> "${hours}h ${mins}m"
+    }
+}
+
+private fun buildFocusHeroCopy(today: Int, yesterday: Int): Pair<String, String> = when {
+    today == 0 && yesterday == 0 ->
+        "No focus time yet" to "Unfortunately you haven't focused today. Start a session to begin."
+    today == 0 && yesterday > 0 ->
+        "Nothing focused today yet" to "Yesterday you did ${formatFocusMinutes(yesterday)}. Don't break the streak!"
+    yesterday == 0 && today > 0 ->
+        "${formatFocusMinutes(today)} focused today" to "Great start — first focused day in a while!"
+    today > yesterday ->
+        "${formatFocusMinutes(today)} focused today" to "${formatFocusMinutes(today - yesterday)} more than yesterday — keep it up!"
+    today < yesterday ->
+        "${formatFocusMinutes(today)} focused today" to "${formatFocusMinutes(yesterday - today)} less than yesterday — push for it."
+    else ->
+        "${formatFocusMinutes(today)} focused today" to "Matching yesterday's pace — steady wins."
+}
+
+private fun buildActivityBannerCopy(completedToday: Int, todayMinutes: Int): Pair<String, String> {
+    val tasksPart = when (completedToday) {
+        0 -> "no tasks completed"
+        1 -> "1 task completed"
+        else -> "$completedToday tasks completed"
+    }
+    val focusPart = if (todayMinutes > 0) "stayed focused for ${formatFocusMinutes(todayMinutes)}"
+    else "no focus time logged"
+
+    return when {
+        completedToday == 0 && todayMinutes == 0 ->
+            "A fresh start" to "Plan a task and try a quick focus session to get going."
+        else ->
+            "Great work today" to "You've $tasksPart and $focusPart."
     }
 }

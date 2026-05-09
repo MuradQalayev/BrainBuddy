@@ -42,7 +42,7 @@ fun ProgressTrack(palette: TodoPalette, progress: Float) {
                 .clip(RoundedCornerShape(999.dp))
                 .background(
                     Brush.horizontalGradient(
-                        listOf(Color(0xFF8C70EC), palette.lavender)
+                        listOf(Color(0xFFE8A878), palette.lavender)
                     )
                 )
         )

@@ -40,11 +40,11 @@ import java.util.Locale
 
 // Dot colors for multi-event indicators (like the reference shows)
 private val dotColors = listOf(
-    Color(0xFF6366F1), // indigo
-    Color(0xFF82C8FF), // sky
-    Color(0xFFE53E3E), // red
-    Color(0xFFD0DB56), // lime
-    Color(0xFF6366F1), // lilac
+    Color(0xFFD97A3D), // accent orange
+    Color(0xFF7FA3C9), // accent blue
+    Color(0xFFC75A4A), // muted red
+    Color(0xFFB6C68A), // sage lime
+    Color(0xFFE8A878), // soft peach
 )
 
 /* ── Calendar body (month or week) ── */
@@ -108,7 +108,7 @@ fun MonthDay(
 
     val bgColor by animateColorAsState(
         targetValue = when {
-            isSelected -> Color(0xFF6366F1) // lavender accent
+            isSelected -> Color(0xFFFF6A1A) // brand orange accent
             else -> Color.Transparent
         },
         animationSpec = tween(200),
@@ -117,7 +117,7 @@ fun MonthDay(
 
     val textColor = when {
         isSelected -> Color.White
-        isToday -> Color(0xFF6366F1)
+        isToday -> Color(0xFFFF6A1A)
         inMonth -> MaterialTheme.colorScheme.onSurface
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
     }
@@ -189,7 +189,7 @@ fun WeekDayItem(
 
     val bgColor by animateColorAsState(
         targetValue = when {
-            isSelected -> Color(0xFF6366F1)
+            isSelected -> Color(0xFFFF6A1A)
             else -> Color.Transparent
         },
         animationSpec = tween(200),
@@ -198,7 +198,7 @@ fun WeekDayItem(
 
     val textColor = when {
         isSelected -> Color.White
-        isToday -> Color(0xFF6366F1)
+        isToday -> Color(0xFFFF6A1A)
         inWeek -> MaterialTheme.colorScheme.onSurface
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
     }

@@ -28,6 +28,8 @@ class SettingsViewModel @Inject constructor(
     private val preferencesManager: PreferencesManager,
     private val authRepository: AuthRepository,
     private val todoRepository: com.muradgalayev.brainbuddy.data.repository.TodoRepository,
+    private val calendarRepository: com.muradgalayev.brainbuddy.data.repository.CalendarRepository,
+    private val pomodoroRepository: com.muradgalayev.brainbuddy.data.repository.PomodoroRepository,
     private val preferencesRepository: com.muradgalayev.brainbuddy.data.repository.PreferencesRepository,
     private val googleCalendarRepository: GoogleCalendarRepository,
     private val googleCalendarAuthClient: GoogleCalendarAuthClient,
@@ -50,11 +52,30 @@ class SettingsViewModel @Inject constructor(
     private val _linkedGoogleEmail = MutableStateFlow(googleCalendarTokenStore.getLinkedEmail())
     val linkedGoogleEmail: StateFlow<String?> = _linkedGoogleEmail.asStateFlow()
 
+    private val _profile = MutableStateFlow(
+        UserProfile(
+            email = authRepository.getCurrentUserEmail(),
+            name = authRepository.getCurrentUserFullName(),
+            username = authRepository.getCurrentUserUsername(),
+            avatarUrl = authRepository.getCurrentUserAvatarUrl()
+        )
+    )
+    val profile: StateFlow<UserProfile> = _profile.asStateFlow()
+
+    private val _profileSaving = MutableStateFlow(false)
+    val profileSaving: StateFlow<Boolean> = _profileSaving.asStateFlow()
+
+    private val _profileSaveMessage = MutableStateFlow<String?>(null)
+    val profileSaveMessage: StateFlow<String?> = _profileSaveMessage.asStateFlow()
+    init {
+        refreshProfile()
+    }
+    // Legacy convenience getters retained for any other callers that read these.
     val userEmail: String?
-        get() = authRepository.getCurrentUserEmail()
+        get() = _profile.value.email
 
     val userFullName: String?
-        get() = authRepository.getCurrentUserFullName()
+        get() = _profile.value.name
 
     val fontSize = preferencesManager.fontSize
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FontSize.Medium)
@@ -108,7 +129,7 @@ class SettingsViewModel @Inject constructor(
         if (_exportingToCalendar.value) return
         _exportingToCalendar.value = true
         viewModelScope.launch {
-            val first = googleCalendarRepository.exportAllTodos()
+            val first = googleCalendarRepository.exportAllEvents()
             if (first !is ExportResult.NeedsGoogleSignIn) {
                 publishExportResult(first)
                 _exportingToCalendar.value = false
@@ -118,7 +139,7 @@ class SettingsViewModel @Inject constructor(
                 when (val step = googleCalendarAuthClient.requestAuthorization()) {
                     is GoogleCalendarAuthClient.AuthorizationStep.AccessToken -> {
                         refreshLinkedEmail(step.token)
-                        publishExportResult(googleCalendarRepository.exportAllTodos())
+                        publishExportResult(googleCalendarRepository.exportAllEvents())
                         _exportingToCalendar.value = false
                     }
                     is GoogleCalendarAuthClient.AuthorizationStep.NeedsUserConsent -> {
@@ -150,7 +171,7 @@ class SettingsViewModel @Inject constructor(
                 return@launch
             }
             refreshLinkedEmail(token)
-            publishExportResult(googleCalendarRepository.exportAllTodos())
+            publishExportResult(googleCalendarRepository.exportAllEvents())
             _exportingToCalendar.value = false
         }
     }
@@ -196,10 +217,77 @@ class SettingsViewModel @Inject constructor(
             googleCalendarAuthClient.signOut()
             _linkedGoogleEmail.value = null
             currentUserId?.let {
-                // clear local tasks for the user that just signed out
+                // clear local tasks + calendar events + pomodoro sessions for the user that just signed out
                 todoRepository.clearLocalForUser(it)
+                calendarRepository.clearLocalForUser(it)
+                pomodoroRepository.clearLocalForUser(it)
             }
             _loggedOut.value = true
         }
     }
+
+    fun updateProfile(name: String, username: String) {
+        if (_profileSaving.value) return
+
+        val cleanName = name.trim()
+        val cleanUsername = username.trim()
+
+        if (cleanName.isBlank()) {
+            _profileSaveMessage.value = "Name cannot be empty"
+            return
+        }
+
+        _profileSaving.value = true
+
+        viewModelScope.launch {
+            try {
+                val updatedProfile = authRepository.updateProfile(
+                    displayName = cleanName,
+                    username = cleanUsername
+                )
+
+                _profile.value = UserProfile(
+                    email = updatedProfile.email ?: _profile.value.email ?: authRepository.getCurrentUserEmail(),
+                    name = updatedProfile.displayName ?: cleanName,
+                    username = updatedProfile.username ?: cleanUsername,
+                    avatarUrl = updatedProfile.avatarUrl ?: _profile.value.avatarUrl
+                )
+
+                _profileSaveMessage.value = "Profile updated"
+            } catch (e: Exception) {
+                _profileSaveMessage.value = "Couldn't save: ${e.message ?: "unknown error"}"
+            } finally {
+                _profileSaving.value = false
+            }
+        }
+    }
+
+    fun clearProfileSaveMessage() {
+        _profileSaveMessage.value = null
+    }
+
+
+    private fun refreshProfile() {
+        viewModelScope.launch {
+            try {
+                val profileDto = authRepository.ensureProfileExists()
+
+                _profile.value = UserProfile(
+                    email = profileDto.email ?: authRepository.getCurrentUserEmail(),
+                    name = profileDto.displayName ?: authRepository.getCurrentUserFullName(),
+                    username = profileDto.username ?: authRepository.getCurrentUserUsername(),
+                    avatarUrl = profileDto.avatarUrl ?: authRepository.getCurrentUserAvatarUrl()
+                )
+            } catch (e: Exception) {
+                _profileSaveMessage.value = "Couldn't load profile: ${e.message ?: "unknown error"}"
+            }
+        }
+    }
 }
+
+data class UserProfile(
+    val email: String?,
+    val name: String?,
+    val username: String?,
+    val avatarUrl: String?
+)

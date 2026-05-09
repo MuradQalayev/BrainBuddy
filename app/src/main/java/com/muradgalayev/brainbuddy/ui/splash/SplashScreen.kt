@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
 fun SplashScreen(
     onNavigateToHome: () -> Unit,
     onNavigateToAuth: () -> Unit,
+    onNavigateToOnboarding: () -> Unit,
     viewModel: SplashViewModel = hiltViewModel()
 ) {
     val rotation = remember { Animatable(0f) }
@@ -69,12 +70,14 @@ fun SplashScreen(
             )
         }
 
-        // Hold for a moment, then navigate based on auth state
+        // Hold for a moment, then navigate based on auth + survey state
         delay(1200)
-        if (viewModel.isLoggedIn()) {
+        if (!viewModel.isLoggedIn()) {
+            onNavigateToAuth()
+        } else if (viewModel.isSurveyCompleted()) {
             onNavigateToHome()
         } else {
-            onNavigateToAuth()
+            onNavigateToOnboarding()
         }
     }
 

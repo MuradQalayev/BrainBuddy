@@ -6,6 +6,7 @@ import com.muradgalayev.brainbuddy.data.local.entity.SyncStatus
 import com.muradgalayev.brainbuddy.data.mapper.toDomain
 import com.muradgalayev.brainbuddy.data.mapper.toDto
 import com.muradgalayev.brainbuddy.data.mapper.toEntity
+import com.muradgalayev.brainbuddy.data.notifications.ReminderScheduler
 import com.muradgalayev.brainbuddy.data.remote.SupabaseTodoDataSource
 import com.muradgalayev.brainbuddy.domain.model.TodoItem
 import kotlinx.coroutines.flow.Flow
@@ -19,7 +20,8 @@ import kotlinx.coroutines.flow.emptyFlow
 class TodoRepository @Inject constructor(
     private val todoItemDao: TodoItemDao,
     private val remoteDataSource: SupabaseTodoDataSource,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val reminderScheduler: ReminderScheduler,
 ) {
     companion object {
         private const val TAG = "TodoRepository"
@@ -83,6 +85,7 @@ class TodoRepository @Inject constructor(
             lastModifiedAt = System.currentTimeMillis()
         )
         todoItemDao.insertTodoItem(entity)
+        scheduleReminderIfDue(todoItem)
         tryRemoteUpsert(entity)
     }
 
@@ -93,6 +96,8 @@ class TodoRepository @Inject constructor(
             lastModifiedAt = System.currentTimeMillis()
         )
         todoItemDao.updateTodoItem(entity)
+        reminderScheduler.cancelForItem(todoItem.id)
+        scheduleReminderIfDue(todoItem)
         tryRemoteUpsert(entity)
     }
 
@@ -102,6 +107,7 @@ class TodoRepository @Inject constructor(
             syncStatus = SyncStatus.PENDING_DELETE.name
         )
         todoItemDao.updateTodoItem(entity)
+        reminderScheduler.cancelForItem(todoItem.id)
         tryRemoteDelete(entity.id, userId)
     }
 
@@ -114,7 +120,19 @@ class TodoRepository @Inject constructor(
             lastModifiedAt = System.currentTimeMillis()
         )
         todoItemDao.updateTodoItem(updated)
+        if (updated.isCompleted) reminderScheduler.cancelForItem(id)
         tryRemoteUpsert(updated)
+    }
+
+    private fun scheduleReminderIfDue(todo: TodoItem) {
+        if (todo.isCompleted) return
+        if (todo.date.isBlank() || todo.startTime.isBlank()) return
+        reminderScheduler.scheduleForItem(
+            itemId = todo.id,
+            title = todo.title,
+            dateIso = todo.date,
+            timeIso = todo.startTime,
+        )
     }
 
     // ── Sync operations ──
@@ -153,8 +171,7 @@ class TodoRepository @Inject constructor(
 
     private suspend fun pullRemoteChanges(userId: String) {
         try {
-            // Only pull remote items for the currently authenticated user
-            val remoteItems = remoteDataSource.getAll(userId)
+            val remoteItems = remoteDataSource.getAll()
             val pendingItems = todoItemDao.getPendingSyncItems(userId)
             val pendingIds = pendingItems.map { it.id }.toSet()
 
@@ -189,8 +206,6 @@ class TodoRepository @Inject constructor(
         }
     }
 
-    // Clear local data for a specific user (used on sign out to avoid leaking tasks
-    // between different accounts on the same device).
     suspend fun clearLocalForUser(userId: String) {
         todoItemDao.deleteAllForUser(userId)
     }

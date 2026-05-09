@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,11 +29,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import android.content.Intent
+import androidx.core.net.toUri
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.EventNote
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -258,12 +270,12 @@ fun EmptyTasksState(palette: CalendarPalette) {
 
 /* ── Category tag colors ── */
 private fun categoryColor(category: String): Color = when (category.lowercase()) {
-    "work" -> Color(0xFFE8A838)
-    "personal" -> Color(0xFF4CAF50)
-    "education" -> Color(0xFF6366F1)
-    "sport" -> Color(0xFFEF5350)
-    "health" -> Color(0xFFAB47BC)
-    else -> Color(0xFF78909C)
+    "work" -> Color(0xFFD9B05C)      // muted amber
+    "personal" -> Color(0xFF8AAE7E)  // sage green
+    "education" -> Color(0xFFD97A3D) // accent orange
+    "sport" -> Color(0xFFC75A4A)     // muted red
+    "health" -> Color(0xFFA88AB8)    // muted lilac
+    else -> Color(0xFF7FA3C9)        // accent blue
 }
 
 /* ── Swipeable task card ── */
@@ -275,26 +287,46 @@ private fun SwipeableCalendarTaskCard(
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                onDelete()
+            when (value) {
+                SwipeToDismissBoxValue.EndToStart -> {
+                    showDeleteConfirm = true
+                    false
+                }
+                SwipeToDismissBoxValue.StartToEnd -> {
+                    onClick()
+                    false
+                }
+                else -> false
             }
-            false
         }
     )
 
-    val showDeleteBackground =
-        dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart
+    // After triggering edit/delete, snap the row back to center.
+    LaunchedEffect(showDeleteConfirm) {
+        if (!showDeleteConfirm && dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
+            dismissState.reset()
+        }
+    }
+
+    val direction = dismissState.dismissDirection
+    val showDeleteBackground = direction == SwipeToDismissBoxValue.EndToStart
+    val showEditBackground = direction == SwipeToDismissBoxValue.StartToEnd
 
     val backgroundColor by animateColorAsState(
-        targetValue = if (showDeleteBackground) palette.flagRed else Color.Transparent,
+        targetValue = when {
+            showDeleteBackground -> palette.flagRed
+            showEditBackground -> palette.lavender
+            else -> Color.Transparent
+        },
         label = "swipeBackground"
     )
 
     SwipeToDismissBox(
         state = dismissState,
-        enableDismissFromStartToEnd = false,
         backgroundContent = {
             Row(
                 modifier = Modifier
@@ -303,12 +335,23 @@ private fun SwipeableCalendarTaskCard(
                     .background(backgroundColor)
                     .padding(horizontal = 24.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = when {
+                    showEditBackground -> Arrangement.Start
+                    else -> Arrangement.End
+                }
             ) {
+                AnimatedVisibility(visible = showEditBackground) {
+                    Icon(
+                        imageVector = Icons.Outlined.Edit,
+                        contentDescription = "Edit event",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
                 AnimatedVisibility(visible = showDeleteBackground) {
                     Icon(
                         imageVector = Icons.Rounded.Delete,
-                        contentDescription = "Delete task",
+                        contentDescription = "Delete event",
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
                     )
@@ -322,6 +365,48 @@ private fun SwipeableCalendarTaskCard(
             onClick = onClick
         )
     }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            shape = RoundedCornerShape(24.dp),
+            containerColor = palette.cardBg,
+            title = {
+                Text(
+                    text = "Delete event?",
+                    color = palette.ink,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to delete \"${task.title}\"? This can't be undone.",
+                    color = palette.muted
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    onDelete()
+                }) {
+                    Text(
+                        "Delete",
+                        color = palette.flagRed,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text(
+                        "Cancel",
+                        color = palette.muted,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        )
+    }
 }
 
 /* ── Task Card (reference style) ── */
@@ -331,6 +416,9 @@ fun CalendarTaskCard(
     task: CalendarTaskUi,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val tintedBg = androidx.compose.ui.graphics.lerp(palette.cardBg, task.accent, 0.07f)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -340,15 +428,23 @@ fun CalendarTaskCard(
                 onClick = onClick
             ),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = palette.cardBg),
+        colors = CardDefaults.cardColors(containerColor = tintedBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+            // Accent stripe — modern Linear-style indicator
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .fillMaxHeight()
+                    .background(task.accent)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
             // Completion circle
             TaskStatusCircle(palette = palette, completed = task.completed)
 
@@ -387,6 +483,27 @@ fun CalendarTaskCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+
+                if (!task.location.isNullOrEmpty()) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = task.location,
+                        color = palette.muted,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                if (!task.link.isNullOrEmpty()) {
+                    Spacer(Modifier.height(6.dp))
+                    LinkChip(
+                        palette = palette,
+                        rawUrl = task.link,
+                        onClick = { openUrl(context, task.link) }
+                    )
+                }
             }
 
             // Time range
@@ -411,8 +528,60 @@ fun CalendarTaskCard(
                         .background(palette.flagRed)
                 )
             }
+            }
         }
     }
+}
+
+/* ── Link chip (tap to open) ── */
+@Composable
+private fun LinkChip(
+    palette: CalendarPalette,
+    rawUrl: String,
+    onClick: () -> Unit
+) {
+    val display = rawUrl
+        .removePrefix("https://")
+        .removePrefix("http://")
+        .removePrefix("www.")
+        .let { if (it.length > 32) it.take(32) + "…" else it }
+
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(palette.lavender.copy(alpha = 0.12f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Link,
+            contentDescription = null,
+            tint = palette.lavender,
+            modifier = Modifier.size(14.dp)
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            text = display,
+            color = palette.lavender,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+private fun openUrl(context: android.content.Context, raw: String) {
+    val normalized = when {
+        raw.startsWith("http://", ignoreCase = true) -> raw
+        raw.startsWith("https://", ignoreCase = true) -> raw
+        else -> "https://$raw"
+    }
+    val intent = Intent(Intent.ACTION_VIEW, normalized.toUri()).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    runCatching { context.startActivity(intent) }
 }
 
 /* ── Task Status Circle ── */
