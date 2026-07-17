@@ -2,14 +2,21 @@ package com.muradgalayev.brainbuddy.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.muradgalayev.brainbuddy.data.auth.PasswordRecoveryState
+import com.muradgalayev.brainbuddy.data.network.NetworkObserver
 import com.muradgalayev.brainbuddy.data.repository.AuthRepository
+import com.muradgalayev.brainbuddy.data.sync.SyncCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.auth.status.SessionStatus
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.IOException
 import javax.inject.Inject
 
 data class AuthUiState(
@@ -21,14 +28,23 @@ data class AuthUiState(
     val isLoginMode: Boolean = true,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isSuccess: Boolean = false
+    val infoMessage: String? = null,
+    val isSuccess: Boolean = false,
+    val forgotPasswordOpen: Boolean = false,
+    val forgotPasswordEmail: String = "",
+    val forgotPasswordSending: Boolean = false,
+    val forgotPasswordError: String? = null,
+    val newPasswordOpen: Boolean = false,
+    val newPasswordSaving: Boolean = false,
+    val newPasswordError: String? = null,
 )
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val todoRepository: com.muradgalayev.brainbuddy.data.repository.TodoRepository,
-    private val preferencesRepository: com.muradgalayev.brainbuddy.data.repository.PreferencesRepository
+    private val syncCoordinator: SyncCoordinator,
+    private val networkObserver: NetworkObserver,
+    private val passwordRecoveryState: PasswordRecoveryState,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -37,18 +53,29 @@ class AuthViewModel @Inject constructor(
     private var awaitingExternalAuth = false
 
     init {
-        // Listen for the OAuth deeplink callback completing. signInWith(Google) launches
-        // a browser and returns immediately; the session only becomes Authenticated when
-        // the deeplink fires. Watch sessionStatus and flip isSuccess at that point.
+        // We combine sessionStatus with the recovery flag because they can flip in either
+        // order: MainActivity sets `recovery` synchronously from intent.data, but Supabase
+        // imports the session on a later coroutine tick. Either edge should trigger the
+        // dialog once both are true.
         viewModelScope.launch {
-            authRepository.sessionStatus.collect { status ->
-                if (awaitingExternalAuth && status is SessionStatus.Authenticated) {
-                    awaitingExternalAuth = false
-                    _uiState.update { it.copy(isLoading = false, isSuccess = true) }
-                    runCatching { todoRepository.sync() }
-                    runCatching { preferencesRepository.pullRemoteAndApply() }
+            combine(
+                authRepository.sessionStatus,
+                passwordRecoveryState.active,
+            ) { status, recovery -> (status is SessionStatus.Authenticated) to recovery }
+                .collect { (authenticated, recovery) ->
+                    when {
+                        authenticated && recovery -> {
+                            _uiState.update {
+                                it.copy(isLoading = false, newPasswordOpen = true)
+                            }
+                        }
+                        authenticated && awaitingExternalAuth -> {
+                            awaitingExternalAuth = false
+                            _uiState.update { it.copy(isLoading = false, isSuccess = true) }
+                            syncCoordinator.syncAll()
+                        }
+                    }
                 }
-            }
         }
     }
 
@@ -73,13 +100,150 @@ class AuthViewModel @Inject constructor(
     }
 
     fun toggleMode() {
-        _uiState.update { it.copy(isLoginMode = !it.isLoginMode, error = null) }
+        _uiState.update {
+            it.copy(isLoginMode = !it.isLoginMode, error = null, infoMessage = null)
+        }
+    }
+
+    fun clearInfoMessage() {
+        _uiState.update { it.copy(infoMessage = null) }
+    }
+
+    // ── Forgot password ──
+
+    fun openForgotPassword() {
+        _uiState.update {
+            it.copy(
+                forgotPasswordOpen = true,
+                // Pre-fill with the email they've already typed on the sign-in form.
+                forgotPasswordEmail = it.email,
+                forgotPasswordError = null,
+            )
+        }
+    }
+
+    fun dismissForgotPassword() {
+        _uiState.update {
+            it.copy(
+                forgotPasswordOpen = false,
+                forgotPasswordSending = false,
+                forgotPasswordError = null,
+            )
+        }
+    }
+
+    fun onForgotEmailChanged(value: String) {
+        _uiState.update { it.copy(forgotPasswordEmail = value, forgotPasswordError = null) }
+    }
+
+    fun sendPasswordReset() {
+        val email = _uiState.value.forgotPasswordEmail.trim()
+        if (email.isBlank() || !email.contains("@")) {
+            _uiState.update { it.copy(forgotPasswordError = "Please enter a valid email") }
+            return
+        }
+        _uiState.update { it.copy(forgotPasswordSending = true, forgotPasswordError = null) }
+        viewModelScope.launch {
+            if (!networkObserver.isOnline.first()) {
+                _uiState.update {
+                    it.copy(
+                        forgotPasswordSending = false,
+                        forgotPasswordError = "No internet connection",
+                    )
+                }
+                return@launch
+            }
+            try {
+                authRepository.sendPasswordReset(email)
+                _uiState.update {
+                    it.copy(
+                        forgotPasswordSending = false,
+                        forgotPasswordOpen = false,
+                        infoMessage = "Reset link sent to $email. Check your email to continue.",
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        forgotPasswordSending = false,
+                        forgotPasswordError = mapAuthError(e),
+                    )
+                }
+            }
+        }
+    }
+
+    // ── Set a new password (after clicking the reset link) ──
+
+    fun submitNewPassword(newPassword: String) {
+        if (newPassword.length < 6) {
+            _uiState.update {
+                it.copy(newPasswordError = "Password must be at least 6 characters")
+            }
+            return
+        }
+        _uiState.update { it.copy(newPasswordSaving = true, newPasswordError = null) }
+        viewModelScope.launch {
+            if (!networkObserver.isOnline.first()) {
+                _uiState.update {
+                    it.copy(
+                        newPasswordSaving = false,
+                        newPasswordError = "No internet connection",
+                    )
+                }
+                return@launch
+            }
+            try {
+                authRepository.updatePassword(newPassword)
+                passwordRecoveryState.clear()
+                _uiState.update {
+                    it.copy(
+                        newPasswordSaving = false,
+                        newPasswordOpen = false,
+                        isSuccess = true,
+                        infoMessage = null,
+                    )
+                }
+                syncCoordinator.syncAll()
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        newPasswordSaving = false,
+                        newPasswordError = mapAuthError(e),
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Called when the Auth screen comes back into the foreground. Detects the case
+     * where the user tapped Google → landed in Chrome Custom Tab → hit Back without
+     * finishing. In that path no deep link fires, so `isLoading` would otherwise
+     * spin forever. Small grace period covers slow deep-link callbacks that arrive
+     * just after ON_RESUME.
+     */
+    fun onScreenResumed() {
+        if (!awaitingExternalAuth) return
+        viewModelScope.launch {
+            delay(800)
+            if (awaitingExternalAuth && authRepository.getCurrentUserId() == null) {
+                awaitingExternalAuth = false
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
     }
 
     fun signInWithGoogle() {
-        _uiState.update { it.copy(isLoading = true, error = null) }
-        awaitingExternalAuth = true
+        _uiState.update { it.copy(isLoading = true, error = null, infoMessage = null) }
         viewModelScope.launch {
+            if (!networkObserver.isOnline.first()) {
+                _uiState.update {
+                    it.copy(isLoading = false, error = "No internet connection")
+                }
+                return@launch
+            }
+            awaitingExternalAuth = true
             try {
                 // Launches the browser/CustomTab. Returns immediately — the session
                 // only flips to Authenticated when the deeplink callback fires, which
@@ -88,10 +252,7 @@ class AuthViewModel @Inject constructor(
             } catch (e: Exception) {
                 awaitingExternalAuth = false
                 _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = e.message ?: "Google sign-in failed"
-                    )
+                    it.copy(isLoading = false, error = mapAuthError(e))
                 }
             }
         }
@@ -112,12 +273,22 @@ class AuthViewModel @Inject constructor(
             return
         }
 
-        _uiState.update { it.copy(isLoading = true, error = null) }
+        _uiState.update { it.copy(isLoading = true, error = null, infoMessage = null) }
 
         viewModelScope.launch {
+            // Fail fast when offline — otherwise Ktor sits through the full 30s timeout.
+            if (!networkObserver.isOnline.first()) {
+                _uiState.update {
+                    it.copy(isLoading = false, error = "No internet connection")
+                }
+                return@launch
+            }
+
             try {
                 if (state.isLoginMode) {
                     authRepository.signIn(state.email.trim(), state.password)
+                    _uiState.update { it.copy(isLoading = false, isSuccess = true) }
+                    syncCoordinator.syncAll()
                 } else {
                     authRepository.signUp(
                         email = state.email.trim(),
@@ -126,24 +297,45 @@ class AuthViewModel @Inject constructor(
                         lastName = state.lastName.trim(),
                         phone = state.phone.trim()
                     )
+                    // Supabase requires email confirmation by default — signUp returns without
+                    // a session, so navigating to Home would land the user on an unauth screen.
+                    // Keep them on Auth and tell them to confirm.
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isLoginMode = true,
+                            password = "",
+                            infoMessage = "Account created. Check your email to confirm, then sign in."
+                        )
+                    }
                 }
-                // Auth succeeded synchronously for email/password.
-                // Sync runs in the background; failures shouldn't block the user.
-                _uiState.update { it.copy(isLoading = false, isSuccess = true) }
-                runCatching { todoRepository.sync() }
-                runCatching { preferencesRepository.pullRemoteAndApply() }
             } catch (e: Exception) {
-                val message = when {
-                    e.message?.contains("Invalid login", ignoreCase = true) == true ->
-                        "Invalid email or password"
-                    e.message?.contains("already registered", ignoreCase = true) == true ->
-                        "This email is already registered"
-                    e.message?.contains("valid email", ignoreCase = true) == true ->
-                        "Please enter a valid email address"
-                    else -> e.message ?: "Something went wrong"
+                _uiState.update {
+                    it.copy(isLoading = false, error = mapAuthError(e))
                 }
-                _uiState.update { it.copy(isLoading = false, error = message) }
             }
+        }
+    }
+
+    private fun mapAuthError(e: Throwable): String {
+        // Ktor throws these when the device can't reach the server.
+        if (e is IOException) return "Can't reach the server. Check your internet connection."
+        val msg = e.message.orEmpty()
+        return when {
+            msg.contains("email_not_confirmed", ignoreCase = true) ||
+                msg.contains("Email not confirmed", ignoreCase = true) ->
+                "Please confirm your email before signing in."
+            msg.contains("Invalid login", ignoreCase = true) ||
+                msg.contains("invalid_credentials", ignoreCase = true) ->
+                "Invalid email or password"
+            msg.contains("already registered", ignoreCase = true) ||
+                msg.contains("user_already_exists", ignoreCase = true) ->
+                "This email is already registered"
+            msg.contains("valid email", ignoreCase = true) ->
+                "Please enter a valid email address"
+            msg.contains("weak_password", ignoreCase = true) ->
+                "Password is too weak"
+            else -> msg.ifBlank { "Something went wrong" }
         }
     }
 }

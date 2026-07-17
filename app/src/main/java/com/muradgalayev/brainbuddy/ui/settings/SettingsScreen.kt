@@ -1,6 +1,7 @@
 package com.muradgalayev.brainbuddy.ui.settings
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -60,6 +61,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -188,7 +190,7 @@ fun SettingsScreen(
                 onEditProfile = { editProfileOpen = true }
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             Column(
                 modifier = Modifier
@@ -196,7 +198,10 @@ fun SettingsScreen(
                     .padding(horizontal = ScreenHorizontalPadding)
             ) {
                 // ── Customization ──
-                SectionHeader(title = "Customization")
+                SectionHeader(
+                    title = "Customization",
+                    accent = MaterialTheme.colorScheme.primary,
+                )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -223,7 +228,10 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // ── About You ──
-                SectionHeader(title = "About You")
+                SectionHeader(
+                    title = "About You",
+                    accent = MaterialTheme.colorScheme.secondary,
+                )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -232,7 +240,10 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // ── Focus ──
-                SectionHeader(title = "Focus")
+                SectionHeader(
+                    title = "Focus",
+                    accent = MaterialTheme.colorScheme.tertiary,
+                )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -253,7 +264,10 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // ── Integrations ──
-                SectionHeader(title = "Integrations")
+                SectionHeader(
+                    title = "Integrations",
+                    accent = MaterialTheme.colorScheme.primary,
+                )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -267,7 +281,10 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // ── About ──
-                SectionHeader(title = "About")
+                SectionHeader(
+                    title = "About",
+                    accent = MaterialTheme.colorScheme.outline,
+                )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -310,10 +327,13 @@ fun SettingsScreen(
     }
 
     if (editProfileOpen) {
+        val usernameAvailability by viewModel.usernameAvailability.collectAsState()
         EditProfileDialog(
             initialName = profile.name.orEmpty(),
             initialUsername = profile.username.orEmpty(),
             saving = profileSaving,
+            availability = usernameAvailability,
+            onUsernameChange = viewModel::onEditingUsername,
             onDismiss = { editProfileOpen = false },
             onSave = { name, username ->
                 viewModel.updateProfile(name, username)
@@ -350,6 +370,10 @@ private fun ProfileHeroCard(
         ?.joinToString("")
         ?.takeIf { it.isNotBlank() }
         ?: "?"
+
+    // Deep charcoal hero with a warm gradient orb in the top-right corner —
+    // matches the reference "Never miss out on your pills again" landing card.
+    val heroBg = Color(0xFF1B1B23)
     val heroShape = RoundedCornerShape(
         topStart = 0.dp,
         topEnd = 0.dp,
@@ -361,20 +385,38 @@ private fun ProfileHeroCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(heroShape)
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(AiButtonLight, AiButtonLightEnd)
-                )
-            )
-            .padding(horizontal = 24.dp)
-            .padding(top = 36.dp, bottom = 28.dp)
+            .background(heroBg)
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        // Warm gradient orb — sits partly off-canvas in the top-right corner
+        Canvas(modifier = Modifier.matchParentSize()) {
+            val w = size.width
+            val orbRadius = w * 0.55f
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        AiButtonLight.copy(alpha = 0.85f),
+                        AiButtonLightEnd.copy(alpha = 0.55f),
+                        heroBg.copy(alpha = 0f),
+                    ),
+                    center = Offset(w * 1.05f, -w * 0.05f),
+                    radius = orbRadius,
+                ),
+                radius = orbRadius,
+                center = Offset(w * 1.05f, -w * 0.05f),
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(top = 44.dp, bottom = 28.dp)
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 ProfileAvatar(
                     avatarUrl = avatarUrl,
                     initials = initials,
-                    size = 68.dp
+                    size = 60.dp
                 )
 
                 Spacer(modifier = Modifier.width(16.dp))
@@ -386,30 +428,31 @@ private fun ProfileHeroCard(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = handle,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.85f)
+                        color = Color.White.copy(alpha = 0.72f)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
-            // Edit Profile action button
+            // Edit Profile — pill-shaped, glass-morphism style over the dark hero.
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(999.dp))
                     .clickable(onClick = onEditProfile),
-                shape = RoundedCornerShape(20.dp),
-                color = Color.White.copy(alpha = 0.20f),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.32f))
+                shape = RoundedCornerShape(999.dp),
+                color = Color.White.copy(alpha = 0.10f),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.22f))
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                        .padding(horizontal = 18.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
@@ -417,14 +460,15 @@ private fun ProfileHeroCard(
                         imageVector = Icons.Rounded.Edit,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Edit Profile",
+                        text = "Edit profile",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                        color = Color.White,
+                        letterSpacing = 0.2.sp
                     )
                 }
             }
@@ -477,11 +521,37 @@ private fun EditProfileDialog(
     initialName: String,
     initialUsername: String,
     saving: Boolean,
+    availability: com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability,
+    onUsernameChange: (String) -> Unit,
     onDismiss: () -> Unit,
     onSave: (name: String, username: String) -> Unit
 ) {
     var name by rememberSaveable { mutableStateOf(initialName) }
     var username by rememberSaveable { mutableStateOf(initialUsername) }
+
+    // Fire an initial check for the pre-filled value so the user sees state immediately.
+    LaunchedEffect(Unit) { onUsernameChange(username) }
+
+    val statusText: String? = when (availability) {
+        com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Idle -> null
+        com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Checking -> "Checking…"
+        com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Available -> "Available"
+        com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Taken -> "Already taken"
+        com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Invalid ->
+            "Use 3–20 letters, numbers or underscores"
+    }
+    val statusColor = when (availability) {
+        com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Available ->
+            Color(0xFF6B8F5D)
+        com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Taken,
+        com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Invalid ->
+            MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val canSave = !saving && name.isNotBlank() && (
+        availability == com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Available ||
+            availability == com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Idle
+    )
 
     AlertDialog(
         onDismissRequest = { if (!saving) onDismiss() },
@@ -512,28 +582,55 @@ private fun EditProfileDialog(
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
-                OutlinedTextField(
-                    value = username,
-                    onValueChange = { username = it },
-                    label = { Text("Username") },
-                    leadingIcon = {
-                        Icon(Icons.Rounded.AlternateEmail, contentDescription = null)
-                    },
-                    singleLine = true,
-                    enabled = !saving,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Column {
+                    OutlinedTextField(
+                        value = username,
+                        onValueChange = {
+                            username = it
+                            onUsernameChange(it)
+                        },
+                        label = { Text("Username") },
+                        leadingIcon = {
+                            Icon(Icons.Rounded.AlternateEmail, contentDescription = null)
+                        },
+                        trailingIcon = {
+                            if (availability == com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Checking) {
+                                CircularProgressIndicator(
+                                    strokeWidth = 2.dp,
+                                    modifier = Modifier.size(18.dp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        },
+                        singleLine = true,
+                        enabled = !saving,
+                        isError = availability ==
+                            com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Taken ||
+                            availability ==
+                            com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Invalid,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (statusText != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = statusText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = statusColor,
+                            modifier = Modifier.padding(start = 12.dp)
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = { onSave(name, username) },
-                enabled = !saving && name.isNotBlank(),
+                enabled = canSave,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
@@ -562,33 +659,34 @@ private fun EditProfileDialog(
 @Composable
 private fun ListCard(
     modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.surfaceContainer,
+    color: Color = MaterialTheme.colorScheme.surface,
     onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
+    val shape = RoundedCornerShape(CardCorner)
     val baseModifier = modifier
         .fillMaxWidth()
         .border(
             width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-            shape = RoundedCornerShape(CardCorner)
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+            shape = shape,
         )
 
     if (onClick != null) {
         Surface(
             modifier = baseModifier,
-            shape = RoundedCornerShape(CardCorner),
+            shape = shape,
             color = color,
-            shadowElevation = 1.dp,
+            shadowElevation = 0.dp,
             onClick = onClick,
             content = { content() }
         )
     } else {
         Surface(
             modifier = baseModifier,
-            shape = RoundedCornerShape(CardCorner),
+            shape = shape,
             color = color,
-            shadowElevation = 1.dp,
+            shadowElevation = 0.dp,
             content = { content() }
         )
     }
@@ -598,11 +696,11 @@ private fun ListCard(
 private fun IconBubble(
     icon: ImageVector,
     tint: Color = MaterialTheme.colorScheme.primary,
-    background: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
+    background: Color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
     size: Dp = IconCircleSize
 ) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         color = background,
         modifier = Modifier.size(size)
     ) {
@@ -611,24 +709,36 @@ private fun IconBubble(
                 imageVector = icon,
                 contentDescription = null,
                 tint = tint,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(22.dp)
             )
         }
     }
 }
 
 // ── Section Header ──
+// Small colored dot + uppercase label — signals section boundary without hard rules.
 
 @Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title.uppercase(),
-        style = MaterialTheme.typography.labelSmall,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
-        letterSpacing = 1.6.sp,
+private fun SectionHeader(title: String, accent: Color = MaterialTheme.colorScheme.primary) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.padding(start = 6.dp)
-    )
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(accent)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = title.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+            letterSpacing = 1.6.sp,
+        )
+    }
 }
 
 // ── Google Calendar Export Row ──
@@ -897,12 +1007,17 @@ private fun AdhdProfileRow(onClick: () -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp)
-                .heightIn(min = 60.dp),
+                .padding(horizontal = 18.dp, vertical = 18.dp)
+                .heightIn(min = 68.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconBubble(icon = Icons.Outlined.Person)
-            Spacer(modifier = Modifier.width(14.dp))
+            IconBubble(
+                icon = Icons.Outlined.Person,
+                tint = MaterialTheme.colorScheme.secondary,
+                background = MaterialTheme.colorScheme.secondary.copy(alpha = 0.14f),
+                size = 48.dp,
+            )
+            Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "ADHD Profile",
@@ -910,7 +1025,7 @@ private fun AdhdProfileRow(onClick: () -> Unit) {
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = "Edit your survey responses",
                     style = MaterialTheme.typography.bodySmall,
@@ -920,7 +1035,7 @@ private fun AdhdProfileRow(onClick: () -> Unit) {
             Icon(
                 imageVector = Icons.Rounded.ChevronRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
             )
         }
     }
@@ -932,12 +1047,17 @@ private fun AboutSection() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp)
-                .heightIn(min = 56.dp),
+                .padding(horizontal = 18.dp, vertical = 18.dp)
+                .heightIn(min = 60.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconBubble(icon = Icons.Outlined.Info)
-            Spacer(modifier = Modifier.width(14.dp))
+            IconBubble(
+                icon = Icons.Outlined.Info,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                background = MaterialTheme.colorScheme.surfaceContainer,
+                size = 48.dp,
+            )
+            Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = "Version",
                 style = MaterialTheme.typography.titleMedium,
@@ -945,17 +1065,22 @@ private fun AboutSection() {
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
-            // Pill badge — same visual slot as the "Free" pill in the reference
+            // Pill badge
             Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHighest
+                shape = RoundedCornerShape(999.dp),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                border = BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+                ),
             ) {
                 Text(
                     text = "1.0",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    letterSpacing = 0.4.sp,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
                 )
             }
         }
@@ -989,10 +1114,11 @@ private fun SimplifiedWorkspaceRow(
     enabled: Boolean,
     onToggle: (Boolean) -> Unit
 ) {
+    val shape = RoundedCornerShape(CardCorner)
     val cardColor = if (enabled)
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.55f)
     else
-        MaterialTheme.colorScheme.surfaceContainer
+        MaterialTheme.colorScheme.surface
 
     Surface(
         modifier = Modifier
@@ -1000,43 +1126,38 @@ private fun SimplifiedWorkspaceRow(
             .border(
                 width = 1.dp,
                 color = if (enabled)
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f)
                 else
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(CardCorner)
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+                shape = shape,
             ),
-        shape = RoundedCornerShape(CardCorner),
+        shape = shape,
         color = cardColor,
-        shadowElevation = 1.dp
+        shadowElevation = 0.dp
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 14.dp)
-                .heightIn(min = 60.dp),
+                .padding(horizontal = 18.dp, vertical = 18.dp)
+                .heightIn(min = 68.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconBubble(
                 icon = Icons.Rounded.VisibilityOff,
-                tint = if (enabled)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant,
-                background = if (enabled)
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                else
-                    MaterialTheme.colorScheme.surfaceContainerHighest
+                tint = MaterialTheme.colorScheme.tertiary,
+                background = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.18f),
+                size = 48.dp,
             )
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Simplified Workspace",
+                    text = "Simplified workspace",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = if (enabled)
                         "Showing only actionable items"
@@ -1051,9 +1172,9 @@ private fun SimplifiedWorkspaceRow(
                 checked = enabled,
                 onCheckedChange = onToggle,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primary,
-                    checkedBorderColor = MaterialTheme.colorScheme.primary
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = MaterialTheme.colorScheme.tertiary,
+                    checkedBorderColor = MaterialTheme.colorScheme.tertiary,
                 )
             )
         }
@@ -1063,52 +1184,42 @@ private fun SimplifiedWorkspaceRow(
 @Composable
 private fun SignOutRow(onSignOut: () -> Unit) {
     val errorColor = MaterialTheme.colorScheme.error
+    val shape = RoundedCornerShape(999.dp)
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(CardCorner))
+            .clip(shape)
             .clickable(onClick = onSignOut)
             .border(
-                width = 1.5.dp,
-                color = errorColor.copy(alpha = 0.45f),
-                shape = RoundedCornerShape(CardCorner)
+                width = 1.dp,
+                color = errorColor.copy(alpha = 0.35f),
+                shape = shape,
             ),
-        shape = RoundedCornerShape(CardCorner),
-        color = errorColor.copy(alpha = 0.06f),
+        shape = shape,
+        color = errorColor.copy(alpha = 0.05f),
         shadowElevation = 0.dp
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 18.dp, vertical = 16.dp)
-                .heightIn(min = 60.dp),
+                .padding(horizontal = 22.dp, vertical = 18.dp)
+                .heightIn(min = 52.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            Surface(
-                shape = CircleShape,
-                color = errorColor.copy(alpha = 0.16f),
-                modifier = Modifier.size(36.dp)
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Logout,
-                        contentDescription = null,
-                        tint = errorColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(12.dp))
+            Icon(
+                imageVector = Icons.Rounded.Logout,
+                contentDescription = null,
+                tint = errorColor,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
             Text(
-                text = "Sign Out",
+                text = "Sign out",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 color = errorColor,
-                letterSpacing = 0.4.sp
+                letterSpacing = 0.3.sp
             )
         }
     }

@@ -62,22 +62,24 @@ fun SplashScreen(
         }
 
         // App name fades in after logo settles
-        delay(600)
+        delay(300)
         launch {
             textAlpha.animateTo(
                 targetValue = 1f,
-                animationSpec = tween(600, easing = FastOutSlowInEasing)
+                animationSpec = tween(400, easing = FastOutSlowInEasing)
             )
         }
 
-        // Hold for a moment, then navigate based on auth + survey state
-        delay(1200)
-        if (!viewModel.isLoggedIn()) {
-            onNavigateToAuth()
-        } else if (viewModel.isSurveyCompleted()) {
-            onNavigateToHome()
-        } else {
-            onNavigateToOnboarding()
+        // Short hold so the logo has time to register, then route.
+        // The survey check is a local DataStore read — no network round-trip here.
+        delay(500)
+        when {
+            // Reset link cold-started the app: the session is technically Authenticated,
+            // but the user must set a new password before we let them into the app.
+            viewModel.isInPasswordRecovery() -> onNavigateToAuth()
+            !viewModel.isLoggedIn() -> onNavigateToAuth()
+            viewModel.isSurveyCompleted() -> onNavigateToHome()
+            else -> onNavigateToOnboarding()
         }
     }
 

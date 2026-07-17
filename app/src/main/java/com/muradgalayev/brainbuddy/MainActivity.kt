@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.messaging.FirebaseMessaging
+import com.muradgalayev.brainbuddy.data.auth.PasswordRecoveryState
 import com.muradgalayev.brainbuddy.data.local.FontMode
 import com.muradgalayev.brainbuddy.data.local.PreferencesManager
 import com.muradgalayev.brainbuddy.data.local.ThemeMode
@@ -34,6 +35,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var supabaseClient: SupabaseClient
+
+    @Inject
+    lateinit var passwordRecoveryState: PasswordRecoveryState
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -88,6 +92,9 @@ class MainActivity : ComponentActivity() {
     // redirect). Swallow it so the app doesn't crash on a callback we can't parse.
     private fun safeHandleDeeplinks(intent: Intent?) {
         if (intent == null) return
+        // Sniff for `type=recovery` BEFORE handing to Supabase — once handleDeeplinks
+        // consumes the intent, `intent.data` may be cleared on some SDK paths.
+        passwordRecoveryState.onDeepLink(intent.data)
         try {
             supabaseClient.handleDeeplinks(intent)
         } catch (t: Throwable) {

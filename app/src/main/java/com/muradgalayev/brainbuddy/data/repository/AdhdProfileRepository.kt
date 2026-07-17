@@ -1,6 +1,7 @@
 package com.muradgalayev.brainbuddy.data.repository
 
 import android.util.Log
+import com.muradgalayev.brainbuddy.data.local.PreferencesManager
 import com.muradgalayev.brainbuddy.data.mapper.toDomain
 import com.muradgalayev.brainbuddy.data.mapper.toDto
 import com.muradgalayev.brainbuddy.data.remote.dto.AdhdProfileDto
@@ -21,6 +22,7 @@ class AdhdProfileRepository @Inject constructor(
     // Provider breaks the Hilt cycle: bootstrapper → this repo → bootstrapper.
     private val reminderBootstrapper: Provider<com.muradgalayev.brainbuddy.data.notifications.ReminderBootstrapper>,
     private val medicationTodoSyncer: MedicationTodoSyncer,
+    private val preferencesManager: PreferencesManager,
 ) {
     private val table = "adhd_profiles"
 
@@ -55,12 +57,32 @@ class AdhdProfileRepository @Inject constructor(
     }
 
     /**
-     * True if the user has finished either survey. False on missing row, error,
-     * or row that exists but isn't yet flagged complete. Splash uses this to
-     * decide whether to gate onto the onboarding flow.
+     * Resolves whether the current user has completed the survey.
+     *
+     *  - If the local cache has a value (true/false), returns it immediately (fast path).
+     *  - If unknown (fresh install, new device, cache cleared), hits Supabase once and
+     *    persists the answer for next launch.
+     *  - If unknown AND the network fails, returns false so we default to the
+     *    onboarding flow — better to re-do the survey than skip it wrongly.
      */
-    suspend fun isSurveyCompleted(): Boolean {
+    suspend fun isSurveyCompletedCached(): Boolean {
         val userId = authRepository.getCurrentUserId() ?: return false
+        preferencesManager.getSurveyCompletedCached(userId)?.let { return it }
+        // Unknown → resolve from Supabase and cache the answer for next time.
+        val remote = fetchRemoteSurveyCompleted(userId) ?: return false
+        preferencesManager.setSurveyCompletedCached(userId, remote)
+        return remote
+    }
+
+    /** Pulls the flag from Supabase and writes it into the local cache. */
+    suspend fun refreshSurveyCompletedCache() {
+        val userId = authRepository.getCurrentUserId() ?: return
+        val remote = fetchRemoteSurveyCompleted(userId) ?: return
+        preferencesManager.setSurveyCompletedCached(userId, remote)
+    }
+
+    /** Null return means "network failed / row missing" — caller decides fallback. */
+    private suspend fun fetchRemoteSurveyCompleted(userId: String): Boolean? {
         return runCatching {
             supabaseClient
                 .from(table)
@@ -73,8 +95,8 @@ class AdhdProfileRepository @Inject constructor(
                 ?.surveyCompleted
                 ?: false
         }.onFailure {
-            Log.w(TAG, "isSurveyCompleted failed: ${it.message}")
-        }.getOrDefault(false)
+            Log.w(TAG, "fetchRemoteSurveyCompleted failed: ${it.message}")
+        }.getOrNull()
     }
 
     suspend fun saveProfile(profile: AdhdProfile) {
@@ -82,6 +104,8 @@ class AdhdProfileRepository @Inject constructor(
         val saved = profile.copy(userId = userId, surveyCompleted = true)
         supabaseClient.from(table).upsert(saved.toDto())
         cachedProfile = saved
+        // Splash reads from this cache, so keep it in lockstep with the remote write.
+        preferencesManager.setSurveyCompletedCached(userId, true)
         runCatching { reminderBootstrapper.get().rescheduleMorningSummary() }
         runCatching { medicationTodoSyncer.sync(saved) }
     }

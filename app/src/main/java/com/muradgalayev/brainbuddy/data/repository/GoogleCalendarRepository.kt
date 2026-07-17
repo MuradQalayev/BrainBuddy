@@ -1,6 +1,7 @@
 package com.muradgalayev.brainbuddy.data.repository
 
 import android.util.Log
+import com.muradgalayev.brainbuddy.data.google.GoogleCalendarAuthClient
 import com.muradgalayev.brainbuddy.data.google.GoogleCalendarTokenStore
 import com.muradgalayev.brainbuddy.domain.model.CalendarEvent
 import kotlinx.coroutines.Dispatchers
@@ -21,11 +22,12 @@ private const val TAG = "GCalExport"
 @Singleton
 class GoogleCalendarRepository @Inject constructor(
     private val tokenStore: GoogleCalendarTokenStore,
+    private val authClient: GoogleCalendarAuthClient,
     private val calendarRepository: CalendarRepository
 ) {
 
     suspend fun exportAllEvents(): ExportResult = withContext(Dispatchers.IO) {
-        val token = tokenStore.getAccessToken()
+        val token = ensureAccessToken()
             ?: return@withContext ExportResult.NeedsGoogleSignIn
 
         val events = calendarRepository.getAllEvents().first()
@@ -50,6 +52,18 @@ class GoogleCalendarRepository @Inject constructor(
         }
 
         ExportResult.Success(pushed, alreadyExisted, failed)
+    }
+
+    /**
+     * Returns a usable access token, refreshing it silently if the cached one
+     * has expired. Returns null only when the user has never connected or
+     * their consent has been revoked — in which case the caller should surface
+     * `NeedsGoogleSignIn` and let the user reconnect interactively.
+     */
+    private suspend fun ensureAccessToken(): String? {
+        tokenStore.getAccessToken()?.let { return it }
+        if (!tokenStore.isLinked()) return null
+        return authClient.tryGetFreshAccessTokenSilently()
     }
 
     private fun pushEvent(event: CalendarEvent, accessToken: String): PushResult {

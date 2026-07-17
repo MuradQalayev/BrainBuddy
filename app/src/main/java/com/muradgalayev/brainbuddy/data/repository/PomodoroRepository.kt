@@ -97,6 +97,18 @@ class PomodoroRepository @Inject constructor(
         return (totalMs / 60000L).toInt()
     }
 
+    /** Emits whenever completed focus sessions in the range change — no polling needed. */
+    fun observeCompletedFocusMinutesForRange(startMs: Long, endMs: Long): Flow<Int> {
+        val userId = getCurrentUserId() ?: return emptyFlow()
+        return pomodoroSessionDao.observeCompletedDurationForRange(
+            userId = userId,
+            sessionType = PomodoroSessionType.FOCUS.name,
+            completionStatus = PomodoroCompletionStatus.COMPLETED.name,
+            startOfDay = startMs,
+            endOfDay = endMs
+        ).map { (it / 60000L).toInt() }
+    }
+
     suspend fun getCompletedFocusMinutesForDay(
         startOfDay: Long,
         endOfDay: Long

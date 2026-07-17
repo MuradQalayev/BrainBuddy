@@ -8,6 +8,7 @@ import com.google.android.gms.auth.api.identity.AuthorizationRequest
 import com.google.android.gms.auth.api.identity.AuthorizationResult
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.common.api.Scope
+import com.muradgalayev.brainbuddy.data.repository.AuthRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -25,7 +26,8 @@ import kotlin.coroutines.resumeWithException
 @Singleton
 class GoogleCalendarAuthClient @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val tokenStore: GoogleCalendarTokenStore
+    private val tokenStore: GoogleCalendarTokenStore,
+    private val authRepository: AuthRepository,
 ) {
 
     sealed class AuthorizationStep {
@@ -34,7 +36,27 @@ class GoogleCalendarAuthClient @Inject constructor(
     }
 
     suspend fun requestAuthorization(): AuthorizationStep {
-        val request = AuthorizationRequest.builder()
+        val result = awaitAuthorization(buildRequest())
+        return interpret(result)
+    }
+
+    /**
+     * Mint a fresh access token without showing UI. Returns the token if the
+     * user has already granted consent for this account+scope (just a token
+     * refresh), or null when interactive consent would be required — e.g. the
+     * user revoked access or signed out of Google on the device. Safe to call
+     * from background contexts like a WorkManager job.
+     */
+    suspend fun tryGetFreshAccessTokenSilently(): String? {
+        return runCatching {
+            val result = awaitAuthorization(buildRequest())
+            if (result.pendingIntent != null) null
+            else interpretAndPersistToken(result)
+        }.getOrNull()
+    }
+
+    private fun buildRequest(): AuthorizationRequest =
+        AuthorizationRequest.builder()
             .setRequestedScopes(
                 listOf(
                     Scope(SCOPE_CALENDAR_EVENTS),
@@ -42,10 +64,6 @@ class GoogleCalendarAuthClient @Inject constructor(
                 )
             )
             .build()
-
-        val result = awaitAuthorization(request)
-        return interpret(result)
-    }
 
     fun extractFromActivityResult(data: Intent?): String? {
         if (data == null) return null
@@ -96,7 +114,7 @@ class GoogleCalendarAuthClient @Inject constructor(
     }
 
     suspend fun fetchAndStoreUserEmail(token: String): String? = withContext(Dispatchers.IO) {
-        runCatching {
+        val email = runCatching {
             val url = URL("https://www.googleapis.com/oauth2/v2/userinfo")
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 setRequestProperty("Authorization", "Bearer $token")
@@ -106,16 +124,20 @@ class GoogleCalendarAuthClient @Inject constructor(
             try {
                 if (conn.responseCode !in 200..299) return@runCatching null
                 val body = conn.inputStream.bufferedReader().use { it.readText() }
-                val email = Json.parseToJsonElement(body).jsonObject["email"]
-                    ?.jsonPrimitive?.content
-                if (!email.isNullOrBlank()) {
-                    tokenStore.saveLinkedEmail(email)
-                    email
-                } else null
+                Json.parseToJsonElement(body).jsonObject["email"]?.jsonPrimitive?.content
             } finally {
                 conn.disconnect()
             }
-        }.getOrNull()
+        }.getOrNull()?.takeIf { it.isNotBlank() }
+
+        if (email != null) {
+            tokenStore.saveLinkedEmail(email)
+            // Persist to Supabase so the link survives sign-out. Failure here is
+            // non-fatal — the local link still works, and SyncCoordinator will
+            // reconcile on next connect/sync.
+            runCatching { authRepository.setLinkedGoogleEmail(email) }
+        }
+        email
     }
 
     private fun interpret(result: AuthorizationResult): AuthorizationStep {

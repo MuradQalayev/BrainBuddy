@@ -127,6 +127,7 @@ fun rememberCalendarPalette(): CalendarPalette {
 @Composable
 fun CalendarScreen(
     onBackClick: () -> Unit = {},
+    onNavigateToPomodoro: () -> Unit = {},
     viewModel: CalendarViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -207,6 +208,18 @@ fun CalendarScreen(
         )
     }
 
+    // Subtask editor bottom sheet
+    uiState.subtaskEditor?.let { editor ->
+        SubtaskEditorSheet(
+            palette = p,
+            state = editor,
+            onDismiss = { viewModel.dismissSubtaskEditor() },
+            onApplyPreset = { viewModel.applySplitPreset(it) },
+            onUpdateDrafts = { viewModel.updateEditorDrafts(it) },
+            onSave = { viewModel.saveSubtaskEditor() },
+        )
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
     if (isLandscape) {
         // ── Landscape: side-by-side (no bottom sheet) ──
@@ -281,8 +294,17 @@ fun CalendarScreen(
                     palette = p,
                     selectedDate = uiState.selectedDate,
                     tasks = uiState.tasksForSelectedDate,
+                    expandedEventId = uiState.expandedEventId,
                     onTaskClick = { viewModel.editEvent(it) },
                     onTaskDelete = { viewModel.deleteTask(it) },
+                    onToggleExpanded = { viewModel.toggleExpanded(it) },
+                    onToggleSubtask = { id, completed ->
+                        viewModel.toggleSubtaskCompleted(id, completed)
+                    },
+                    onManageSubtasks = { viewModel.openSubtaskEditor(it) },
+                    onRunInPomodoro = { id ->
+                        if (viewModel.launchInPomodoro(id)) onNavigateToPomodoro()
+                    },
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
@@ -332,9 +354,18 @@ fun CalendarScreen(
                     palette = p,
                     selectedDate = uiState.selectedDate,
                     tasks = uiState.tasksForSelectedDate,
+                    expandedEventId = uiState.expandedEventId,
                     onTaskClick = { viewModel.editEvent(it) },
                     onTaskDelete = { viewModel.deleteTask(it) },
-                    onAddTask = { viewModel.showAddTaskDialog() }
+                    onAddTask = { viewModel.showAddTaskDialog() },
+                    onToggleExpanded = { viewModel.toggleExpanded(it) },
+                    onToggleSubtask = { id, completed ->
+                        viewModel.toggleSubtaskCompleted(id, completed)
+                    },
+                    onManageSubtasks = { viewModel.openSubtaskEditor(it) },
+                    onRunInPomodoro = { id ->
+                        if (viewModel.launchInPomodoro(id)) onNavigateToPomodoro()
+                    },
                 )
             }
         ) { innerPadding ->

@@ -8,6 +8,7 @@ import com.muradgalayev.brainbuddy.domain.model.City
 import com.muradgalayev.brainbuddy.domain.model.Place
 import com.muradgalayev.brainbuddy.domain.model.PlaceCategory
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -83,8 +84,13 @@ class CareNearbyViewModel @Inject constructor(
                 _state.update { it.copy(errorMessage = null) }
             }
 
-            val citiesResult = placesRepository.listCities(forceRefresh)
-            val profile = adhdProfileRepository.getProfile()
+            // Cities and the ADHD profile live in different Supabase tables and don't
+            // depend on each other — run them in parallel so this screen isn't stuck
+            // behind two sequential round-trips.
+            val citiesDeferred = async { placesRepository.listCities(forceRefresh) }
+            val profileDeferred = async { adhdProfileRepository.getProfile() }
+            val citiesResult = citiesDeferred.await()
+            val profile = profileDeferred.await()
 
             citiesResult
                 .onSuccess { cities ->

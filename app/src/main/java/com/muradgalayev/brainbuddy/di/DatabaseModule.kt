@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.muradgalayev.brainbuddy.data.local.BrainBuddyDatabase
 import com.muradgalayev.brainbuddy.data.local.dao.CalendarEventDao
+import com.muradgalayev.brainbuddy.data.local.dao.CalendarSubtaskDao
 import com.muradgalayev.brainbuddy.data.local.dao.PomodoroSessionDao
 import com.muradgalayev.brainbuddy.data.local.dao.TodoItemDao
 import dagger.Module
@@ -46,6 +47,12 @@ object DatabaseModule {
     @Provides
     fun provideCalendarEventDao(database: BrainBuddyDatabase): CalendarEventDao {
         return database.calendarEventDao()
+    }
+
+    @Singleton
+    @Provides
+    fun provideCalendarSubtaskDao(database: BrainBuddyDatabase): CalendarSubtaskDao {
+        return database.calendarSubtaskDao()
     }
 }
 

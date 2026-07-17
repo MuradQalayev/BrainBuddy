@@ -17,5 +17,7 @@ data class AiMessageDto(
     @SerialName("tool_result")
     val toolResult: String? = null,
     @SerialName("created_at")
-    val createdAt: String? = null
+    val createdAt: String? = null,
+    @SerialName("conversation_id")
+    val conversationId: String? = null,
 )

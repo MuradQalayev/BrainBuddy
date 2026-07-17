@@ -8,9 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,7 +27,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.runtime.collectAsState
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -39,7 +38,7 @@ import androidx.navigation.navArgument
 import com.muradgalayev.brainbuddy.data.local.entity.TodoItemEntity
 import com.muradgalayev.brainbuddy.ui.activity.WorkspaceScreen
 import com.muradgalayev.brainbuddy.ui.calendar.CalendarScreen
-import com.muradgalayev.brainbuddy.ui.components.AiPromptCard
+import com.muradgalayev.brainbuddy.ui.ai.AiPromptCard
 import com.muradgalayev.brainbuddy.ui.home.HomeScreen
 import com.muradgalayev.brainbuddy.ui.settings.SettingsScreen
 import com.muradgalayev.brainbuddy.ui.pomodoro.PomodoroScreen
@@ -58,6 +57,12 @@ fun NavGraph(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     var showAiPrompt by remember { mutableStateOf(false) }
+    // Observe active-chat status from the AI view-model at the graph level so
+    // the badge on the AI bottom-nav icon reflects it in real time. Injecting the
+    // view-model here doesn't force it to load history until it's actually used —
+    // Hilt lazily creates it on first observation.
+    val aiViewModel: com.muradgalayev.brainbuddy.ui.ai.AiAssistantViewModel = hiltViewModel()
+    val aiHasActiveChat by aiViewModel.hasActiveChat.collectAsState()
     val enabledOptional = remember(enabledOptionalRoutes) {
         optionalNavItems.filter { it.route in enabledOptionalRoutes }
     }
@@ -94,11 +99,9 @@ fun NavGraph(
         Screen.CareNearby.route,
     )
     val isFullScreen = currentRoute in fullScreenRoutes
-    val bottomPadding by animateDpAsState(
-        targetValue = if (isFullScreen) 0.dp else 104.dp,
-        animationSpec = tween(220),
-        label = "bottomPadding"
-    )
+    // No animation on bottom padding — an extra 220ms layout pass on every tab change
+    // made navigation feel sluggish on older devices for no visible benefit.
+    val bottomPadding = if (isFullScreen) 0.dp else 104.dp
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -112,28 +115,16 @@ fun NavGraph(
                 .statusBarsPadding()
                 .padding(bottom = bottomPadding),
             enterTransition = {
-                slideInHorizontally(
-                    initialOffsetX = { it / 2 },
-                    animationSpec = tween(350)
-                ) + fadeIn(animationSpec = tween(350))
+                fadeIn(animationSpec = tween(140))
             },
             exitTransition = {
-                slideOutHorizontally(
-                    targetOffsetX = { -it / 4 },
-                    animationSpec = tween(300)
-                ) + fadeOut(animationSpec = tween(300))
+                fadeOut(animationSpec = tween(100))
             },
             popEnterTransition = {
-                slideInHorizontally(
-                    initialOffsetX = { -it / 4 },
-                    animationSpec = tween(300)
-                ) + fadeIn(animationSpec = tween(300))
+                fadeIn(animationSpec = tween(140))
             },
             popExitTransition = {
-                slideOutHorizontally(
-                    targetOffsetX = { it / 2 },
-                    animationSpec = tween(300)
-                ) + fadeOut(animationSpec = tween(300))
+                fadeOut(animationSpec = tween(100))
             }
         ) {
             composable(Screen.Splash.route) {
@@ -223,7 +214,12 @@ fun NavGraph(
             }
             composable(Screen.Calendar.route) {
                 CalendarScreen(
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
+                    onNavigateToPomodoro = {
+                        navController.navigate(Screen.Pomodoro.route) {
+                            launchSingleTop = true
+                        }
+                    }
                 )
             }
             composable(Screen.Todo.route) {
@@ -329,6 +325,7 @@ fun NavGraph(
                 },
                 onAiClick = { showAiPrompt = !showAiPrompt },
                 isAiOpen = showAiPrompt,
+                hasActiveAiChat = aiHasActiveChat,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }

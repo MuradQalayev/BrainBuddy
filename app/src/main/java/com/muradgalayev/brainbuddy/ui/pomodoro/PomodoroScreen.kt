@@ -102,6 +102,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.launch
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.AmbientMusicSection
+import com.muradgalayev.brainbuddy.ui.pomodoro.components.CalendarPlanStrip
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.DailyFocusCard
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.SessionTypePills
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.BottomControls
@@ -125,6 +126,7 @@ fun PomodoroScreen(
     viewModel: PomodoroViewModel = hiltViewModel()
 ) {
     val timerState by viewModel.timerState.collectAsState()
+    val pomodoroQueue by viewModel.pomodoroQueue.collectAsState()
     var musicExpanded by rememberSaveable { mutableStateOf(false) }
     val recentSessions by viewModel.recentSessions.collectAsState()
     val uiExtra by viewModel.uiExtra.collectAsState()
@@ -404,8 +406,18 @@ fun PomodoroScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
+            CalendarPlanStrip(
+                queue = pomodoroQueue,
+                accentColor = arcColor,
+                onClear = { viewModel.clearQueue() },
+            )
+
+            if (pomodoroQueue != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
             AnimatedVisibility(
-                visible = timerState.timerState == TimerState.IDLE,
+                visible = timerState.timerState == TimerState.IDLE && pomodoroQueue == null,
                 enter = fadeIn(tween(200)) + expandVertically(animationSpec = tween(220)),
                 exit = fadeOut(tween(150)) + shrinkVertically(animationSpec = tween(180))
             ) {

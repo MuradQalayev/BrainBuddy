@@ -37,6 +37,9 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -44,6 +47,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -74,6 +78,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.muradgalayev.brainbuddy.R
 import kotlinx.coroutines.delay
 
@@ -153,6 +159,12 @@ fun AuthScreen(
     }
     LaunchedEffect(state.isSuccess) {
         if (state.isSuccess) onAuthSuccess()
+    }
+
+    // Reset the "Loading" state if the user backs out of the Google Custom Tab
+    // without finishing. Fires each time we come back to the foreground.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.onScreenResumed()
     }
 
     Box(
@@ -318,7 +330,7 @@ fun AuthScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier
-                            .clickable { /* TODO */ }
+                            .clickable { viewModel.openForgotPassword() }
                             .padding(4.dp)
                     )
                 }
@@ -329,14 +341,22 @@ fun AuthScreen(
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
-                Text(
+                AuthBanner(
                     text = state.error ?: "",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
+                    background = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+
+            AnimatedVisibility(
+                visible = state.infoMessage != null,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                AuthBanner(
+                    text = state.infoMessage ?: "",
+                    background = Color(0xFFE9F5EC),
+                    contentColor = Color(0xFF1F5B2E)
                 )
             }
 
@@ -397,7 +417,51 @@ fun AuthScreen(
             }
         }
     }
+
+    if (state.forgotPasswordOpen) {
+        ForgotPasswordDialog(
+            email = state.forgotPasswordEmail,
+            sending = state.forgotPasswordSending,
+            error = state.forgotPasswordError,
+            onEmailChanged = viewModel::onForgotEmailChanged,
+            onSend = viewModel::sendPasswordReset,
+            onDismiss = viewModel::dismissForgotPassword,
+        )
+    }
+
+    if (state.newPasswordOpen) {
+        NewPasswordDialog(
+            saving = state.newPasswordSaving,
+            error = state.newPasswordError,
+            onSubmit = viewModel::submitNewPassword,
+        )
+    }
 }
+@Composable
+private fun AuthBanner(
+    text: String,
+    background: Color,
+    contentColor: Color,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(background)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = text,
+            color = contentColor,
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Start,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
 @Composable
 private fun SoftPillTextField(
     value: String,
@@ -575,4 +639,198 @@ private fun GoogleSignInButton(
             }
         }
     }
+}
+
+@Composable
+private fun ForgotPasswordDialog(
+    email: String,
+    sending: Boolean,
+    error: String?,
+    onEmailChanged: (String) -> Unit,
+    onSend: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = { if (!sending) onDismiss() },
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        title = {
+            Text(
+                text = "Reset password",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "Enter the email you signed up with. We'll send you a link to set a new password.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = onEmailChanged,
+                    label = { Text("Email") },
+                    leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
+                    singleLine = true,
+                    enabled = !sending,
+                    shape = RoundedCornerShape(16.dp),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { onSend() }),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (error != null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onSend,
+                enabled = !sending && email.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                if (sending) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(16.dp)
+                    )
+                } else {
+                    Text("Send link", fontWeight = FontWeight.SemiBold)
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !sending) { Text("Cancel") }
+        }
+    )
+}
+
+@Composable
+private fun NewPasswordDialog(
+    saving: Boolean,
+    error: String?,
+    onSubmit: (String) -> Unit,
+) {
+    var password by remember { mutableStateOf("") }
+    var confirm by remember { mutableStateOf("") }
+    var visible by remember { mutableStateOf(false) }
+    val mismatch = confirm.isNotEmpty() && password != confirm
+
+    // No dismiss button — Supabase already put the account into recovery mode via the link.
+    // If the user backs out, their session is still authenticated but with an unchanged password.
+    // The onDismissRequest is a no-op so the OS back button doesn't drop the dialog silently.
+    AlertDialog(
+        onDismissRequest = {},
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        title = {
+            Text(
+                text = "Set a new password",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "Choose a new password to finish signing in.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("New password") },
+                    leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
+                    trailingIcon = {
+                        Icon(
+                            imageVector = if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(22.dp)
+                                .clickable { visible = !visible }
+                        )
+                    },
+                    singleLine = true,
+                    enabled = !saving,
+                    visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
+                    shape = RoundedCornerShape(16.dp),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Next
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = confirm,
+                    onValueChange = { confirm = it },
+                    label = { Text("Confirm password") },
+                    leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
+                    singleLine = true,
+                    enabled = !saving,
+                    visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
+                    shape = RoundedCornerShape(16.dp),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { if (!mismatch) onSubmit(password) }
+                    ),
+                    isError = mismatch,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                val bottomError = error ?: if (mismatch) "Passwords don't match" else null
+                if (bottomError != null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = bottomError,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSubmit(password) },
+                enabled = !saving && password.isNotBlank() && !mismatch,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                if (saving) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(16.dp)
+                    )
+                } else {
+                    Text("Save & sign in", fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+    )
 }

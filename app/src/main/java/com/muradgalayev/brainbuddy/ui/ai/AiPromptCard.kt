@@ -34,13 +34,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -90,8 +95,10 @@ fun AiPromptCard(
     var isListening by remember { mutableStateOf(false) }
     var partialText by remember { mutableStateOf("") }
     var showVoiceExpanded by remember { mutableStateOf(false) }
+    var showHistorySheet by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+    val conversations by viewModel.conversations.collectAsState()
 
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val aiGradient = if (isDark) {
@@ -190,21 +197,26 @@ fun AiPromptCard(
                             color = Color.White.copy(alpha = 0.7f)
                         )
                     }
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.15f))
-                            .clickable { onDismiss() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Close,
-                            contentDescription = "Close",
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
+                    HeaderIconButton(
+                        icon = Icons.Rounded.History,
+                        contentDescription = "Chat history",
+                        onClick = {
+                            viewModel.refreshConversations()
+                            showHistorySheet = true
+                        },
+                    )
+                    Spacer(modifier = Modifier.size(8.dp))
+                    HeaderIconButton(
+                        icon = Icons.Rounded.Add,
+                        contentDescription = "New chat",
+                        onClick = { viewModel.startNewChat() },
+                    )
+                    Spacer(modifier = Modifier.size(8.dp))
+                    HeaderIconButton(
+                        icon = Icons.Rounded.Close,
+                        contentDescription = "Close",
+                        onClick = onDismiss,
+                    )
                 }
             }
 
@@ -212,7 +224,8 @@ fun AiPromptCard(
             if (uiState.messages.isNotEmpty() || uiState.error != null) {
                 ConversationView(
                     messages = uiState.messages,
-                    error = uiState.error
+                    error = uiState.error,
+                    onChipTap = { viewModel.send(it) },
                 )
             }
 
@@ -550,16 +563,181 @@ fun AiPromptCard(
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    AiSuggestionChip("Summarize my day", aiGradient)
-                    AiSuggestionChip("Help me focus", aiGradient)
+                    AiSuggestionChip("Summarize my day", aiGradient) {
+                        promptText = "Summarize my day"
+                    }
+                    AiSuggestionChip("Help me focus", aiGradient) {
+                        promptText = "Help me focus"
+                    }
                 }
+            }
+        }
+    }
+
+    if (showHistorySheet) {
+        ChatHistorySheet(
+            conversations = conversations,
+            onDismiss = { showHistorySheet = false },
+            onSelect = { id ->
+                viewModel.switchToConversation(id)
+                showHistorySheet = false
+            },
+            onDelete = { id -> viewModel.deleteConversation(id) },
+        )
+    }
+}
+
+@Composable
+private fun HeaderIconButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .background(Color.White.copy(alpha = 0.15f))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = Color.White,
+            modifier = Modifier.size(16.dp),
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ChatHistorySheet(
+    conversations: List<com.muradgalayev.brainbuddy.domain.ai.ConversationSummary>,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit,
+    onDelete: (String) -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+        ) {
+            Text(
+                text = "Chat history",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(vertical = 8.dp),
+            )
+            if (conversations.isEmpty()) {
+                Text(
+                    text = "No past chats yet.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 24.dp),
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 480.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(items = conversations, key = { it.id }) { conv ->
+                        HistoryRow(
+                            summary = conv,
+                            onClick = { onSelect(conv.id) },
+                            onDelete = { onDelete(conv.id) },
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun HistoryRow(
+    summary: com.muradgalayev.brainbuddy.domain.ai.ConversationSummary,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = if (summary.isActive) colors.primaryContainer.copy(alpha = 0.55f)
+        else colors.surfaceContainer,
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            colors.outlineVariant.copy(alpha = 0.55f),
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (summary.isActive) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(colors.primary),
+                        )
+                        Spacer(modifier = Modifier.size(6.dp))
+                    }
+                    Text(
+                        text = summary.title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.onSurface,
+                        maxLines = 1,
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+//                Text(
+//                    text = "${summary.messageCount} message" +
+//                        (if (summary.messageCount == 1) "" else "s"),
+//                    style = MaterialTheme.typography.labelSmall,
+//                    color = colors.onSurfaceVariant,
+//                )
+            }
+            Spacer(modifier = Modifier.size(8.dp))
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .background(colors.errorContainer.copy(alpha = 0.4f))
+                    .clickable(onClick = onDelete),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Close,
+                    contentDescription = "Delete chat",
+                    tint = colors.error,
+                    modifier = Modifier.size(14.dp),
+                )
             }
         }
     }
 }
 
 @Composable
-private fun AiSuggestionChip(text: String, gradient: Brush) {
+private fun AiSuggestionChip(
+    text: String,
+    gradient: Brush,
+    onClick: () -> Unit,
+) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
@@ -568,7 +746,7 @@ private fun AiSuggestionChip(text: String, gradient: Brush) {
                 brush = gradient,
                 shape = RoundedCornerShape(16.dp)
             )
-            .clickable { /* TODO: fill prompt with suggestion */ }
+            .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 9.dp)
     ) {
         Row(
@@ -594,13 +772,19 @@ private fun AiSuggestionChip(text: String, gradient: Brush) {
 @Composable
 private fun ConversationView(
     messages: List<ChatMessage>,
-    error: String?
+    error: String?,
+    onChipTap: (String) -> Unit,
 ) {
     val listState = rememberLazyListState()
     LaunchedEffect(messages.size, error) {
         val target = messages.size + (if (error != null) 1 else 0) - 1
         if (target >= 0) listState.animateScrollToItem(target)
     }
+    val visible = messages.filter { it.role != ChatRole.TOOL && it.text.isNotBlank() }
+    // Only the very last assistant message shows tappable chips — older ones stay
+    // visually intact but non-interactive so the user doesn't accidentally
+    // re-trigger something from three turns ago.
+    val lastAssistantId = visible.lastOrNull { it.role == ChatRole.ASSISTANT }?.id
     LazyColumn(
         state = listState,
         modifier = Modifier
@@ -610,10 +794,14 @@ private fun ConversationView(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(
-            items = messages.filter { it.role != ChatRole.TOOL && it.text.isNotBlank() },
+            items = visible,
             key = { it.id }
         ) { msg ->
-            MessageBubble(msg)
+            MessageBubble(
+                msg = msg,
+                showChips = msg.id == lastAssistantId,
+                onChipTap = onChipTap,
+            )
         }
         if (error != null) {
             item("error") {
@@ -629,12 +817,39 @@ private fun ConversationView(
     }
 }
 
+/**
+ * Extracts the trailing `[options: A | B | C]` block (case-insensitive) from an
+ * assistant message. Returns the visible text and up to 3 chip labels.
+ * The whole line is stripped from what the user sees.
+ */
+private val OPTIONS_REGEX = Regex(
+    pattern = """\[\s*options\s*:\s*([^\]]+)\]\s*$""",
+    option = RegexOption.IGNORE_CASE,
+)
+
+private fun parseOptions(raw: String): Pair<String, List<String>> {
+    val match = OPTIONS_REGEX.find(raw.trimEnd()) ?: return raw to emptyList()
+    val labels = match.groupValues[1].split('|')
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .take(3)
+    val cleaned = raw.substring(0, match.range.first).trimEnd()
+    return cleaned to labels
+}
+
 @Composable
-private fun MessageBubble(msg: ChatMessage) {
+private fun MessageBubble(
+    msg: ChatMessage,
+    showChips: Boolean,
+    onChipTap: (String) -> Unit,
+) {
     val isUser = msg.role == ChatRole.USER
-    Row(
+    val (bodyText, chips) = if (isUser) msg.text to emptyList()
+    else parseOptions(msg.text)
+
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+        horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
     ) {
         Box(
             modifier = Modifier
@@ -646,11 +861,46 @@ private fun MessageBubble(msg: ChatMessage) {
                 .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             Text(
-                text = msg.text,
+                text = bodyText,
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (isUser) MaterialTheme.colorScheme.onPrimary
                 else MaterialTheme.colorScheme.onSurface
             )
+        }
+        if (!isUser && chips.isNotEmpty() && showChips) {
+            Spacer(modifier = Modifier.height(6.dp))
+            QuickReplyChips(labels = chips, onTap = onChipTap)
+        }
+    }
+}
+
+@Composable
+private fun QuickReplyChips(
+    labels: List<String>,
+    onTap: (String) -> Unit,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        labels.forEach { label ->
+            Surface(
+                shape = RoundedCornerShape(999.dp),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                ),
+                onClick = { onTap(label) },
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                )
+            }
         }
     }
 }

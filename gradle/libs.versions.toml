@@ -27,6 +27,8 @@ coil = "2.7.0"
 mapsCompose = "4.4.1"
 playServicesMaps = "19.0.0"
 playServicesLocation = "21.3.0"
+workRuntime = "2.10.0"
+hiltWork = "1.2.0"
 
 [libraries]
 # --- Existing (keep these) ---
@@ -64,6 +66,10 @@ datastore-preferences = { group = "androidx.datastore", name = "datastore-prefer
 
 # --- NEW: ViewModel for Compose ---
 lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
+# Provides LifecycleEventEffect / LifecycleResumeEffect for observing activity resume
+# from within a Composable — used to cancel stale "loading" UI when the user backs
+# out of an OAuth Custom Tab.
+lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycleRuntimeKtx" }
 
 # --- NEW: Calendar ---
 calendar-compose = { group = "com.kizitonwose.calendar", name = "compose", version.ref = "kizitonwoseCalendar" }
@@ -86,6 +92,11 @@ coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coi
 maps-compose = { group = "com.google.maps.android", name = "maps-compose", version.ref = "mapsCompose" }
 play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+
+# --- NEW: WorkManager + Hilt-Work (background calendar sync) ---
+androidx-work-runtime = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntime" }
+androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWork" }
+androidx-hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltWork" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

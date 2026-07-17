@@ -31,6 +31,8 @@ class PomodoroViewModel @Inject constructor(
 ) : ViewModel() {
 
     val timerState = timerManager.state
+    val pomodoroQueue = timerManager.queue
+    fun clearQueue() = timerManager.clearQueue()
 
     private val _uiExtra = MutableStateFlow(PomodoroUiExtra())
     val uiExtra: StateFlow<PomodoroUiExtra> = _uiExtra.asStateFlow()
@@ -51,7 +53,8 @@ class PomodoroViewModel @Inject constructor(
         }
 
         observeFocusMinutes()
-        viewModelScope.launch { pomodoroRepository.sync() }
+        // Sync is handled centrally by SyncCoordinator (app start + reconnect).
+        // Calling repo.sync() from ViewModel init made every Pomodoro tab tap hit Supabase.
 
         timerManager.onTimerStarted = {
             PomodoroTimerService.start(appContext)
@@ -106,35 +109,28 @@ class PomodoroViewModel @Inject constructor(
     fun getFocusModePermissionIntent() = focusModeManager.getPermissionIntent()
 
     private fun observeFocusMinutes() {
+        val zone = java.time.ZoneId.systemDefault()
+        val today = java.time.LocalDate.now()
+        val yesterday = today.minusDays(1)
+        val startOfToday = today.atStartOfDay(zone).toInstant().toEpochMilli()
+        val endOfToday = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+        val startOfYesterday = yesterday.atStartOfDay(zone).toInstant().toEpochMilli()
+        val endOfYesterday = startOfToday - 1
+
+        // Room emits only when the underlying data changes — no timer, no polling.
         viewModelScope.launch {
-            while (true) {
-                val zone = java.time.ZoneId.systemDefault()
-                val today = java.time.LocalDate.now()
-                val yesterday = today.minusDays(1)
-
-                val startOfToday = today.atStartOfDay(zone).toInstant().toEpochMilli()
-                val endOfToday = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
-                val startOfYesterday = yesterday.atStartOfDay(zone).toInstant().toEpochMilli()
-                val endOfYesterday = today.atStartOfDay(zone).toInstant().toEpochMilli() - 1
-
-                val todayMinutes = pomodoroRepository.getCompletedFocusMinutesForRange(
-                    startMs = startOfToday,
-                    endMs = endOfToday
-                )
-                val yesterdayMinutes = pomodoroRepository.getCompletedFocusMinutesForRange(
-                    startMs = startOfYesterday,
-                    endMs = endOfYesterday
-                )
-
-                _uiExtra.update {
-                    it.copy(
-                        todayFocusMinutes = todayMinutes,
-                        yesterdayFocusMinutes = yesterdayMinutes
-                    )
+            pomodoroRepository
+                .observeCompletedFocusMinutesForRange(startOfToday, endOfToday)
+                .collect { minutes ->
+                    _uiExtra.update { it.copy(todayFocusMinutes = minutes) }
                 }
-
-                kotlinx.coroutines.delay(5000)
-            }
+        }
+        viewModelScope.launch {
+            pomodoroRepository
+                .observeCompletedFocusMinutesForRange(startOfYesterday, endOfYesterday)
+                .collect { minutes ->
+                    _uiExtra.update { it.copy(yesterdayFocusMinutes = minutes) }
+                }
         }
     }
 

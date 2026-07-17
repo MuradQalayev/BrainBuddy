@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import com.muradgalayev.brainbuddy.MainActivity
 import com.muradgalayev.brainbuddy.R
@@ -50,6 +51,13 @@ class PomodoroTimerService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var updateJob: Job? = null
+    /**
+     * Partial wake lock kept while the timer is running so the CPU stays available even
+     * when the screen is off. Without this, OEM aggressive battery savers (Samsung,
+     * Xiaomi, etc.) can suspend the foreground service's coroutines and the countdown
+     * appears to stop until the screen wakes up.
+     */
+    private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -57,21 +65,51 @@ class PomodoroTimerService : Service() {
         super.onCreate()
         createNotificationChannel()
 
-        timerManager.onTimerStopped = { stopSelf() }
+        timerManager.onTimerStopped = {
+            releaseWakeLock()
+            stopSelf()
+        }
         timerManager.onTimerCompleted = {
             // Update notification one last time, then stop after a brief delay
             updateNotification()
             serviceScope.launch {
                 delay(3000)
+                releaseWakeLock()
                 stopSelf()
             }
         }
     }
 
+    private fun acquireWakeLock() {
+        if (wakeLock?.isHeld == true) return
+        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = pm.newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK,
+            "BrainBuddy:PomodoroTimer"
+        ).apply {
+            setReferenceCounted(false)
+            // Hard cap matches the longest single session (long break with extras), so
+            // a forgotten release can't drain the battery indefinitely.
+            acquire(2 * 60 * 60 * 1000L) // 2 hours
+        }
+    }
+
+    private fun releaseWakeLock() {
+        wakeLock?.let { if (it.isHeld) it.release() }
+        wakeLock = null
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_PAUSE -> timerManager.pause()
-            ACTION_RESUME -> timerManager.resume()
+            ACTION_PAUSE -> {
+                timerManager.pause()
+                // Pause doesn't need the wake lock — the countdown isn't ticking.
+                releaseWakeLock()
+            }
+            ACTION_RESUME -> {
+                timerManager.resume()
+                acquireWakeLock()
+            }
             ACTION_STOP -> timerManager.stop()
             else -> {
                 // Start foreground
@@ -85,6 +123,7 @@ class PomodoroTimerService : Service() {
                 } else {
                     startForeground(NOTIFICATION_ID, notification)
                 }
+                acquireWakeLock()
                 startUpdatingNotification()
             }
         }
@@ -94,6 +133,7 @@ class PomodoroTimerService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         updateJob?.cancel()
+        releaseWakeLock()
         timerManager.onTimerStopped = null
         timerManager.onTimerCompleted = null
     }

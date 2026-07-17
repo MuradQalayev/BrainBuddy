@@ -66,6 +66,7 @@ fun BottomNavBar(
     onItemClick: (Screen) -> Unit,
     onAiClick: () -> Unit = {},
     isAiOpen: Boolean = false,
+    hasActiveAiChat: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     var moreExpanded by remember { mutableStateOf(false) }
@@ -317,6 +318,28 @@ fun BottomNavBar(
                                     .size(26.dp)
                                     .rotate(aiRotation)
                             )
+                        }
+                        // Active-chat badge — a small "1" pinned to the top-right
+                        // of the AI circle. Only visible when the user has an
+                        // ongoing conversation with messages.
+                        if (hasActiveAiChat) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = (-2).dp, y = 2.dp)
+                                    .size(18.dp)
+                                    .clip(CircleShape)
+                                    .background(NavOrange)
+                                    .border(1.5.dp, Color.White, CircleShape),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = "1",
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
                         }
                     }
 

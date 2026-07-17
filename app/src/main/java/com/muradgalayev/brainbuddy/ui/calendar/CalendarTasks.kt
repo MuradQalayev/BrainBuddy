@@ -31,13 +31,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import android.content.Intent
 import androidx.core.net.toUri
+import androidx.compose.foundation.Canvas
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.EventNote
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
@@ -78,9 +84,14 @@ fun EventsBottomSheet(
     palette: CalendarPalette,
     selectedDate: LocalDate,
     tasks: List<CalendarTaskUi>,
+    expandedEventId: String?,
     onTaskClick: (String) -> Unit,
     onTaskDelete: (String) -> Unit,
     onAddTask: () -> Unit,
+    onToggleExpanded: (String) -> Unit,
+    onToggleSubtask: (String, Boolean) -> Unit,
+    onManageSubtasks: (String) -> Unit,
+    onRunInPomodoro: (String) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         // ── Drag handle ──
@@ -123,8 +134,13 @@ fun EventsBottomSheet(
                         SwipeableCalendarTaskCard(
                             palette = palette,
                             task = task,
+                            expanded = expandedEventId == task.id,
                             onClick = { onTaskClick(task.id) },
-                            onDelete = { onTaskDelete(task.id) }
+                            onDelete = { onTaskDelete(task.id) },
+                            onToggleExpanded = { onToggleExpanded(task.id) },
+                            onToggleSubtask = onToggleSubtask,
+                            onManageSubtasks = { onManageSubtasks(task.id) },
+                            onRunInPomodoro = { onRunInPomodoro(task.id) },
                         )
                     }
                 }
@@ -197,8 +213,13 @@ fun EventsSection(
     palette: CalendarPalette,
     selectedDate: LocalDate,
     tasks: List<CalendarTaskUi>,
+    expandedEventId: String?,
     onTaskClick: (String) -> Unit,
     onTaskDelete: (String) -> Unit,
+    onToggleExpanded: (String) -> Unit,
+    onToggleSubtask: (String, Boolean) -> Unit,
+    onManageSubtasks: (String) -> Unit,
+    onRunInPomodoro: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -219,8 +240,13 @@ fun EventsSection(
                     SwipeableCalendarTaskCard(
                         palette = palette,
                         task = task,
+                        expanded = expandedEventId == task.id,
                         onClick = { onTaskClick(task.id) },
-                        onDelete = { onTaskDelete(task.id) }
+                        onDelete = { onTaskDelete(task.id) },
+                        onToggleExpanded = { onToggleExpanded(task.id) },
+                        onToggleSubtask = onToggleSubtask,
+                        onManageSubtasks = { onManageSubtasks(task.id) },
+                        onRunInPomodoro = { onRunInPomodoro(task.id) },
                     )
                 }
             }
@@ -284,8 +310,13 @@ private fun categoryColor(category: String): Color = when (category.lowercase())
 private fun SwipeableCalendarTaskCard(
     palette: CalendarPalette,
     task: CalendarTaskUi,
+    expanded: Boolean,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onToggleExpanded: () -> Unit,
+    onToggleSubtask: (String, Boolean) -> Unit,
+    onManageSubtasks: () -> Unit,
+    onRunInPomodoro: () -> Unit,
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
@@ -362,7 +393,12 @@ private fun SwipeableCalendarTaskCard(
         CalendarTaskCard(
             palette = palette,
             task = task,
-            onClick = onClick
+            expanded = expanded,
+            onClick = onClick,
+            onToggleExpanded = onToggleExpanded,
+            onToggleSubtask = onToggleSubtask,
+            onManageSubtasks = onManageSubtasks,
+            onRunInPomodoro = onRunInPomodoro,
         )
     }
 
@@ -414,10 +450,24 @@ private fun SwipeableCalendarTaskCard(
 fun CalendarTaskCard(
     palette: CalendarPalette,
     task: CalendarTaskUi,
-    onClick: () -> Unit
+    expanded: Boolean,
+    onClick: () -> Unit,
+    onToggleExpanded: () -> Unit,
+    onToggleSubtask: (String, Boolean) -> Unit,
+    onManageSubtasks: () -> Unit,
+    onRunInPomodoro: () -> Unit,
 ) {
     val context = LocalContext.current
     val tintedBg = androidx.compose.ui.graphics.lerp(palette.cardBg, task.accent, 0.07f)
+    val canExpand = task.subtasks.isNotEmpty() || task.totalMinutes > 0
+
+    val totalSubtaskMinutes = task.subtasks.sumOf { it.durationMinutes }
+    val completedSubtaskMinutes = task.subtasks
+        .filter { it.completed }
+        .sumOf { it.durationMinutes }
+    val subtaskProgress = if (totalSubtaskMinutes > 0)
+        completedSubtaskMinutes.toFloat() / totalSubtaskMinutes.toFloat()
+    else 0f
 
     Card(
         modifier = Modifier
@@ -439,95 +489,199 @@ fun CalendarTaskCard(
                     .fillMaxHeight()
                     .background(task.accent)
             )
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(16.dp)
             ) {
-            // Completion circle
-            TaskStatusCircle(palette = palette, completed = task.completed)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Progress indicator → also the expand button (replaces the
+                    // old completion circle, which was a no-op for calendar events).
+                    if (canExpand) {
+                        SubtaskProgressIndicator(
+                            accent = task.accent,
+                            progress = subtaskProgress,
+                            hasSubtasks = task.subtasks.isNotEmpty(),
+                            onClick = onToggleExpanded,
+                        )
+                    } else {
+                        TaskStatusCircle(palette = palette, completed = task.completed)
+                    }
 
-            Spacer(Modifier.width(14.dp))
+                    Spacer(Modifier.width(14.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
-                // Category tag pill
-                if (!task.subtitle.isNullOrEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(
-                                categoryColor(task.subtitle).copy(alpha = 0.15f)
-                            )
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
-                    ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        // Category tag pill
+                        if (!task.subtitle.isNullOrEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(
+                                        categoryColor(task.subtitle).copy(alpha = 0.15f)
+                                    )
+                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    text = task.subtitle.uppercase(),
+                                    color = categoryColor(task.subtitle),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.5.sp
+                                )
+                            }
+                            Spacer(Modifier.height(6.dp))
+                        }
+
+                        // Task title
                         Text(
-                            text = task.subtitle.uppercase(),
-                            color = categoryColor(task.subtitle),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
+                            text = task.title,
+                            color = if (task.completed) palette.muted else palette.ink,
+                            fontSize = 15.sp,
+                            lineHeight = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+
+                        if (!task.location.isNullOrEmpty()) {
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                text = task.location,
+                                color = palette.muted,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        if (!task.link.isNullOrEmpty()) {
+                            Spacer(Modifier.height(6.dp))
+                            LinkChip(
+                                palette = palette,
+                                rawUrl = task.link,
+                                onClick = { openUrl(context, task.link) }
+                            )
+                        }
+                    }
+
+                    // Time range
+                    if (!task.timeRange.isNullOrEmpty()) {
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = task.timeRange,
+                                color = palette.muted.copy(alpha = 0.8f),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    // Flag indicator
+                    if (task.flagged) {
+                        Spacer(Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(palette.flagRed)
                         )
                     }
-                    Spacer(Modifier.height(6.dp))
+
                 }
 
-                // Task title
-                Text(
-                    text = task.title,
-                    color = if (task.completed) palette.muted else palette.ink,
-                    fontSize = 15.sp,
-                    lineHeight = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                if (!task.location.isNullOrEmpty()) {
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = task.location,
-                        color = palette.muted,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                if (!task.link.isNullOrEmpty()) {
-                    Spacer(Modifier.height(6.dp))
-                    LinkChip(
+                // Ribbon teaser when collapsed (hint that subtasks exist)
+                if (!expanded && task.subtasks.isNotEmpty()) {
+                    Spacer(Modifier.height(10.dp))
+                    SubtaskRibbonPreview(
                         palette = palette,
-                        rawUrl = task.link,
-                        onClick = { openUrl(context, task.link) }
+                        accent = task.accent,
+                        subtasks = task.subtasks,
                     )
                 }
-            }
 
-            // Time range
-            if (!task.timeRange.isNullOrEmpty()) {
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = task.timeRange,
-                        color = palette.muted.copy(alpha = 0.8f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-
-            // Flag indicator
-            if (task.flagged) {
-                Spacer(Modifier.width(8.dp))
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(palette.flagRed)
+                // Full timeline rail when expanded
+                SubtaskTimelineRail(
+                    palette = palette,
+                    accent = task.accent,
+                    totalMinutes = task.totalMinutes,
+                    subtasks = task.subtasks,
+                    isPomodoroPlan = task.subtasks.isPomodoroPlan(),
+                    onToggleSubtask = onToggleSubtask,
+                    onManage = onManageSubtasks,
+                    onRunInPomodoro = onRunInPomodoro,
+                    expanded = expanded,
                 )
             }
+        }
+    }
+}
+
+/* ── Subtask progress indicator (replaces chevron — shows % at a glance) ── */
+@Composable
+private fun SubtaskProgressIndicator(
+    accent: Color,
+    progress: Float,
+    hasSubtasks: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(34.dp)
+            .clip(CircleShape)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (hasSubtasks) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val stroke = 3.dp.toPx()
+                val arcSize = Size(size.width - stroke, size.height - stroke)
+                val topLeft = Offset(stroke / 2, stroke / 2)
+                drawArc(
+                    color = accent.copy(alpha = 0.18f),
+                    startAngle = 0f,
+                    sweepAngle = 360f,
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(width = stroke, cap = StrokeCap.Round),
+                )
+                drawArc(
+                    color = accent,
+                    startAngle = -90f,
+                    sweepAngle = 360f * progress,
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(width = stroke, cap = StrokeCap.Round),
+                )
+            }
+            Text(
+                text = "${(progress * 100).toInt()}",
+                color = accent,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = (-0.4).sp,
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(accent.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.AutoAwesome,
+                    contentDescription = "Add stations",
+                    tint = accent,
+                    modifier = Modifier.size(14.dp),
+                )
             }
         }
     }

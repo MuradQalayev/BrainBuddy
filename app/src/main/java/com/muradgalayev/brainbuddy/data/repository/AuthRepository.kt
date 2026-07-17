@@ -14,6 +14,7 @@ import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -29,7 +30,28 @@ data class ProfileDto(
     val username: String? = null,
 
     @SerialName("avatar_url")
-    val avatarUrl: String? = null
+    val avatarUrl: String? = null,
+
+    @SerialName("linked_google_email")
+    val linkedGoogleEmail: String? = null,
+)
+
+/** Patch-only DTO for updating just the Google Calendar link column. */
+@Serializable
+private data class LinkedGoogleEmailPatch(
+    @SerialName("linked_google_email")
+    val linkedGoogleEmail: String?
+)
+
+/**
+ * Standalone read DTO for the `linked_google_email` column. `ProfileDto` requires `id`
+ * to be present, but a targeted `SELECT linked_google_email` doesn't return it, so
+ * decoding into ProfileDto fails. This DTO is exactly what the projection returns.
+ */
+@Serializable
+private data class LinkedGoogleEmailRow(
+    @SerialName("linked_google_email")
+    val linkedGoogleEmail: String? = null
 )
 
 @Serializable
@@ -39,6 +61,10 @@ data class ProfileUpdateDto(
 
     val username: String
 )
+
+/** Thrown when a username collides with an existing row in `profiles`. */
+class UsernameTakenException(username: String) :
+    Exception("Username '$username' is already taken")
 
 @Serializable
 data class ProfileInsertDto(
@@ -141,6 +167,25 @@ class AuthRepository @Inject constructor(
         supabaseClient.auth.signInWith(Google)
     }
 
+    /**
+     * Send a Supabase password-reset email. The reset link redirects back into the
+     * app via the `brainbuddy://auth-callback` deep link, and Supabase attaches
+     * `type=recovery` to the URL fragment so we can distinguish it from a normal login.
+     */
+    suspend fun sendPasswordReset(email: String) {
+        supabaseClient.auth.resetPasswordForEmail(
+            email = email,
+            redirectUrl = "brainbuddy://auth-callback",
+        )
+    }
+
+    /** Only works while the current session is in Supabase's recovery state. */
+    suspend fun updatePassword(newPassword: String) {
+        supabaseClient.auth.updateUser {
+            password = newPassword
+        }
+    }
+
     suspend fun signOut() {
         supabaseClient.auth.signOut()
         cachedProfile = null
@@ -159,19 +204,21 @@ class AuthRepository @Inject constructor(
     suspend fun updateProfile(displayName: String, username: String): ProfileDto {
         val userId = getCurrentUserId() ?: error("No logged-in user")
 
-        val updated = supabaseClient
-            .from("profiles")
-            .update(
-                ProfileUpdateDto(
-                    displayName = displayName,
-                    username = username
-                )
-            ) {
-                filter { eq("id", userId) }
-                select()
-            }
-            .decodeList<ProfileDto>()
-            .firstOrNull()
+        val updated = translateUsernameConflict(username) {
+            supabaseClient
+                .from("profiles")
+                .update(
+                    ProfileUpdateDto(
+                        displayName = displayName,
+                        username = username
+                    )
+                ) {
+                    filter { eq("id", userId) }
+                    select()
+                }
+                .decodeList<ProfileDto>()
+                .firstOrNull()
+        }
 
         if (updated != null) {
             cachedProfile = updated
@@ -179,23 +226,41 @@ class AuthRepository @Inject constructor(
         }
 
         // No row updated — insert one and return that.
-        val inserted = supabaseClient
-            .from("profiles")
-            .insert(
-                ProfileInsertDto(
-                    id = userId,
-                    email = getCurrentUserEmail(),
-                    displayName = displayName,
-                    username = username,
-                    avatarUrl = getCurrentUserAvatarUrl(),
-                )
-            ) { select() }
-            .decodeList<ProfileDto>()
-            .firstOrNull()
-            ?: error("profile insert returned no row")
+        val inserted = translateUsernameConflict(username) {
+            supabaseClient
+                .from("profiles")
+                .insert(
+                    ProfileInsertDto(
+                        id = userId,
+                        email = getCurrentUserEmail(),
+                        displayName = displayName,
+                        username = username,
+                        avatarUrl = getCurrentUserAvatarUrl(),
+                    )
+                ) { select() }
+                .decodeList<ProfileDto>()
+                .firstOrNull()
+        } ?: error("profile insert returned no row")
 
         cachedProfile = inserted
         return inserted
+    }
+
+    /**
+     * Postgres error 23505 (unique_violation) is what fires when the DB-side unique
+     * index on `LOWER(username)` rejects a duplicate. Surface it as a typed exception
+     * so the UI can show a clean "Username is already taken" instead of a raw REST error.
+     */
+    private inline fun <T> translateUsernameConflict(username: String, block: () -> T): T {
+        return try {
+            block()
+        } catch (e: Exception) {
+            val msg = e.message.orEmpty()
+            val isConflict = msg.contains("23505") ||
+                msg.contains("duplicate key", ignoreCase = true) ||
+                msg.contains("profiles_username", ignoreCase = true)
+            if (isConflict) throw UsernameTakenException(username) else throw e
+        }
     }
 
     /**
@@ -242,12 +307,32 @@ class AuthRepository @Inject constructor(
     /**
      * True if no other profile already uses this username. Case-insensitive,
      * ignores the current user's own row.
+     *
+     * Uses the `is_username_available` RPC (SECURITY DEFINER) so RLS on `profiles`
+     * doesn't hide other users' rows. Falls back to a direct SELECT if the RPC
+     * isn't installed — that fallback is only accurate under a permissive RLS
+     * policy; the DB unique index is the ultimate source of truth.
      */
     suspend fun isUsernameAvailable(username: String): Boolean {
-        val trimmed = username.trim().lowercase()
+        val trimmed = username.trim()
         if (trimmed.isEmpty()) return false
-        val currentUserId = getCurrentUserId()
 
+        // Preferred path: RPC. Requires the SQL below to be applied in Supabase.
+        val rpcResult = runCatching {
+            supabaseClient.postgrest
+                .rpc(
+                    "is_username_available",
+                    buildJsonObject { put("candidate", JsonPrimitive(trimmed)) },
+                )
+                .decodeAs<Boolean>()
+        }
+        if (rpcResult.isSuccess) return rpcResult.getOrNull() ?: true
+
+        // Fallback: direct query. Under strict RLS this may return false negatives
+        // (i.e. return "available" for names that are actually taken by other users) —
+        // the DB unique index still enforces correctness on save.
+        val currentUserId = getCurrentUserId()
+        val lower = trimmed.lowercase()
         return try {
             val matches = supabaseClient
                 .from("profiles")
@@ -256,12 +341,44 @@ class AuthRepository @Inject constructor(
                     limit(2)
                 }
                 .decodeList<ProfileDto>()
-
-            matches.none { it.id != currentUserId && it.username?.lowercase() == trimmed }
-        } catch (e: Exception) {
-            // Don't block the user on a transient failure — assume available.
+            matches.none { it.id != currentUserId && it.username?.lowercase() == lower }
+        } catch (_: Exception) {
             true
         }
+    }
+
+    /**
+     * Read just the linked Google Calendar email from the current user's profile row.
+     * Returns null when there's no session, no profile row, or the column is null.
+     */
+    suspend fun getLinkedGoogleEmail(): String? {
+        val userId = getCurrentUserId() ?: return null
+        return runCatching {
+            supabaseClient
+                .from("profiles")
+                .select(Columns.list("linked_google_email")) {
+                    filter { eq("id", userId) }
+                    limit(1)
+                }
+                .decodeList<LinkedGoogleEmailRow>()
+                .firstOrNull()
+                ?.linkedGoogleEmail
+        }.onFailure {
+            android.util.Log.w("AuthRepository", "getLinkedGoogleEmail failed: ${it.message}")
+        }.getOrNull()
+    }
+
+    /**
+     * Persist (or clear) the linked Google Calendar email on the current user's profile row.
+     * Pass null to disconnect. Silently no-ops when there's no session.
+     */
+    suspend fun setLinkedGoogleEmail(email: String?) {
+        val userId = getCurrentUserId() ?: return
+        supabaseClient
+            .from("profiles")
+            .update(LinkedGoogleEmailPatch(linkedGoogleEmail = email)) {
+                filter { eq("id", userId) }
+            }
     }
 
     private fun Map<String, JsonElement>.stringField(key: String): String? {

@@ -43,9 +43,11 @@ import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.LocationCity
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -56,7 +58,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -99,6 +106,7 @@ fun CareNearbyScreen(
     }
 
     val cameraPositionState = rememberCameraPositionState()
+    var showFullscreenMap by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(placesWithLocation) {
         val first = placesWithLocation.firstOrNull()
         if (first != null) {
@@ -144,11 +152,16 @@ fun CareNearbyScreen(
                 MedicationChip(name = state.medicationName)
             }
 
-            // Map preview
-            MapPreview(
-                cameraPositionState = cameraPositionState,
-                placesWithLocation = placesWithLocation,
-            )
+            // Map preview — tap anywhere on it to open the fullscreen map.
+            // Hide it while the dialog is open so we don't run two GoogleMap composables
+            // (each with its own native MapView) sharing the same CameraPositionState.
+            if (!showFullscreenMap) {
+                MapPreview(
+                    cameraPositionState = cameraPositionState,
+                    placesWithLocation = placesWithLocation,
+                    onExpand = { showFullscreenMap = true },
+                )
+            }
 
             // Category filters
             CategoryRow(
@@ -171,6 +184,14 @@ fun CareNearbyScreen(
                 )
             }
         }
+    }
+
+    if (showFullscreenMap) {
+        FullscreenMapDialog(
+            cameraPositionState = cameraPositionState,
+            placesWithLocation = placesWithLocation,
+            onDismiss = { showFullscreenMap = false },
+        )
     }
 }
 
@@ -355,21 +376,26 @@ private fun MedicationChip(name: String) {
 private fun MapPreview(
     cameraPositionState: CameraPositionState,
     placesWithLocation: List<Place>,
+    onExpand: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    Surface(
+    val shape = RoundedCornerShape(20.dp)
+    // Outer Box is clickable — a single reliable tap target that opens fullscreen.
+    // The GoogleMap sits inside with all interactive gestures disabled so it never
+    // eats the outer clickable's touches.
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .height(200.dp)
-            .clip(RoundedCornerShape(20.dp))
+            .clip(shape)
             .border(
                 1.dp,
                 colors.outlineVariant.copy(alpha = 0.5f),
-                RoundedCornerShape(20.dp),
-            ),
-        shape = RoundedCornerShape(20.dp),
-        color = colors.surfaceContainer,
+                shape,
+            )
+            .background(colors.surfaceContainer)
+            .clickable(onClick = onExpand),
     ) {
         if (placesWithLocation.isEmpty()) {
             Column(
@@ -399,6 +425,10 @@ private fun MapPreview(
                     zoomControlsEnabled = false,
                     myLocationButtonEnabled = false,
                     mapToolbarEnabled = false,
+                    scrollGesturesEnabled = false,
+                    zoomGesturesEnabled = false,
+                    tiltGesturesEnabled = false,
+                    rotationGesturesEnabled = false,
                 ),
             ) {
                 placesWithLocation.forEach { place ->
@@ -406,6 +436,86 @@ private fun MapPreview(
                         state = MarkerState(position = LatLng(place.lat!!, place.lng!!)),
                         title = place.name,
                         snippet = place.address,
+                    )
+                }
+            }
+            // Visual affordance that the preview is tappable — the outer Box already
+            // handles the tap, so this Surface is decorative (no onClick needed).
+            Surface(
+                shape = CircleShape,
+                color = colors.surface.copy(alpha = 0.92f),
+                shadowElevation = 4.dp,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(10.dp)
+                    .size(36.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Rounded.Fullscreen,
+                        contentDescription = "Expand map",
+                        tint = colors.onSurface,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FullscreenMapDialog(
+    cameraPositionState: CameraPositionState,
+    placesWithLocation: List<Place>,
+    onDismiss: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            // Fill the screen edge-to-edge instead of the default centered dialog width.
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = false,
+        ),
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState,
+                properties = MapProperties(isMyLocationEnabled = false),
+                uiSettings = MapUiSettings(
+                    zoomControlsEnabled = true,
+                    myLocationButtonEnabled = false,
+                    mapToolbarEnabled = true,
+                ),
+            ) {
+                placesWithLocation.forEach { place ->
+                    Marker(
+                        state = MarkerState(position = LatLng(place.lat!!, place.lng!!)),
+                        title = place.name,
+                        snippet = place.address,
+                    )
+                }
+            }
+            // Close button — sits below the status bar via statusBarsPadding().
+            Surface(
+                onClick = onDismiss,
+                shape = CircleShape,
+                color = colors.surface.copy(alpha = 0.94f),
+                shadowElevation = 6.dp,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .statusBarsPadding()
+                    .padding(14.dp)
+                    .size(44.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = "Close map",
+                        tint = colors.onSurface,
+                        modifier = Modifier.size(22.dp),
                     )
                 }
             }

@@ -15,6 +15,7 @@ val localProperties = Properties().apply {
     if (file.exists()) file.inputStream().use { load(it) }
 }
 val geminiApiKey: String = localProperties.getProperty("GEMINI_API_KEY", "")
+val deepseekApiKey: String = localProperties.getProperty("DEEPSEEK_API_KEY", "")
 val mapsApiKey: String = localProperties.getProperty("MAPS_API_KEY", "")
 
 android {
@@ -35,6 +36,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
+        buildConfigField("String", "DEEPSEEK_API_KEY", "\"$deepseekApiKey\"")
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
@@ -90,6 +92,7 @@ dependencies {
 
     // === ViewModel for Compose ===
     implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.lifecycle.runtime.compose)
 
     // === Calendar ===
     implementation(libs.calendar.compose)
@@ -103,6 +106,11 @@ dependencies {
 
     // === Google Identity (OAuth for Calendar scope, decoupled from Supabase auth) ===
     implementation(libs.play.services.auth)
+
+    // === WorkManager + Hilt-Work (background calendar sync) ===
+    implementation(libs.androidx.work.runtime)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
 
     // === Coil (remote image loading for avatars) ===
     implementation(libs.coil.compose)

@@ -54,6 +54,23 @@ interface PomodoroSessionDao {
         endOfDay: Long
     ): Long
 
+    /** Flow variant so ViewModels can subscribe instead of polling. */
+    @Query("""
+    SELECT COALESCE(SUM(actualDurationMs), 0)
+    FROM pomodoro_sessions
+    WHERE userId = :userId
+      AND sessionType = :sessionType
+      AND completionStatus = :completionStatus
+      AND endTime BETWEEN :startOfDay AND :endOfDay
+""")
+    fun observeCompletedDurationForRange(
+        userId: String,
+        sessionType: String,
+        completionStatus: String,
+        startOfDay: Long,
+        endOfDay: Long
+    ): Flow<Long>
+
     @Query("""
     SELECT COUNT(*)
     FROM pomodoro_sessions
