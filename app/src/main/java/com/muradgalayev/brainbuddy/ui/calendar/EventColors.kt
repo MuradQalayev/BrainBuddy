@@ -8,20 +8,21 @@ data class EventColor(
     val displayName: String,
 )
 
-// 8 curated tones — designed to harmonize with the warm-orange brand
-// without all leaning warm, so events stay distinguishable.
+// 8 curated tones, spread around the wheel so two events are never mistaken for each other,
+// at a saturation that holds up against the app's own accent. the previous set was desaturated
+// enough that coral, rose and sand read as three shades of the same dusty pink on a phone
 val EventColors: List<EventColor> = listOf(
-    EventColor("coral", Color(0xFFC75A4A), "Coral"),
-    EventColor("amber", Color(0xFFD9B05C), "Amber"),
-    EventColor("sage", Color(0xFF8AAE7E), "Sage"),
-    EventColor("sky", Color(0xFF7FA3C9), "Sky"),
-    EventColor("lilac", Color(0xFFA88AB8), "Lilac"),
-    EventColor("rose", Color(0xFFD68FA8), "Rose"),
-    EventColor("slate", Color(0xFF7A8A95), "Slate"),
-    EventColor("sand", Color(0xFFC9A87B), "Sand"),
+    EventColor("coral", Color(0xFFEF4444), "Coral"),
+    EventColor("amber", Color(0xFFF59E0B), "Amber"),
+    EventColor("sage", Color(0xFF10B981), "Sage"),
+    EventColor("sky", Color(0xFF0EA5E9), "Sky"),
+    EventColor("lilac", Color(0xFFA855F7), "Lilac"),
+    EventColor("rose", Color(0xFFEC4899), "Rose"),
+    EventColor("slate", Color(0xFF64748B), "Slate"),
+    EventColor("sand", Color(0xFFD97706), "Sand"),
 )
 
-// Map legacy stored values from the original red/blue/yellow scheme.
+// map legacy stored values from the original red/blue/yellow scheme
 private val LegacyAliases: Map<String, String> = mapOf(
     "red" to "coral",
     "blue" to "sky",

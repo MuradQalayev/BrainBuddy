@@ -3,7 +3,11 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Required only after the user chooses "Find Myndora contacts". Phone numbers are
+         normalized and hashed locally; contact names and raw numbers are never uploaded. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -13,9 +17,26 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+    <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
+
+    <queries>
+        <!-- Health Connect provider on Android 13 and lower. -->
+        <package android:name="com.google.android.apps.healthdata" />
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
 
     <application
-        android:name=".BrainBuddyApp"
+        android:name=".MyndoraApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -23,7 +44,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.BrainBuddy">
+        android:theme="@style/Theme.Myndora">
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}" />
@@ -32,7 +53,7 @@
             android:exported="true"
             android:label="@string/app_name"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.BrainBuddy">
+            android:theme="@style/Theme.Myndora">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -48,7 +69,45 @@
                     android:host="auth-callback"
                     android:scheme="brainbuddy" />
             </intent-filter>
+            <!--
+              Myndora Together invite links. A separate filter on its own scheme so
+              the brainbuddy:// auth callback above stays exactly as Supabase and the
+              Google OAuth client have it registered.
+            -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="connect"
+                    android:scheme="myndora" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
         </activity>
+
+        <activity-alias
+            android:name=".ViewHealthPermissionUsageActivity"
+            android:exported="true"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
+
+        <!--
+          The image-cropper's CropImageActivity is an AppCompatActivity and needs a
+          Theme.AppCompat descendant, but our app theme is a framework/Compose theme.
+          Override just the cropper activity's theme so it doesn't crash on launch.
+        -->
+        <activity
+            android:name="com.canhub.cropper.CropImageActivity"
+            android:theme="@style/Theme.AppCompat.Light.DarkActionBar" />
 
         <service
             android:name=".data.local.PomodoroTimerService"
@@ -59,12 +118,34 @@
                 android:value="Pomodoro focus timer running in the background to track session progress and show countdown notification" />
         </service>
 
+        <!--
+            exported="true" is required by FCM: the Play Services process is what
+            delivers the message, so the intent arrives from outside the app. The
+            intent-filter action is the only one it answers, and the payloads are
+            data-only and validated in onMessageReceived.
+        -->
+        <service
+            android:name=".data.notifications.MyndoraMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <receiver
             android:name=".data.notifications.EventReminderReceiver"
             android:exported="false" />
 
         <receiver
             android:name=".data.notifications.MorningSummaryReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".data.notifications.FocusNudgeReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".data.notifications.QuestionnaireReminderReceiver"
             android:exported="false" />
 
         <receiver
@@ -78,7 +159,7 @@
 
         <!--
           We supply WorkManager's Configuration ourselves via Configuration.Provider
-          on BrainBuddyApp so Hilt's WorkerFactory can inject dependencies into
+          on MyndoraApp so Hilt's WorkerFactory can inject dependencies into
           CoroutineWorkers. Disable the on-demand androidx.startup initializer to
           avoid the default factory being installed first.
         -->

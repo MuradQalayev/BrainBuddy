@@ -22,7 +22,6 @@ import com.muradgalayev.brainbuddy.data.local.TimerState
 import com.muradgalayev.brainbuddy.ui.pomodoro.ControlCircle
 import com.muradgalayev.brainbuddy.ui.pomodoro.GradientCircleButton
 
-
 @Composable
 fun BottomControls(
     timerState: TimerState,
@@ -33,7 +32,11 @@ fun BottomControls(
     onResume: () -> Unit,
     onReset: () -> Unit,
     onStop: () -> Unit,
-    onSkip: () -> Unit
+    onSkip: () -> Unit,
+    // false while a shared focus room owns the clock. starting a second, private timer on top of
+    // one you agreed to run with someone else isn't a thing anyone means to do, and the room's
+    // timer is already this screen's timer
+    startEnabled: Boolean = true,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -47,7 +50,8 @@ fun BottomControls(
                     label = "Start",
                     gradient = accentGradient,
                     size = 72,
-                    onClick = onStart
+                    onClick = onStart,
+                    enabled = startEnabled,
                 )
             }
             TimerState.RUNNING -> {

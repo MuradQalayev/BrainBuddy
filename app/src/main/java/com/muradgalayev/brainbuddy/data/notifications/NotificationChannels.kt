@@ -9,10 +9,13 @@ import android.net.Uri
 import com.muradgalayev.brainbuddy.R
 
 object NotificationChannels {
-    // Bump the suffix when changing sound/importance — Android locks channel
-    // settings after creation, so a new sound needs a new channel ID.
+    // bump the suffix when changing sound or importance: Android locks channel settings after
+    // creation, so a new sound needs a new channel id
     const val EVENT_REMINDERS = "event_reminders_v3"
     const val DAILY_SUMMARY = "daily_summary_v3"
+    const val FOCUS_NUDGE = "focus_nudge_v1"
+    const val POMODORO_ALERTS = "pomodoro_alerts_v1"
+    const val QUESTIONNAIRE_REMINDERS = "questionnaire_reminders_v1"
 
     private val LEGACY_CHANNELS = listOf(
         "event_reminders", "daily_summary",
@@ -54,6 +57,48 @@ object NotificationChannels {
                 setSound(customSoundUri, audioAttrs)
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 200)
+                setShowBadge(false)
+            }
+        )
+
+        nm.createNotificationChannel(
+            NotificationChannel(
+                FOCUS_NUDGE,
+                "Focus nudges",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Gentle prompts to start a Pomodoro focus session."
+                setSound(customSoundUri, audioAttrs)
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 200)
+                setShowBadge(false)
+            }
+        )
+
+        nm.createNotificationChannel(
+            NotificationChannel(
+                QUESTIONNAIRE_REMINDERS,
+                "Profile check-ins",
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ).apply {
+                description = "Occasional reminders to continue an unfinished Myndora profile."
+                setSound(customSoundUri, audioAttrs)
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 200)
+                setShowBadge(false)
+            }
+        )
+
+        nm.createNotificationChannel(
+            NotificationChannel(
+                POMODORO_ALERTS,
+                "Pomodoro breaks",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Alerts when a focus session or break finishes."
+                setSound(customSoundUri, audioAttrs)
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 250, 200, 250)
                 setShowBadge(false)
             }
         )

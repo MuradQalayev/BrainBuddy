@@ -1,13 +1,9 @@
 package com.muradgalayev.brainbuddy.domain.model
 
-/**
- * A focused chunk inside a CalendarEvent. Lets users break a 1-hour
- * "Math exam prep" block into smaller stations like "review formulas (15m)"
- * → "practice problems (30m)" → "flashcards (15m)".
- *
- * Subtasks are ordered (orderIndex) and sized in minutes, not absolute times,
- * so reordering doesn't require time math.
- */
+// a focused chunk inside a CalendarEvent. lets users break a 1-hour 'Math exam prep' block into
+// smaller stations like 'review formulas 15m', 'practice problems 30m', 'flashcards 15m'.
+// ordered by orderIndex and sized in minutes rather than absolute times, so reordering doesn't
+// require time maths
 data class CalendarSubtask(
     val id: String,
     val eventId: String,

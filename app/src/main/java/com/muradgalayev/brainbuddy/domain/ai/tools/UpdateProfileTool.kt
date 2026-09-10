@@ -10,11 +10,8 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import javax.inject.Inject
 
-/**
- * Updates the user's display name and/or username on the profiles table. Handles
- * the unique-username error gracefully so the AI can suggest alternatives instead
- * of failing silently.
- */
+// updates the user's display name and/or username on the profiles table. handles the
+// unique-username error gracefully, so the AI can suggest alternatives rather than fail silently
 class UpdateProfileTool @Inject constructor(
     private val authRepository: AuthRepository,
 ) : AiTool {

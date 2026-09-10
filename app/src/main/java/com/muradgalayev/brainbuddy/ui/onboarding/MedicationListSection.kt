@@ -28,11 +28,18 @@ import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +49,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.muradgalayev.brainbuddy.domain.model.Medication
 import com.muradgalayev.brainbuddy.domain.model.MedicationSlot
+import com.muradgalayev.brainbuddy.domain.model.MedicationUnit
+import androidx.compose.ui.text.input.KeyboardType
+import com.muradgalayev.brainbuddy.ui.sharedcomponents.TimePickerDialog
+import com.muradgalayev.brainbuddy.ui.sharedcomponents.TimePickerField
 
 @Composable
 fun MedicationListSection(
@@ -50,7 +61,13 @@ fun MedicationListSection(
     onRemove: (String) -> Unit,
     onNameChange: (String, String) -> Unit,
     onDoseChange: (String, String) -> Unit,
+    // the unit the dose is measured in, see MedicationUnit
+    onDoseUnitChange: (String, MedicationUnit) -> Unit = { _, _ -> },
     onSlotToggle: (String, MedicationSlot) -> Unit,
+    // N4, the exact clock time, HH:mm
+    onTimeChange: (String, String) -> Unit = { _, _ -> },
+    // N4, as-needed rather than on a daily schedule
+    onToggleAsNeeded: (String) -> Unit = {},
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         AnimatedVisibility(
@@ -65,7 +82,10 @@ fun MedicationListSection(
                         onRemove = { onRemove(med.id) },
                         onNameChange = { onNameChange(med.id, it) },
                         onDoseChange = { onDoseChange(med.id, it) },
+                        onDoseUnitChange = { onDoseUnitChange(med.id, it) },
                         onSlotToggle = { onSlotToggle(med.id, it) },
+                        onTimeChange = { onTimeChange(med.id, it) },
+                        onToggleAsNeeded = { onToggleAsNeeded(med.id) },
                     )
                 }
             }
@@ -81,16 +101,20 @@ private fun MedicationCard(
     onRemove: () -> Unit,
     onNameChange: (String) -> Unit,
     onDoseChange: (String) -> Unit,
+    onDoseUnitChange: (MedicationUnit) -> Unit,
     onSlotToggle: (MedicationSlot) -> Unit,
+    onTimeChange: (String) -> Unit,
+    onToggleAsNeeded: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
+    var showTimePicker by remember { mutableStateOf(false) }
+    var showUnitMenu by remember { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         color = colors.surface,
         border = BorderStroke(1.dp, colors.outlineVariant.copy(alpha = 0.6f)),
-        shadowElevation = 1.dp,
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
@@ -143,12 +167,15 @@ private fun MedicationCard(
                         cursorColor = colors.primary,
                     ),
                 )
+                // amount and unit split apart. one '20mg' field looked simpler but produced '20 mg', '20mg',
+                // '20 MG' and 'twenty' from four users, none of which can be compared or summed later
                 OutlinedTextField(
                     value = med.dose,
                     onValueChange = onDoseChange,
                     label = { Text("Dose") },
-                    placeholder = { Text("20mg") },
+                    placeholder = { Text("20") },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.weight(1f),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -156,24 +183,97 @@ private fun MedicationCard(
                         cursorColor = colors.primary,
                     ),
                 )
-            }
-
-            Text(
-                text = "When?",
-                style = MaterialTheme.typography.labelMedium,
-                color = colors.onSurfaceVariant,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MedicationSlot.entries.forEach { slot ->
+                Box {
+                    val selected = MedicationUnit.fromKey(med.doseUnit)
                     SlotChip(
-                        label = slot.label,
-                        selected = slot.key in med.slots,
-                        onClick = { onSlotToggle(slot) },
-                        modifier = Modifier.weight(1f),
+                        label = selected?.label ?: "unit",
+                        selected = selected != null,
+                        onClick = { showUnitMenu = true },
+                        modifier = Modifier.width(88.dp).height(56.dp),
                     )
+                    DropdownMenu(
+                        expanded = showUnitMenu,
+                        onDismissRequest = { showUnitMenu = false },
+                    ) {
+                        MedicationUnit.entries.forEach { unit ->
+                            DropdownMenuItem(
+                                text = { Text(unit.label) },
+                                onClick = {
+                                    onDoseUnitChange(unit)
+                                    showUnitMenu = false
+                                },
+                            )
+                        }
+                    }
                 }
             }
+
+            // N4, daily or as-needed. asked first because it decides whether the rest of this card means
+            // anything: an as-needed medication has no schedule to give, and prompting for one invites a
+            // made-up answer
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SlotChip(
+                    label = "Every day",
+                    selected = !med.asNeeded,
+                    onClick = { if (med.asNeeded) onToggleAsNeeded() },
+                    modifier = Modifier.weight(1f),
+                )
+                SlotChip(
+                    label = "As needed",
+                    selected = med.asNeeded,
+                    onClick = { if (!med.asNeeded) onToggleAsNeeded() },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            if (!med.asNeeded) {
+                Text(
+                    text = "When?",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colors.onSurfaceVariant,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    MedicationSlot.entries.forEach { slot ->
+                        SlotChip(
+                            label = slot.label,
+                            selected = slot.key in med.slots,
+                            onClick = { onSlotToggle(slot) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+
+                // N4, the exact time, optional on top of the rough slot. stimulant onset and wear-off are
+                // among the strongest predictors of real focus through the day, and 'morning' spans four
+                // hours in which a dose could peak anywhere
+                // dose could peak anywhere.
+                TimePickerField(
+                    value = med.times.firstOrNull().orEmpty(),
+                    label = "Exact time (optional)",
+                    placeholder = "08:00",
+                    mutedColor = colors.onSurfaceVariant,
+                    accentColor = colors.primary,
+                    borderColor = colors.outlineVariant,
+                    textColor = colors.onSurface,
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { showTimePicker = true },
+                )
+            }
         }
+    }
+
+    if (showTimePicker) {
+        val parts = med.times.firstOrNull()?.split(":")
+        TimePickerDialog(
+            title = "When do you take it?",
+            initialHour = parts?.getOrNull(0)?.toIntOrNull() ?: 8,
+            initialMinute = parts?.getOrNull(1)?.toIntOrNull() ?: 0,
+            onConfirm = { h, m ->
+                onTimeChange("%02d:%02d".format(h, m))
+                showTimePicker = false
+            },
+            onDismiss = { showTimePicker = false },
+        )
     }
 }
 

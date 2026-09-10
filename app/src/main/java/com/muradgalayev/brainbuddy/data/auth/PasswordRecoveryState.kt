@@ -1,22 +1,16 @@
 package com.muradgalayev.brainbuddy.data.auth
 
 import android.net.Uri
-import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Bridge between MainActivity (which receives the recovery deep link) and AuthViewModel
- * (which shows the "Set new password" UI).
- *
- * Supabase's `SessionSource` sealed interface has no dedicated `PasswordRecovery` variant —
- * `resetPasswordForEmail` and OAuth deep links both surface as `SessionSource.External`.
- * So we sniff the intent URI ourselves: the recovery link Supabase generates contains
- * `type=recovery` in the URL fragment.
- */
+// bridge between MainActivity, which receives the recovery deep link, and AuthViewModel, which
+// shows the set-new-password UI. Supabase's SessionSource has no dedicated PasswordRecovery
+// variant: resetPasswordForEmail and OAuth deep links both surface as External. so we sniff
+// the intent URI ourselves, since the recovery link Supabase generates carries type=recovery
 @Singleton
 class PasswordRecoveryState @Inject constructor() {
     private val _active = MutableStateFlow(false)
@@ -24,20 +18,28 @@ class PasswordRecoveryState @Inject constructor() {
 
     fun onDeepLink(uri: Uri?) {
         if (uri == null) return
-        // Supabase attaches auth tokens to the fragment (#) on redirect, but some email
-        // clients/browsers rewrite the URL and move params to the query (?). Check both.
-        val fragment = uri.fragment.orEmpty()
-        val query = uri.query.orEmpty()
-        val hay = "$fragment&$query"
-        val isRecovery = hay.split('&').any { it.trim() == "type=recovery" }
-        Log.d(
-            "PasswordRecoveryState",
-            "onDeepLink uri=$uri fragment=$fragment query=$query recovery=$isRecovery",
-        )
-        if (isRecovery) _active.value = true
+        // Supabase attaches auth tokens to the fragment on redirect, but some email clients and
+        // browsers rewrite the URL and move params to the query, so check both
+        if (hasPasswordRecoveryType(uri.fragment) || hasPasswordRecoveryType(uri.query)) {
+            _active.value = true
+        }
     }
 
     fun clear() {
         _active.value = false
     }
+
 }
+
+// Deliberately inspect only the non-secret `type` field. Recovery fragments also contain access
+// and refresh tokens, so callers never need to copy or log the full callback URL.
+internal fun hasPasswordRecoveryType(parameters: String?): Boolean = parameters
+    .orEmpty()
+    .removePrefix("?")
+    .split('&')
+    .any { parameter ->
+        val parts = parameter.trim().split('=', limit = 2)
+        parts.size == 2 &&
+            parts[0].equals("type", ignoreCase = true) &&
+            parts[1].equals("recovery", ignoreCase = true)
+    }

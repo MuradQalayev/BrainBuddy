@@ -20,4 +20,6 @@ data class AiMessageDto(
     val createdAt: String? = null,
     @SerialName("conversation_id")
     val conversationId: String? = null,
+    // short generated label for the conversation, stamped on all of its rows
+    val title: String? = null,
 )

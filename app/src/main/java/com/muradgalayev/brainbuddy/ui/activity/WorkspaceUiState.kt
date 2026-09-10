@@ -19,5 +19,18 @@ data class WorkspaceUiState(
     val focusHeroSubtitle: String = "Start your first focus session today.",
     val activityBannerTitle: String = "A fresh start",
     val activityBannerMessage: String = "Plan a task and try a quick focus session to get going.",
-    val isSimplified: Boolean = false
+    val isSimplified: Boolean = false,
+
+    // the 'right now' hero: the single most relevant thing, resolved in the ViewModel so the UI
+    // never has to decide what matters. a null title means nothing is scheduled
+    val nextUpTitle: String? = null,
+    // 'Now', 'in 20 min', 'Today 15:00', 'Tomorrow 09:00'
+    val nextUpWhen: String? = null,
+    // true while the item's start time has passed, so it's happening rather than upcoming
+    val nextUpIsNow: Boolean = false,
+    // true when the hero item came from the calendar rather than the to-do list
+    val nextUpIsEvent: Boolean = false,
+
+    val weekCompletedTasks: Int = 0,
+    val weekFocusMinutes: Int = 0,
 )

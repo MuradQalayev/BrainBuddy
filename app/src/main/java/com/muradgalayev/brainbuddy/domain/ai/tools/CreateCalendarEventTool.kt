@@ -1,6 +1,7 @@
 package com.muradgalayev.brainbuddy.domain.ai.tools
 
 import com.muradgalayev.brainbuddy.data.repository.CalendarRepository
+import com.muradgalayev.brainbuddy.data.repository.HabitTimingRepository
 import com.muradgalayev.brainbuddy.domain.ai.AiTool
 import com.muradgalayev.brainbuddy.domain.model.CalendarEvent
 import kotlinx.serialization.json.JsonObject
@@ -15,13 +16,11 @@ import java.time.LocalTime
 import java.util.UUID
 import javax.inject.Inject
 
-/**
- * Creates a calendar event ("meeting", "appointment", "class", …). Distinct from
- * `create_todo` — todos are checklist items, calendar events are timed things that
- * show on the calendar screen.
- */
+// creates a calendar event: meeting, appointment, class. distinct from create_todo, since
+// todos are checklist items and calendar events are timed things that show on the calendar
 class CreateCalendarEventTool @Inject constructor(
-    private val calendarRepository: CalendarRepository
+    private val calendarRepository: CalendarRepository,
+    private val habitTimingRepository: HabitTimingRepository,
 ) : AiTool {
 
     override val name: String = "create_calendar_event"
@@ -57,7 +56,11 @@ class CreateCalendarEventTool @Inject constructor(
             }
             putJsonObject("location") {
                 put("type", "string")
-                put("description", "Optional location — room, address, or link")
+                put("description", "Optional physical location — room name or address")
+            }
+            putJsonObject("link") {
+                put("type", "string")
+                put("description", "Optional URL — a meeting/video link (Zoom, Meet), doc, or map link")
             }
             putJsonObject("color") {
                 put("type", "string")
@@ -97,8 +100,14 @@ class CreateCalendarEventTool @Inject constructor(
             endTime = endIso,
             location = args["location"]?.jsonPrimitive?.content.orEmpty(),
             color = args["color"]?.jsonPrimitive?.content ?: "blue",
+            link = args["link"]?.jsonPrimitive?.content.orEmpty(),
         )
         calendarRepository.insertEvent(event)
+        // teach the timing engine, exactly as the calendar screen does when the user adds an event by
+        // hand. without this the two features worked against each other: the more someone scheduled
+        // through the assistant, the less their own suggestions learned, and the chips slowly went
+        // stale on the habits they actually had
+        habitTimingRepository.recordEvent(event, HabitTimingRepository.WEIGHT_PLANNED)
         return "Created event '${event.title}' on $date at $start. id=${event.id}"
     }
 }

@@ -27,6 +27,8 @@ data class TodoItemEntity(
     val attendees: Int = 0,
     val color: String = TodoColor.LIGHT_PINK.name,
     val category: String = "personal",
+    // see CalendarEventEntity.createdBy, same owner/author split
+    val createdBy: String? = null,
     val syncStatus: String = SyncStatus.PENDING_INSERT.name,
     val lastModifiedAt: Long = System.currentTimeMillis()
 )

@@ -2,11 +2,14 @@ package com.muradgalayev.brainbuddy.ui.calendar
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,7 +43,11 @@ import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Diversity3
+import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
@@ -47,6 +55,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -66,19 +75,218 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
+import com.muradgalayev.brainbuddy.ui.accessibility.speaking
 
+// overdue once the end time has passed and it isn't finished. finished covers both routes,
+// ticked off directly or every station done. nagging about work someone already did is the
+// fastest way to teach them to ignore the overdue section altogether
+fun CalendarTaskUi.isOverdue(nowMillis: Long): Boolean {
+    val end = endMillis ?: return false
+    if (end >= nowMillis) return false
+    // only unfinished work can be late
+    return !isDone
+}
 
-/* ── Bottom Sheet Content (Portrait mode) ── */
+// ticks once a minute so an event crossing its end time moves into the overdue group while
+// the user is looking at it. otherwise the list only re-evaluates when the data changes
+@Composable
+private fun rememberNowMillis(): Long {
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(60_000L)
+            now = System.currentTimeMillis()
+        }
+    }
+    return now
+}
+
+// the day's events in the three groups the list renders: slipped past, still live, already
+// done. finished work sinks to the bottom, a ticked-off event wedged between two live ones
+// is noise and the point of ticking it off is to stop having to look at it
+private data class DayGroups(
+    val overdue: List<CalendarTaskUi>,
+    val active: List<CalendarTaskUi>,
+    val done: List<CalendarTaskUi>,
+)
+
+private fun List<CalendarTaskUi>.groupForDay(nowMillis: Long): DayGroups {
+    val (done, open) = partition { it.isDone }
+    val (overdue, active) = open.partition { it.isOverdue(nowMillis) }
+    return DayGroups(overdue = overdue, active = active, done = done)
+}
+
+// uses the flag colour, not the event accent
+@Composable
+private fun OverdueSectionHeader(palette: CalendarPalette, count: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 6.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.ErrorOutline,
+            contentDescription = null,
+            tint = palette.flagRed,
+            modifier = Modifier.size(15.dp),
+        )
+        Spacer(Modifier.width(7.dp))
+        Text(
+            text = if (count == 1) "1 thing slipped past" else "$count things slipped past",
+            color = palette.flagRed,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
+// only shown when both groups exist
+@Composable
+private fun StillToComeHeader(palette: CalendarPalette) {
+    Text(
+        text = "Still to come",
+        color = palette.muted,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(top = 14.dp, bottom = 6.dp),
+    )
+}
+
+// header above the finished group at the bottom of the day
+@Composable
+private fun DoneSectionHeader(palette: CalendarPalette, count: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 18.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Check,
+            contentDescription = null,
+            tint = palette.muted.copy(alpha = 0.7f),
+            modifier = Modifier.size(14.dp),
+        )
+        Spacer(Modifier.width(7.dp))
+        Text(
+            text = if (count == 1) "1 done" else "$count done",
+            color = palette.muted.copy(alpha = 0.85f),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+// the day's task list: overdue, then live, then done. shared by the portrait sheet and the
+// landscape column so the two layouts can't drift into different orderings
+private fun LazyListScope.calendarTaskItems(
+    palette: CalendarPalette,
+    tasks: List<CalendarTaskUi>,
+    nowMillis: Long,
+    expandedEventId: String?,
+    onTaskClick: (String) -> Unit,
+    onTaskDelete: (String) -> Unit,
+    onToggleCompleted: (String) -> Unit,
+    onToggleExpanded: (String) -> Unit,
+    onToggleSubtask: (String, Boolean) -> Unit,
+    onManageSubtasks: (String) -> Unit,
+    onRunInPomodoro: (String) -> Unit,
+) {
+    if (tasks.isEmpty()) {
+        item { EmptyTasksState(palette = palette) }
+        return
+    }
+
+    val groups = tasks.groupForDay(nowMillis)
+    val handlers = CalendarTaskHandlers(
+        expandedEventId = expandedEventId,
+        onTaskClick = onTaskClick,
+        onTaskDelete = onTaskDelete,
+        onToggleCompleted = onToggleCompleted,
+        onToggleExpanded = onToggleExpanded,
+        onToggleSubtask = onToggleSubtask,
+        onManageSubtasks = onManageSubtasks,
+        onRunInPomodoro = onRunInPomodoro,
+    )
+
+    // overdue first. burying what slipped past under what's still coming is how it gets
+    // forgotten, and forgetting is the thing this app exists to help with
+    if (groups.overdue.isNotEmpty()) {
+        item(key = "overdue_header") {
+            OverdueSectionHeader(palette = palette, count = groups.overdue.size)
+        }
+        taskCards(palette, groups.overdue, isOverdue = true, dimmed = false, handlers = handlers)
+        if (groups.active.isNotEmpty()) {
+            item(key = "upcoming_header") { StillToComeHeader(palette) }
+        }
+    }
+
+    taskCards(palette, groups.active, isOverdue = false, dimmed = false, handlers = handlers)
+
+    // finished work last and faded: still reachable to un-tick, out of the way otherwise
+    if (groups.done.isNotEmpty()) {
+        item(key = "done_header") {
+            DoneSectionHeader(palette = palette, count = groups.done.size)
+        }
+        taskCards(palette, groups.done, isOverdue = false, dimmed = true, handlers = handlers)
+    }
+}
+
+// bundled so the group helper isn't a wall of parameters
+private class CalendarTaskHandlers(
+    val expandedEventId: String?,
+    val onTaskClick: (String) -> Unit,
+    val onTaskDelete: (String) -> Unit,
+    val onToggleCompleted: (String) -> Unit,
+    val onToggleExpanded: (String) -> Unit,
+    val onToggleSubtask: (String, Boolean) -> Unit,
+    val onManageSubtasks: (String) -> Unit,
+    val onRunInPomodoro: (String) -> Unit,
+)
+
+// one group of cards with a shared overdue/dimmed treatment
+private fun LazyListScope.taskCards(
+    palette: CalendarPalette,
+    group: List<CalendarTaskUi>,
+    isOverdue: Boolean,
+    dimmed: Boolean,
+    handlers: CalendarTaskHandlers,
+) {
+    items(group, key = { it.id }) { task ->
+        SwipeableCalendarTaskCard(
+            modifier = Modifier
+                .animateItem()
+                .then(if (dimmed) Modifier.alpha(0.55f) else Modifier),
+            palette = palette,
+            task = task,
+            expanded = handlers.expandedEventId == task.id,
+            isOverdue = isOverdue,
+            onClick = { handlers.onTaskClick(task.id) },
+            onDelete = { handlers.onTaskDelete(task.id) },
+            onToggleCompleted = { handlers.onToggleCompleted(task.id) },
+            onToggleExpanded = { handlers.onToggleExpanded(task.id) },
+            onToggleSubtask = handlers.onToggleSubtask,
+            onManageSubtasks = { handlers.onManageSubtasks(task.id) },
+            onRunInPomodoro = { handlers.onRunInPomodoro(task.id) },
+        )
+    }
+}
+
+// bottom sheet content (portrait)
 @Composable
 fun EventsBottomSheet(
     palette: CalendarPalette,
@@ -87,14 +295,16 @@ fun EventsBottomSheet(
     expandedEventId: String?,
     onTaskClick: (String) -> Unit,
     onTaskDelete: (String) -> Unit,
+    onToggleCompleted: (String) -> Unit,
     onAddTask: () -> Unit,
     onToggleExpanded: (String) -> Unit,
     onToggleSubtask: (String, Boolean) -> Unit,
     onManageSubtasks: (String) -> Unit,
     onRunInPomodoro: (String) -> Unit,
 ) {
+    val nowMillis = rememberNowMillis()
     Column(modifier = Modifier.fillMaxWidth()) {
-        // ── Drag handle ──
+        // drag handle
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -112,12 +322,12 @@ fun EventsBottomSheet(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // ── Dark date header (like reference) ──
+        // dark date header
         DateHeader(palette = palette, selectedDate = selectedDate)
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // ── Task list ──
+        // task list
         Box(modifier = Modifier.fillMaxWidth()) {
             LazyColumn(
                 modifier = Modifier
@@ -125,50 +335,33 @@ fun EventsBottomSheet(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                if (tasks.isEmpty()) {
-                    item {
-                        EmptyTasksState(palette = palette)
-                    }
-                } else {
-                    items(tasks, key = { it.id }) { task ->
-                        SwipeableCalendarTaskCard(
-                            palette = palette,
-                            task = task,
-                            expanded = expandedEventId == task.id,
-                            onClick = { onTaskClick(task.id) },
-                            onDelete = { onTaskDelete(task.id) },
-                            onToggleExpanded = { onToggleExpanded(task.id) },
-                            onToggleSubtask = onToggleSubtask,
-                            onManageSubtasks = { onManageSubtasks(task.id) },
-                            onRunInPomodoro = { onRunInPomodoro(task.id) },
-                        )
-                    }
-                }
+                calendarTaskItems(
+                    palette = palette,
+                    tasks = tasks,
+                    nowMillis = nowMillis,
+                    expandedEventId = expandedEventId,
+                    onTaskClick = onTaskClick,
+                    onTaskDelete = onTaskDelete,
+                    onToggleCompleted = onToggleCompleted,
+                    onToggleExpanded = onToggleExpanded,
+                    onToggleSubtask = onToggleSubtask,
+                    onManageSubtasks = onManageSubtasks,
+                    onRunInPomodoro = onRunInPomodoro,
+                )
 
-                // Bottom spacing for FAB
+                // bottom spacing for the FAB
                 item { Spacer(modifier = Modifier.height(88.dp)) }
             }
 
-            // FAB inside sheet
-            FloatingActionButton(
-                onClick = onAddTask,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 20.dp, bottom = 24.dp),
-                shape = CircleShape,
-                containerColor = palette.lavender,
-                contentColor = Color.White,
-                elevation = FloatingActionButtonDefaults.elevation(
-                    defaultElevation = 6.dp
-                )
-            ) {
-                Icon(Icons.Outlined.Add, "Add task", Modifier.size(28.dp))
-            }
+            // the add button used to live here, aligned to the bottom of the sheet's content. once the
+            // list grew past the peek height that bottom sat below the fold, so the button vanished at
+            // exactly the point you had enough tasks to want another one. screen-level overlay now,
+            // see CalendarScreen
         }
     }
 }
 
-/* ── Dark date header ── */
+// dark date header
 @Composable
 fun DateHeader(
     palette: CalendarPalette,
@@ -188,7 +381,7 @@ fun DateHeader(
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // Red dot indicator
+            // red dot indicator
             Box(
                 modifier = Modifier
                     .size(8.dp)
@@ -207,7 +400,7 @@ fun DateHeader(
     }
 }
 
-/* ── Events section (landscape fallback) ── */
+// events section (landscape fallback)
 @Composable
 fun EventsSection(
     palette: CalendarPalette,
@@ -216,12 +409,14 @@ fun EventsSection(
     expandedEventId: String?,
     onTaskClick: (String) -> Unit,
     onTaskDelete: (String) -> Unit,
+    onToggleCompleted: (String) -> Unit,
     onToggleExpanded: (String) -> Unit,
     onToggleSubtask: (String, Boolean) -> Unit,
     onManageSubtasks: (String) -> Unit,
     onRunInPomodoro: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val nowMillis = rememberNowMillis()
     Column(modifier = modifier) {
         DateHeader(palette = palette, selectedDate = selectedDate)
 
@@ -233,28 +428,25 @@ fun EventsSection(
                 .padding(horizontal = 4.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            if (tasks.isEmpty()) {
-                item { EmptyTasksState(palette = palette) }
-            } else {
-                items(tasks, key = { it.id }) { task ->
-                    SwipeableCalendarTaskCard(
-                        palette = palette,
-                        task = task,
-                        expanded = expandedEventId == task.id,
-                        onClick = { onTaskClick(task.id) },
-                        onDelete = { onTaskDelete(task.id) },
-                        onToggleExpanded = { onToggleExpanded(task.id) },
-                        onToggleSubtask = onToggleSubtask,
-                        onManageSubtasks = { onManageSubtasks(task.id) },
-                        onRunInPomodoro = { onRunInPomodoro(task.id) },
-                    )
-                }
-            }
+            // same overdue-first / done-last grouping as the portrait sheet
+            calendarTaskItems(
+                palette = palette,
+                tasks = tasks,
+                nowMillis = nowMillis,
+                expandedEventId = expandedEventId,
+                onTaskClick = onTaskClick,
+                onTaskDelete = onTaskDelete,
+                onToggleCompleted = onToggleCompleted,
+                onToggleExpanded = onToggleExpanded,
+                onToggleSubtask = onToggleSubtask,
+                onManageSubtasks = onManageSubtasks,
+                onRunInPomodoro = onRunInPomodoro,
+            )
         }
     }
 }
 
-/* ── Empty tasks state ── */
+// empty tasks state
 @Composable
 fun EmptyTasksState(palette: CalendarPalette) {
     Column(
@@ -294,25 +486,18 @@ fun EmptyTasksState(palette: CalendarPalette) {
     }
 }
 
-/* ── Category tag colors ── */
-private fun categoryColor(category: String): Color = when (category.lowercase()) {
-    "work" -> Color(0xFFD9B05C)      // muted amber
-    "personal" -> Color(0xFF8AAE7E)  // sage green
-    "education" -> Color(0xFFD97A3D) // accent orange
-    "sport" -> Color(0xFFC75A4A)     // muted red
-    "health" -> Color(0xFFA88AB8)    // muted lilac
-    else -> Color(0xFF7FA3C9)        // accent blue
-}
-
-/* ── Swipeable task card ── */
+// swipeable task card
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SwipeableCalendarTaskCard(
+    modifier: Modifier = Modifier,
     palette: CalendarPalette,
     task: CalendarTaskUi,
     expanded: Boolean,
+    isOverdue: Boolean = false,
     onClick: () -> Unit,
     onDelete: () -> Unit,
+    onToggleCompleted: () -> Unit,
     onToggleExpanded: () -> Unit,
     onToggleSubtask: (String, Boolean) -> Unit,
     onManageSubtasks: () -> Unit,
@@ -336,7 +521,7 @@ private fun SwipeableCalendarTaskCard(
         }
     )
 
-    // After triggering edit/delete, snap the row back to center.
+    // snap the row back to centre after edit or delete
     LaunchedEffect(showDeleteConfirm) {
         if (!showDeleteConfirm && dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
             dismissState.reset()
@@ -357,6 +542,7 @@ private fun SwipeableCalendarTaskCard(
     )
 
     SwipeToDismissBox(
+        modifier = modifier,
         state = dismissState,
         backgroundContent = {
             Row(
@@ -394,7 +580,9 @@ private fun SwipeableCalendarTaskCard(
             palette = palette,
             task = task,
             expanded = expanded,
+            isOverdue = isOverdue,
             onClick = onClick,
+            onToggleCompleted = onToggleCompleted,
             onToggleExpanded = onToggleExpanded,
             onToggleSubtask = onToggleSubtask,
             onManageSubtasks = onManageSubtasks,
@@ -445,13 +633,15 @@ private fun SwipeableCalendarTaskCard(
     }
 }
 
-/* ── Task Card (reference style) ── */
+// task card
 @Composable
 fun CalendarTaskCard(
     palette: CalendarPalette,
     task: CalendarTaskUi,
     expanded: Boolean,
+    isOverdue: Boolean = false,
     onClick: () -> Unit,
+    onToggleCompleted: () -> Unit,
     onToggleExpanded: () -> Unit,
     onToggleSubtask: (String, Boolean) -> Unit,
     onManageSubtasks: () -> Unit,
@@ -460,6 +650,9 @@ fun CalendarTaskCard(
     val context = LocalContext.current
     val tintedBg = androidx.compose.ui.graphics.lerp(palette.cardBg, task.accent, 0.07f)
     val canExpand = task.subtasks.isNotEmpty() || task.totalMinutes > 0
+    val hasDetails = !task.subtitle.isNullOrEmpty() ||
+        !task.location.isNullOrEmpty() ||
+        !task.link.isNullOrEmpty()
 
     val totalSubtaskMinutes = task.subtasks.sumOf { it.durationMinutes }
     val completedSubtaskMinutes = task.subtasks
@@ -475,14 +668,14 @@ fun CalendarTaskCard(
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                onClick = onClick
+                onClick = speaking(task.title, onClick)
             ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = tintedBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-            // Accent stripe — modern Linear-style indicator
+            // accent stripe
             Box(
                 modifier = Modifier
                     .width(4.dp)
@@ -495,90 +688,100 @@ fun CalendarTaskCard(
                     .padding(16.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Progress indicator → also the expand button (replaces the
-                    // old completion circle, which was a no-op for calendar events).
-                    if (canExpand) {
-                        SubtaskProgressIndicator(
-                            accent = task.accent,
-                            progress = subtaskProgress,
-                            hasSubtasks = task.subtasks.isNotEmpty(),
-                            onClick = onToggleExpanded,
-                        )
-                    } else {
-                        TaskStatusCircle(palette = palette, completed = task.completed)
-                    }
+                    // plain status dot, and the expand button. the breakdown used to hide behind a 34dp ring
+                    // here and people simply didn't see it: a small circle among other small circles doesn't
+                    // read as something you can press. it's a labelled full-width row at the card's foot now
+                    TaskStatusCircle(
+                        palette = palette,
+                        completed = task.isDone,
+                        onClick = onToggleCompleted,
+                    )
 
                     Spacer(Modifier.width(14.dp))
 
                     Column(modifier = Modifier.weight(1f)) {
-                        // Category tag pill
-                        if (!task.subtitle.isNullOrEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(
-                                        categoryColor(task.subtitle).copy(alpha = 0.15f)
-                                    )
-                                    .padding(horizontal = 8.dp, vertical = 3.dp)
-                            ) {
-                                Text(
-                                    text = task.subtitle.uppercase(),
-                                    color = categoryColor(task.subtitle),
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 0.5.sp
-                                )
-                            }
-                            Spacer(Modifier.height(6.dp))
-                        }
+                        // the description used to render here as an uppercase category pill, which read like a label
+                        // the user had chosen rather than the note they wrote. plain text in the dropdown now
 
-                        // Task title
+                        // task title
                         Text(
                             text = task.title,
-                            color = if (task.completed) palette.muted else palette.ink,
+                            color = if (task.isDone) palette.muted else palette.ink,
                             fontSize = 15.sp,
                             lineHeight = 20.sp,
                             fontWeight = FontWeight.SemiBold,
-                            textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None,
+                            textDecoration = if (task.isDone) TextDecoration.LineThrough else TextDecoration.None,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
 
-                        if (!task.location.isNullOrEmpty()) {
-                            Spacer(Modifier.height(2.dp))
-                            Text(
-                                text = task.location,
-                                color = palette.muted,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                        // attribution when someone else put this here. under the title rather than in the dropdown:
+                        // 'who put this in my day' is the first question they'll have, it shouldn't need a tap
+                        task.addedByName?.let { author ->
+                            Spacer(Modifier.height(4.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(50))
+                                        .background(task.accent.copy(alpha = 0.16f))
+                                        .padding(horizontal = 7.dp, vertical = 2.dp),
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Diversity3,
+                                            contentDescription = null,
+                                            tint = task.accent,
+                                            modifier = Modifier.size(10.dp),
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(
+                                            text = "Added by $author",
+                                            color = task.accent,
+                                            fontSize = 9.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.3.sp,
+                                        )
+                                    }
+                                }
+                            }
                         }
 
-                        if (!task.link.isNullOrEmpty()) {
-                            Spacer(Modifier.height(6.dp))
-                            LinkChip(
-                                palette = palette,
-                                rawUrl = task.link,
-                                onClick = { openUrl(context, task.link) }
-                            )
-                        }
+                        // location and link used to stack here under the title, which made every card a different
+                        // height and buried the time. they live in the details dropdown now
                     }
 
-                    // Time range
+                    // time range, with an overdue marker under it so the card says why it's in the overdue
+                    // group without the user scrolling back to the section header
                     if (!task.timeRange.isNullOrEmpty()) {
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
                                 text = task.timeRange,
-                                color = palette.muted.copy(alpha = 0.8f),
+                                color = if (isOverdue) palette.flagRed
+                                else palette.muted.copy(alpha = 0.8f),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium
                             )
+                            if (isOverdue) {
+                                Spacer(Modifier.height(3.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(50))
+                                        .background(palette.flagRed.copy(alpha = 0.15f))
+                                        .padding(horizontal = 7.dp, vertical = 2.dp),
+                                ) {
+                                    Text(
+                                        text = "OVERDUE",
+                                        color = palette.flagRed,
+                                        fontSize = 8.5.sp,
+                                        fontWeight = FontWeight.Black,
+                                        letterSpacing = 0.5.sp,
+                                    )
+                                }
+                            }
                         }
                     }
 
-                    // Flag indicator
+                    // flag indicator
                     if (task.flagged) {
                         Spacer(Modifier.width(8.dp))
                         Box(
@@ -589,46 +792,92 @@ fun CalendarTaskCard(
                         )
                     }
 
+                    // only rendered when there's something behind it, a chevron that opens an empty drawer is
+                    // worse than no chevron
+                    if (hasDetails) {
+                        Spacer(Modifier.width(4.dp))
+                        DetailsChevron(
+                            palette = palette,
+                            expanded = expanded,
+                            onClick = onToggleExpanded,
+                        )
+                    }
                 }
 
-                // Ribbon teaser when collapsed (hint that subtasks exist)
-                if (!expanded && task.subtasks.isNotEmpty()) {
-                    Spacer(Modifier.height(10.dp))
-                    SubtaskRibbonPreview(
+                AnimatedVisibility(
+                    visible = expanded && hasDetails,
+                    // expandFrom/shrinkTowards = Top. the default is Bottom, which reveals the panel from its
+                    // lower edge upward and made the details look like they popped up over the card instead of
+                    // opening beneath the title
+                    enter = expandVertically(
+                        expandFrom = Alignment.Top,
+                        animationSpec = tween(220),
+                    ) + fadeIn(tween(180, delayMillis = 60)),
+                    exit = shrinkVertically(
+                        shrinkTowards = Alignment.Top,
+                        animationSpec = tween(180),
+                    ) + fadeOut(tween(100)),
+                ) {
+                    TaskDetailsBlock(
                         palette = palette,
-                        accent = task.accent,
-                        subtasks = task.subtasks,
+                        description = task.subtitle,
+                        location = task.location,
+                        link = task.link,
+                        onOpenLink = { task.link?.let { openUrl(context, it) } },
                     )
                 }
 
-                // Full timeline rail when expanded
-                SubtaskTimelineRail(
-                    palette = palette,
-                    accent = task.accent,
-                    totalMinutes = task.totalMinutes,
-                    subtasks = task.subtasks,
-                    isPomodoroPlan = task.subtasks.isPomodoroPlan(),
-                    onToggleSubtask = onToggleSubtask,
-                    onManage = onManageSubtasks,
-                    onRunInPomodoro = onRunInPomodoro,
-                    expanded = expanded,
-                )
+                // breakdown lives on its own screen now. the card carries a status line, enough to know a
+                // plan exists and how far along it is, without the full station rail pushing every other
+                // task off the list.
+                // a finished task shows none of it: offering to break down work that's already done is the
+                // app failing to notice you did it. un-ticking brings it straight back, nothing is deleted.
+                // medication doses are never broken into steps either, 'take Ritalin' has no smaller parts
+                if (!task.isDone && !task.isMedication) {
+                    if (task.subtasks.isNotEmpty()) {
+                        Spacer(Modifier.height(12.dp))
+                        BreakdownSummaryRow(
+                            palette = palette,
+                            accent = task.accent,
+                            doneCount = task.subtasks.count { it.completed },
+                            totalCount = task.subtasks.size,
+                            progress = subtaskProgress,
+                            onClick = onManageSubtasks,
+                        )
+                    } else if (canExpand) {
+                        // no plan yet, so this is the invitation. it has to look like a button, not a hint, or it
+                        // goes unnoticed the way the ring did
+                        Spacer(Modifier.height(12.dp))
+                        BreakdownCtaRow(
+                            palette = palette,
+                            accent = task.accent,
+                            totalMinutes = task.totalMinutes,
+                            onClick = onManageSubtasks,
+                        )
+                    }
+                }
+
             }
         }
     }
 }
 
-/* ── Subtask progress indicator (replaces chevron — shows % at a glance) ── */
+// details disclosure
+
 @Composable
-private fun SubtaskProgressIndicator(
-    accent: Color,
-    progress: Float,
-    hasSubtasks: Boolean,
+private fun DetailsChevron(
+    palette: CalendarPalette,
+    expanded: Boolean,
     onClick: () -> Unit,
 ) {
+    val rotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = tween(220),
+        label = "details_chevron",
+    )
     Box(
         modifier = Modifier
-            .size(34.dp)
+            .size(28.dp)
             .clip(CircleShape)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -637,57 +886,207 @@ private fun SubtaskProgressIndicator(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        if (hasSubtasks) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val stroke = 3.dp.toPx()
-                val arcSize = Size(size.width - stroke, size.height - stroke)
-                val topLeft = Offset(stroke / 2, stroke / 2)
-                drawArc(
-                    color = accent.copy(alpha = 0.18f),
-                    startAngle = 0f,
-                    sweepAngle = 360f,
-                    useCenter = false,
-                    topLeft = topLeft,
-                    size = arcSize,
-                    style = Stroke(width = stroke, cap = StrokeCap.Round),
-                )
-                drawArc(
-                    color = accent,
-                    startAngle = -90f,
-                    sweepAngle = 360f * progress,
-                    useCenter = false,
-                    topLeft = topLeft,
-                    size = arcSize,
-                    style = Stroke(width = stroke, cap = StrokeCap.Round),
-                )
-            }
-            Text(
-                text = "${(progress * 100).toInt()}",
-                color = accent,
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = (-0.4).sp,
+        Icon(
+            imageVector = Icons.Rounded.KeyboardArrowDown,
+            contentDescription = if (expanded) "Hide details" else "Show details",
+            tint = palette.muted.copy(alpha = 0.75f),
+            modifier = Modifier
+                .size(18.dp)
+                .rotate(rotation),
+        )
+    }
+}
+
+// description, location and link, revealed on demand. labelled rows so they read as facts
+// about the event rather than loose text stacked under a title
+@Composable
+private fun TaskDetailsBlock(
+    palette: CalendarPalette,
+    description: String?,
+    location: String?,
+    link: String?,
+    onOpenLink: () -> Unit,
+) {
+    Column(modifier = Modifier.padding(top = 12.dp)) {
+        if (!description.isNullOrEmpty()) {
+            DetailRow(
+                palette = palette,
+                icon = Icons.AutoMirrored.Rounded.EventNote,
+                text = description,
             )
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .background(accent.copy(alpha = 0.14f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.AutoAwesome,
-                    contentDescription = "Add stations",
-                    tint = accent,
-                    modifier = Modifier.size(14.dp),
-                )
+        }
+        if (!location.isNullOrEmpty()) {
+            if (!description.isNullOrEmpty()) Spacer(Modifier.height(8.dp))
+            DetailRow(
+                palette = palette,
+                icon = Icons.Outlined.Place,
+                text = location,
+            )
+        }
+        if (!link.isNullOrEmpty()) {
+            if (!description.isNullOrEmpty() || !location.isNullOrEmpty()) {
+                Spacer(Modifier.height(10.dp))
             }
+            LinkChip(palette = palette, rawUrl = link, onClick = onOpenLink)
         }
     }
 }
 
-/* ── Link chip (tap to open) ── */
+@Composable
+private fun DetailRow(
+    palette: CalendarPalette,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+) {
+    Row(verticalAlignment = Alignment.Top) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = palette.muted.copy(alpha = 0.7f),
+            modifier = Modifier
+                .padding(top = 1.dp)
+                .size(14.dp),
+        )
+        Spacer(Modifier.width(9.dp))
+        Text(
+            text = text,
+            color = palette.muted,
+            fontSize = 12.5.sp,
+            lineHeight = 17.sp,
+        )
+    }
+}
+
+// the 'you can split this up' invitation, on any timed event with no plan yet. a solid
+// tinted button rather than a quiet hint: the old affordance, a 34dp ring at the card's
+// left edge, was being missed entirely
+@Composable
+private fun BreakdownCtaRow(
+    palette: CalendarPalette,
+    accent: Color,
+    totalMinutes: Int,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(accent.copy(alpha = 0.13f))
+            .border(1.dp, accent.copy(alpha = 0.30f), RoundedCornerShape(12.dp))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            )
+            .padding(horizontal = 12.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.AutoAwesome,
+            contentDescription = null,
+            tint = accent,
+            modifier = Modifier.size(15.dp),
+        )
+        Spacer(Modifier.width(9.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Break this into steps",
+                color = accent,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            if (totalMinutes > 0) {
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "$totalMinutes min · easier one piece at a time",
+                    color = palette.muted,
+                    fontSize = 11.sp,
+                )
+            }
+        }
+        Spacer(Modifier.width(8.dp))
+        Icon(
+            imageVector = Icons.Rounded.KeyboardArrowDown,
+            contentDescription = null,
+            tint = accent,
+            modifier = Modifier
+                .size(16.dp)
+                .rotate(-90f),
+        )
+    }
+}
+
+// one-line status of the breakdown, and the way into the full screen. not the plan itself,
+// the stations live on TaskBreakdownScreen so the card is the same height whether an event
+// has three steps or twelve
+@Composable
+private fun BreakdownSummaryRow(
+    palette: CalendarPalette,
+    accent: Color,
+    doneCount: Int,
+    totalCount: Int,
+    progress: Float,
+    onClick: () -> Unit,
+) {
+    val complete = doneCount == totalCount && totalCount > 0
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(accent.copy(alpha = 0.09f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            )
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = if (complete) Icons.Outlined.Check else Icons.Outlined.AutoAwesome,
+            contentDescription = null,
+            tint = accent,
+            modifier = Modifier.size(14.dp),
+        )
+        Spacer(Modifier.width(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = if (complete) "Breakdown complete" else "$doneCount of $totalCount steps done",
+                color = palette.ink,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(Modifier.height(6.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(accent.copy(alpha = 0.18f)),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress.coerceIn(0f, 1f))
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(accent),
+                )
+            }
+        }
+        Spacer(Modifier.width(10.dp))
+        Icon(
+            imageVector = Icons.Rounded.KeyboardArrowDown,
+            contentDescription = "Open breakdown",
+            tint = accent,
+            // pointing right: this opens another screen, it doesn't expand in place
+            modifier = Modifier
+                .size(16.dp)
+                .rotate(-90f),
+        )
+    }
+}
+
+// link chip
 @Composable
 private fun LinkChip(
     palette: CalendarPalette,
@@ -738,9 +1137,13 @@ private fun openUrl(context: android.content.Context, raw: String) {
     runCatching { context.startActivity(intent) }
 }
 
-/* ── Task Status Circle ── */
+// task status circle
 @Composable
-fun TaskStatusCircle(palette: CalendarPalette, completed: Boolean) {
+fun TaskStatusCircle(
+    palette: CalendarPalette,
+    completed: Boolean,
+    onClick: (() -> Unit)? = null,
+) {
     val bgColor by animateColorAsState(
         targetValue = if (completed) palette.lavender else Color.Transparent,
         animationSpec = tween(250),
@@ -758,6 +1161,14 @@ fun TaskStatusCircle(palette: CalendarPalette, completed: Boolean) {
                 } else {
                     Modifier
                 }
+            )
+            // was decoration until calendar events got a completion flag, now it's the tick-off control
+            .then(
+                if (onClick != null) Modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onClick,
+                ) else Modifier
             ),
         contentAlignment = Alignment.Center
     ) {

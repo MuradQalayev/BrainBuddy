@@ -1,4 +1,3 @@
-// domain/model/PomodoroSession.kt
 package com.muradgalayev.brainbuddy.domain.model
 
 data class PomodoroSession(

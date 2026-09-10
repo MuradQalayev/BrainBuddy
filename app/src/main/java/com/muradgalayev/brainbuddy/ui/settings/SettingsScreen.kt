@@ -2,7 +2,19 @@ package com.muradgalayev.brainbuddy.ui.settings
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -27,17 +39,30 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.AlternateEmail
 import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Email
 import androidx.compose.material.icons.rounded.Logout
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material.icons.rounded.Sync
-import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Diversity3
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -56,20 +81,26 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.muradgalayev.brainbuddy.ui.theme.myndoraAccents
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -80,13 +111,16 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import com.muradgalayev.brainbuddy.R
+import com.muradgalayev.brainbuddy.ui.accessibility.speaking
+import com.muradgalayev.brainbuddy.ui.accessibility.animationsOn
 import com.muradgalayev.brainbuddy.ui.settings.components.AppearanceRow
-import com.muradgalayev.brainbuddy.ui.settings.components.FocusModeSection
+import com.muradgalayev.brainbuddy.ui.settings.components.NotificationsSection
 import com.muradgalayev.brainbuddy.ui.settings.components.QuickAccessSection
-import com.muradgalayev.brainbuddy.ui.theme.AiButtonDark
-import com.muradgalayev.brainbuddy.ui.theme.AiButtonDarkEnd
-import com.muradgalayev.brainbuddy.ui.theme.AiButtonLight
-import com.muradgalayev.brainbuddy.ui.theme.AiButtonLightEnd
+import com.muradgalayev.brainbuddy.data.notifications.ReminderCategory
+import com.muradgalayev.brainbuddy.ui.modes.modeAccentColor
+import com.muradgalayev.brainbuddy.ui.modes.modeIcon
+import com.muradgalayev.brainbuddy.ui.modes.scheduleSummary
+import kotlinx.coroutines.launch
 
 private val CardCorner = 24.dp
 private val IconCircleSize = 44.dp
@@ -96,27 +130,56 @@ private val ScreenHorizontalPadding = 20.dp
 fun SettingsScreen(
     onLogout: () -> Unit = {},
     onEditAdhdProfile: () -> Unit = {},
+    onContinueQuestionnaire: (com.muradgalayev.brainbuddy.domain.model.SurveyVersion) -> Unit = {
+        onEditAdhdProfile()
+    },
+    onEditProfile: () -> Unit = {},
+    onOpenCustomization: () -> Unit = {},
+    onOpenNotifications: () -> Unit = {},
+    onOpenAiSettings: () -> Unit = {},
+    onOpenAiWellness: () -> Unit = {},
+    onOpenLinkedAccounts: () -> Unit = {},
+    onOpenLinkedDevices: () -> Unit = {},
+    onOpenTogether: () -> Unit = {},
+    onOpenModes: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val themeMode by viewModel.themeMode.collectAsState()
+    val activeMode by viewModel.activeMode.collectAsState()
     val fontMode by viewModel.fontMode.collectAsState()
     val enabledNavItems by viewModel.enabledNavItems.collectAsState()
-    val focusModeEnabled by viewModel.focusModeEnabled.collectAsState()
-    val simplifiedWorkspace by viewModel.simplifiedWorkspace.collectAsState()
     var appearanceOpen by rememberSaveable { mutableStateOf(false) }
     var quickAccessOpen by rememberSaveable { mutableStateOf(false) }
     var pomodoroOpen by rememberSaveable { mutableStateOf(false) }
+    var notificationsOpen by rememberSaveable { mutableStateOf(false) }
+    val todoReminderKinds by viewModel.todoReminderKinds.collectAsState()
+    val calendarReminderKinds by viewModel.calendarReminderKinds.collectAsState()
+    val dailySummaryEnabled by viewModel.dailySummaryEnabled.collectAsState()
+    val pomodoroNudgeFrequency by viewModel.pomodoroNudgeFrequency.collectAsState()
+    val pomodoroNudgeTime by viewModel.pomodoroNudgeTime.collectAsState()
+    val pomodoroBreakReminders by viewModel.pomodoroBreakReminders.collectAsState()
     val fontSize by viewModel.fontSize.collectAsState()
     val loggedOut by viewModel.loggedOut.collectAsState()
     val exportingToCalendar by viewModel.exportingToCalendar.collectAsState()
     val calendarExportMessage by viewModel.calendarExportMessage.collectAsState()
+    val profileExporting by viewModel.profileExportInProgress.collectAsState()
+    val profileExportMessage by viewModel.profileExportMessage.collectAsState()
     val calendarAuthorizationRequest by viewModel.calendarAuthorizationRequest.collectAsState()
     val linkedGoogleEmail by viewModel.linkedGoogleEmail.collectAsState()
+    val healthConnectState by viewModel.healthConnectState.collectAsState()
+    val aiHealthPersonalization by viewModel.aiHealthPersonalization.collectAsState(initial = false)
     val profile by viewModel.profile.collectAsState()
+    val surveyCompleted by viewModel.surveyCompleted.collectAsState()
+    val questionnaireProgress by viewModel.questionnaireProgress.collectAsState()
     val profileSaving by viewModel.profileSaving.collectAsState()
     val profileSaveMessage by viewModel.profileSaveMessage.collectAsState()
+    val passwordResetState by viewModel.passwordResetState.collectAsState()
+    val pendingTogetherRequests by viewModel.pendingTogetherRequests.collectAsState()
+    val togetherConnections by viewModel.togetherConnections.collectAsState()
     var editProfileOpen by rememberSaveable { mutableStateOf(false) }
+    var passwordResetOpen by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     val calendarAuthLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
@@ -128,10 +191,27 @@ fun SettingsScreen(
         if (loggedOut) onLogout()
     }
 
+    // re-check on every entry so the prompt clears the moment the survey is finished
+    LaunchedEffect(Unit) { viewModel.refreshSurveyCompleted() }
+
+    // pull the freshest photo and name from cache on resume, e.g. right after editing the profile
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+        viewModel.reseedProfileFromCache()
+        viewModel.refreshHealthConnect()
+    }
+
     LaunchedEffect(calendarAuthorizationRequest) {
         val pi = calendarAuthorizationRequest ?: return@LaunchedEffect
         viewModel.consumeCalendarAuthorizationRequest()
         calendarAuthLauncher.launch(IntentSenderRequest.Builder(pi.intentSender).build())
+    }
+
+    LaunchedEffect(profileExportMessage) {
+        val msg = profileExportMessage
+        if (msg != null) {
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearProfileExportMessage()
+        }
     }
 
     LaunchedEffect(calendarExportMessage) {
@@ -155,12 +235,26 @@ fun SettingsScreen(
         }
     }
 
+    LaunchedEffect(passwordResetState.sentTo) {
+        val email = passwordResetState.sentTo ?: return@LaunchedEffect
+        passwordResetOpen = false
+        snackbarHostState.showSnackbar("Password link sent to $email")
+        viewModel.clearPasswordResetFeedback()
+    }
+
+    // collapsing header: once the profile card scrolls past, show a compact top bar
+    val scrollState = rememberScrollState()
+    val collapseThresholdPx = with(LocalDensity.current) { 150.dp.toPx() }
+    val collapsed by remember {
+        derivedStateOf { scrollState.value > collapseThresholdPx }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Scrim when appearance panel is open
+        // scrim while the appearance panel is open
         if (appearanceOpen) {
             Box(
                 modifier = Modifier
@@ -178,17 +272,47 @@ fun SettingsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .zIndex(if (appearanceOpen) 2f else 0f)
         ) {
-            // ── Hero Profile Card (edge-to-edge banner) ──
-            ProfileHeroCard(
+            // title header
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Settings",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = ScreenHorizontalPadding),
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // profile card
+            ProfileCard(
                 name = profile.name,
                 username = profile.username,
                 email = profile.email,
                 avatarUrl = profile.avatarUrl,
-                onEditProfile = { editProfileOpen = true }
+                onEditProfile = onEditProfile,
+                downloadInProgress = profileExporting,
+                onDownloadProfile = { viewModel.downloadMyProfile() },
+                modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
             )
+
+            if (!surveyCompleted) {
+                Spacer(modifier = Modifier.height(12.dp))
+                CompleteSurveyBanner(
+                    progress = questionnaireProgress,
+                    onClick = {
+                        val version = questionnaireProgress?.version
+                        if (version != null) onContinueQuestionnaire(version) else onEditAdhdProfile()
+                    },
+                    modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+                )
+            }
 
             Spacer(modifier = Modifier.height(28.dp))
 
@@ -197,90 +321,176 @@ fun SettingsScreen(
                     .fillMaxWidth()
                     .padding(horizontal = ScreenHorizontalPadding)
             ) {
-                // ── Customization ──
-                SectionHeader(
+                // about you
+                SectionHeader(title = "About You")
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                AdhdProfileRow(completed = surveyCompleted, onClick = onEditAdhdProfile)
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                SectionHeader(title = "Account")
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                SettingsNavRow(
+                    title = "Password & sign-in",
+                    subtitle = "Create or reset your password",
+                    icon = Icons.Rounded.Lock,
+                    iconTint = MaterialTheme.colorScheme.secondary,
+                    onClick = {
+                        viewModel.clearPasswordResetFeedback()
+                        passwordResetOpen = true
+                    },
+                )
+
+                Spacer(modifier = Modifier.height(28.dp))
+
+                // general
+                SectionHeader(title = "General")
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // a normal nav row like the ones below it, only its icon, tint and subtitle follow whatever
+                // mode is running, so what's on is readable without the row standing apart from its neighbours
+                val runningMode = activeMode
+                val activeSchedule = runningMode?.schedule?.let {
+                    scheduleSummary(it.days, it.startMinute, it.endMinute, it.enabled)
+                }
+                SettingsNavRow(
+                    title = "Modes",
+                    subtitle = when {
+                        runningMode == null -> "Create calm, focused setups that switch together"
+                        activeSchedule != null -> "${runningMode.name} active • $activeSchedule"
+                        else -> "${runningMode.name} active • switched on manually"
+                    },
+                    icon = runningMode?.let { modeIcon(it.icon) } ?: Icons.Rounded.AutoAwesome,
+                    iconTint = modeAccentColor(runningMode?.accent),
+                    onClick = onOpenModes,
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                SettingsNavRow(
                     title = "Customization",
-                    accent = MaterialTheme.colorScheme.primary,
+                    subtitle = activeMode?.let { "Locked while ${it.name} mode is active" }
+                        ?: "Theme, font & display",
+                    icon = Icons.Outlined.Tune,
+                    trailingIcon = if (activeMode != null) Icons.Rounded.Lock else null,
+                    onClick = {
+                        coroutineScope.launch {
+                            val mode = viewModel.activeModeNow()
+                            if (mode == null) {
+                                onOpenCustomization()
+                            } else {
+                                snackbarHostState.showSnackbar(
+                                    "Customization isn't available while ${mode.name} mode is active. " +
+                                        "Turn it off or edit that mode first."
+                                )
+                            }
+                        }
+                    },
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                AppearanceRow(
-                    themeMode = themeMode,
-                    fontMode = fontMode,
-                    fontSize = fontSize,
-                    expanded = appearanceOpen,
-                    onToggle = { appearanceOpen = !appearanceOpen },
-                    onThemeChange = { viewModel.setThemeMode(it) },
-                    onFontChange = { viewModel.setFontMode(it) },
-                    onFontSizeChange = { viewModel.setFontSize(it) }
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                QuickAccessSection(
-                    enabledRoutes = enabledNavItems,
-                    expanded = quickAccessOpen,
-                    onToggleExpanded = { quickAccessOpen = !quickAccessOpen },
-                    onToggle = { route, enabled -> viewModel.toggleNavItem(route, enabled) }
+                SettingsNavRow(
+                    title = "Notifications",
+                    subtitle = "Reminders, daily summary & nudges",
+                    icon = Icons.Outlined.Notifications,
+                    iconTint = MaterialTheme.colorScheme.secondary,
+                    onClick = onOpenNotifications,
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // ── About You ──
-                SectionHeader(
-                    title = "About You",
-                    accent = MaterialTheme.colorScheme.secondary,
-                )
+                // Myndora AI
+                SectionHeader(title = "Myndora AI")
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                AdhdProfileRow(onClick = onEditAdhdProfile)
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // ── Focus ──
-                SectionHeader(
-                    title = "Focus",
-                    accent = MaterialTheme.colorScheme.tertiary,
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                FocusModeSection(
-                    enabled = focusModeEnabled,
-                    expanded = pomodoroOpen,
-                    onToggleExpanded = { pomodoroOpen = !pomodoroOpen },
-                    onToggle = { viewModel.toggleFocusMode(it) }
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                SimplifiedWorkspaceRow(
-                    enabled = simplifiedWorkspace,
-                    onToggle = { viewModel.toggleSimplifiedWorkspace(it) }
+                SettingsNavRow(
+                    title = "Myndora AI",
+                    subtitle = if (healthConnectState.connected && !aiHealthPersonalization)
+                        "1 boost available • unlock wellness-aware support"
+                    else "Voice, wellness personalization & preferences",
+                    iconRes = R.drawable.ic_ai,
+                    iconTint = MaterialTheme.colorScheme.primary,
+                    attentionCount = if (healthConnectState.connected && !aiHealthPersonalization) 1 else 0,
+                    onClick = if (healthConnectState.connected && !aiHealthPersonalization)
+                        onOpenAiWellness else onOpenAiSettings,
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // ── Integrations ──
-                SectionHeader(
-                    title = "Integrations",
-                    accent = MaterialTheme.colorScheme.primary,
-                )
+                // people. just a doorway, the hub itself lives in the Workspace where the things you do with
+                // a connection are. Settings only has to get you there and flag anything waiting
+                SectionHeader(title = "People")
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                GoogleCalendarExportRow(
-                    isExporting = exportingToCalendar,
-                    linkedEmail = linkedGoogleEmail,
-                    onExport = { viewModel.exportToGoogleCalendar() },
-                    onDisconnect = { viewModel.disconnectGoogleCalendar() }
+                SettingsNavRow(
+                    title = "Myndora Together",
+                    subtitle = when {
+                        pendingTogetherRequests.isNotEmpty() -> {
+                            val count = pendingTogetherRequests.size
+                            "$count ${if (count == 1) "request" else "requests"} waiting for you"
+                        }
+                        togetherConnections.isNotEmpty() ->
+                            togetherConnections.take(2).joinToString(" & ") { it.name } +
+                                if (togetherConnections.size > 2) {
+                                    " +${togetherConnections.size - 2}"
+                                } else ""
+                        else -> "Add someone you trust"
+                    },
+                    icon = Icons.Rounded.Diversity3,
+                    iconTint = MaterialTheme.colorScheme.tertiary,
+                    attentionCount = pendingTogetherRequests.size,
+                    onClick = onOpenTogether,
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // ── About ──
+                // linked accounts
+                SectionHeader(title = "Linked accounts")
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                SettingsNavRow(
+                    title = "Google Calendar",
+                    subtitle = linkedGoogleEmail ?: "Not connected",
+                    iconRes = R.drawable.ic_google_calendar,
+                    onClick = onOpenLinkedAccounts,
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                if (healthConnectState.connected) {
+                    SettingsNavRow(
+                        title = "Health Connect",
+                        subtitle = "Connected • steps and heart rate",
+                        iconRes = R.drawable.health,
+                        iconTint = MaterialTheme.colorScheme.tertiary,
+                        onClick = onOpenLinkedDevices,
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+
+                if (!healthConnectState.connected) {
+                    SettingsNavRow(
+                        title = "Connect Health Connect",
+                        subtitle = "Share steps and heart rate securely",
+                        iconRes = R.drawable.health,
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        onClick = onOpenLinkedDevices,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // about
                 SectionHeader(
                     title = "About",
                     accent = MaterialTheme.colorScheme.outline,
@@ -292,57 +502,402 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(28.dp))
 
-                // ── Sign Out (separated, red) ──
+                // sign out, separated and red
                 SignOutRow(onSignOut = viewModel::signOut)
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // ── Footer ──
+                // footer
                 Text(
-                    text = "BrainBuddy v1.0",
+                    text = "Myndora v1.0",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
                 )
 
-                // Breathing room above bottom nav bar
+                // breathing room above the bottom nav bar
                 Spacer(modifier = Modifier.height(96.dp))
             }
         }
 
-        SnackbarHost(
+        // compact top bar, slides in once the profile card scrolls away
+        AnimatedVisibility(
+            visible = collapsed,
+            enter = fadeIn(tween(180)) + slideInVertically(animationSpec = tween(220)) { -it },
+            exit = fadeOut(tween(150)) + slideOutVertically(animationSpec = tween(180)) { -it },
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .zIndex(4f),
+        ) {
+            val barInitials = (profile.name?.takeIf { it.isNotBlank() } ?: profile.username ?: profile.email)
+                ?.split(" ", ".", "_", "-")
+                ?.mapNotNull { it.firstOrNull()?.uppercase() }
+                ?.take(2)?.joinToString("")?.takeIf { it.isNotBlank() } ?: "?"
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.background,
+                shadowElevation = 4.dp,
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Settings",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
+                            .clickable(onClick = onEditProfile),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (!profile.avatarUrl.isNullOrBlank()) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(profile.avatarUrl)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "Profile",
+                                modifier = Modifier.size(40.dp).clip(CircleShape),
+                            )
+                        } else {
+                            Text(
+                                text = barInitials,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        com.muradgalayev.brainbuddy.ui.sharedcomponents.MyndoraSnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier
-                .align(Alignment.BottomCenter)
+                .align(Alignment.TopCenter)
                 .padding(16.dp)
                 .zIndex(3f)
-        ) { data ->
-            Snackbar(
-                snackbarData = data,
-                containerColor = MaterialTheme.colorScheme.inverseSurface,
-                contentColor = MaterialTheme.colorScheme.inverseOnSurface
-            )
-        }
+        )
     }
 
-    if (editProfileOpen) {
-        val usernameAvailability by viewModel.usernameAvailability.collectAsState()
-        EditProfileDialog(
-            initialName = profile.name.orEmpty(),
-            initialUsername = profile.username.orEmpty(),
-            saving = profileSaving,
-            availability = usernameAvailability,
-            onUsernameChange = viewModel::onEditingUsername,
-            onDismiss = { editProfileOpen = false },
-            onSave = { name, username ->
-                viewModel.updateProfile(name, username)
-            }
+    if (passwordResetOpen) {
+        PasswordResetDialog(
+            email = profile.email,
+            sending = passwordResetState.sending,
+            error = passwordResetState.error,
+            onSend = viewModel::sendPasswordReset,
+            onDismiss = {
+                passwordResetOpen = false
+                viewModel.clearPasswordResetFeedback()
+            },
         )
     }
 }
 
-// ── Hero Profile Card (gradient header inspired by screenshot) ──
+@Composable
+private fun PasswordResetDialog(
+    email: String?,
+    sending: Boolean,
+    error: String?,
+    onSend: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = { if (!sending) onDismiss() },
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        icon = {
+            Icon(
+                imageVector = Icons.Rounded.Lock,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        },
+        title = {
+            Text(
+                text = "Create or reset password",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+            )
+        },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = if (email.isNullOrBlank()) {
+                        "We couldn't find an email address for this account."
+                    } else {
+                        "We'll email $email. Open the secure link to choose a password. " +
+                            "You can still continue with Google afterward."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                if (error != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = error,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onSend,
+                enabled = !sending && !email.isNullOrBlank(),
+                shape = RoundedCornerShape(14.dp),
+            ) {
+                if (sending) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                } else {
+                    Text("Send email", fontWeight = FontWeight.SemiBold)
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !sending) {
+                Text("Cancel")
+            }
+        },
+    )
+}
+
+// Supportive progress card for a profile that can be continued in small chunks.
+@Composable
+private fun CompleteSurveyBanner(
+    progress: com.muradgalayev.brainbuddy.data.notifications.QuestionnaireReminderProgress?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val accent = MaterialTheme.colorScheme.primary
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.44f),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.18f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(accent),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.AutoAwesome,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(21.dp),
+                )
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Your profile is taking shape",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = progress?.let {
+                        "${it.answered} of ${it.total} steps complete · ${it.remaining} left"
+                    } ?: "Continue to unlock more personal guidance.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (progress != null) {
+                    Spacer(Modifier.height(10.dp))
+                    LinearProgressIndicator(
+                        progress = { progress.fraction.coerceIn(0f, 1f) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(5.dp)
+                            .clip(RoundedCornerShape(50)),
+                        color = accent,
+                        trackColor = accent.copy(alpha = 0.13f),
+                        gapSize = 0.dp,
+                        drawStopIndicator = {},
+                    )
+                }
+            }
+            Icon(
+                imageVector = Icons.Rounded.ChevronRight,
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.padding(start = 10.dp),
+            )
+        }
+    }
+}
+
+// profile card: avatar, name, email, chevron
+
+@Composable
+private fun ProfileCard(
+    name: String?,
+    username: String?,
+    email: String?,
+    avatarUrl: String?,
+    onEditProfile: () -> Unit,
+    downloadInProgress: Boolean,
+    onDownloadProfile: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    val displayName = name?.takeIf { it.isNotBlank() }
+        ?: email?.substringBefore("@")
+        ?: "Welcome"
+    val subtitle = email
+        ?: username?.takeIf { it.isNotBlank() }?.let { "@$it" }
+        ?: "Not signed in"
+    val initials = (name?.takeIf { it.isNotBlank() } ?: username ?: email)
+        ?.split(" ", ".", "_", "-")
+        ?.mapNotNull { it.firstOrNull()?.uppercase() }
+        ?.take(2)
+        ?.joinToString("")
+        ?.takeIf { it.isNotBlank() }
+        ?: "?"
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp)),
+        shape = RoundedCornerShape(20.dp),
+        color = colors.surface,
+        border = BorderStroke(1.dp, colors.outlineVariant.copy(alpha = 0.55f)),
+    ) {
+      Column {
+        // the identity row has its own click target now that the card has a second action. tapping
+        // anywhere used to mean edit profile, which swallowed taps meant for the download strip
+        Row(
+            modifier = Modifier
+                .clickable(onClick = onEditProfile)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = colors.primary.copy(alpha = 0.14f),
+                modifier = Modifier.size(52.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    if (!avatarUrl.isNullOrBlank()) {
+                        val context = LocalContext.current
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(avatarUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Profile picture",
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                        )
+                    } else {
+                        Text(
+                            text = initials,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.primary,
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.onSurface,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
+            }
+            Icon(
+                imageVector = Icons.Rounded.ChevronRight,
+                contentDescription = null,
+                tint = colors.onSurfaceVariant.copy(alpha = 0.8f),
+            )
+        }
+
+        // download strip, tucked into the lower edge of the profile card: it's about your data, so
+        // it belongs with your identity rather than as a full-weight row further down the page
+        HorizontalDivider(color = colors.outlineVariant.copy(alpha = 0.45f))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = !downloadInProgress, onClick = onDownloadProfile)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (downloadInProgress) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(17.dp),
+                    strokeWidth = 2.dp,
+                    color = colors.primary,
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Rounded.Download,
+                    contentDescription = null,
+                    tint = colors.primary,
+                    modifier = Modifier.size(17.dp),
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (downloadInProgress) "Preparing your PDF…" else "Download my profile",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.primary,
+                )
+                Spacer(modifier = Modifier.height(1.dp))
+                Text(
+                    text = "A PDF with your details and the last week of activity.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                    fontSize = 11.sp,
+                )
+            }
+        }
+      }
+    }
+}
 
 @Composable
 private fun ProfileHeroCard(
@@ -371,8 +926,7 @@ private fun ProfileHeroCard(
         ?.takeIf { it.isNotBlank() }
         ?: "?"
 
-    // Deep charcoal hero with a warm gradient orb in the top-right corner —
-    // matches the reference "Never miss out on your pills again" landing card.
+    // deep charcoal hero with a warm gradient orb in the top-right corner
     val heroBg = Color(0xFF1B1B23)
     val heroShape = RoundedCornerShape(
         topStart = 0.dp,
@@ -387,15 +941,17 @@ private fun ProfileHeroCard(
             .clip(heroShape)
             .background(heroBg)
     ) {
-        // Warm gradient orb — sits partly off-canvas in the top-right corner
+        // colours read outside the Canvas, a DrawScope isn't a composable context
+        val orbAccent = MaterialTheme.myndoraAccents.accent
+        val orbAccentEnd = MaterialTheme.myndoraAccents.accentEnd
         Canvas(modifier = Modifier.matchParentSize()) {
             val w = size.width
             val orbRadius = w * 0.55f
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        AiButtonLight.copy(alpha = 0.85f),
-                        AiButtonLightEnd.copy(alpha = 0.55f),
+                        orbAccent.copy(alpha = 0.85f),
+                        orbAccentEnd.copy(alpha = 0.55f),
                         heroBg.copy(alpha = 0f),
                     ),
                     center = Offset(w * 1.05f, -w * 0.05f),
@@ -439,7 +995,7 @@ private fun ProfileHeroCard(
 
             Spacer(modifier = Modifier.height(22.dp))
 
-            // Edit Profile — pill-shaped, glass-morphism style over the dark hero.
+            // edit profile, pill-shaped glass over the dark hero
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -520,16 +1076,19 @@ private fun ProfileAvatar(
 private fun EditProfileDialog(
     initialName: String,
     initialUsername: String,
+    initialPhone: String,
+    email: String?,
     saving: Boolean,
     availability: com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability,
     onUsernameChange: (String) -> Unit,
     onDismiss: () -> Unit,
-    onSave: (name: String, username: String) -> Unit
+    onSave: (name: String, username: String, phone: String) -> Unit
 ) {
     var name by rememberSaveable { mutableStateOf(initialName) }
     var username by rememberSaveable { mutableStateOf(initialUsername) }
+    var phone by rememberSaveable { mutableStateOf(initialPhone) }
 
-    // Fire an initial check for the pre-filled value so the user sees state immediately.
+    // fire an initial check for the pre-filled value so the user sees state immediately
     LaunchedEffect(Unit) { onUsernameChange(username) }
 
     val statusText: String? = when (availability) {
@@ -625,11 +1184,47 @@ private fun EditProfileDialog(
                         )
                     }
                 }
+                // phone, editable and saved to the account
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    label = { Text("Phone (optional)") },
+                    leadingIcon = { Icon(Icons.Rounded.Phone, contentDescription = null) },
+                    placeholder = { Text("e.g. +1 555 123 4567") },
+                    singleLine = true,
+                    enabled = !saving,
+                    shape = RoundedCornerShape(16.dp),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                // email, read-only, the address used to sign in
+                OutlinedTextField(
+                    value = email.orEmpty(),
+                    onValueChange = {},
+                    label = { Text("Email") },
+                    leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
+                    readOnly = true,
+                    enabled = false,
+                    singleLine = true,
+                    shape = RoundedCornerShape(16.dp),
+                    supportingText = { Text("Used to sign in — can't be changed here") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        disabledBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         },
         confirmButton = {
             Button(
-                onClick = { onSave(name, username) },
+                onClick = { onSave(name, username, phone) },
                 enabled = canSave,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
@@ -654,7 +1249,6 @@ private fun EditProfileDialog(
         }
     )
 }
-
 
 @Composable
 private fun ListCard(
@@ -715,73 +1309,234 @@ private fun IconBubble(
     }
 }
 
-// ── Section Header ──
-// Small colored dot + uppercase label — signals section boundary without hard rules.
+// section header
 
 @Composable
 private fun SectionHeader(title: String, accent: Color = MaterialTheme.colorScheme.primary) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(start = 6.dp)
-    ) {
-        Box(
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.padding(start = 4.dp),
+    )
+}
+
+// navigation row: icon, title, subtitle, chevron, opens a sub-page
+@Composable
+private fun SettingsNavRow(
+    title: String,
+    subtitle: String?,
+    icon: ImageVector? = null,
+    iconRes: Int? = null,
+    onClick: () -> Unit,
+    iconTint: Color = MaterialTheme.colorScheme.primary,
+    attentionCount: Int = 0,
+    trailingIcon: ImageVector? = null,
+) {
+    // title only. the subtitle is usually current-state detail like '2 reminders on', which is
+    // worth reading on the destination screen rather than on the way there
+    ListCard(onClick = speaking(title, onClick)) {
+        Row(
             modifier = Modifier
-                .size(6.dp)
-                .clip(CircleShape)
-                .background(accent)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = title.uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-            letterSpacing = 1.6.sp,
-        )
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 16.dp)
+                .heightIn(min = 32.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (iconRes != null) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.size(44.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            painter = painterResource(iconRes),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(26.dp),
+                        )
+                    }
+                }
+            } else if (icon != null) {
+                IconBubble(
+                    icon = icon,
+                    tint = iconTint,
+                    background = iconTint.copy(alpha = 0.14f),
+                    size = 44.dp,
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                if (subtitle != null) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            if (attentionCount > 0) {
+                Surface(
+                    modifier = Modifier.size(22.dp),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            attentionCount.toString(),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+                Spacer(Modifier.width(8.dp))
+            }
+            Icon(
+                imageVector = trailingIcon ?: Icons.Rounded.ChevronRight,
+                contentDescription = if (trailingIcon != null) "Unavailable while a mode is active" else null,
+                tint = if (trailingIcon != null) iconTint
+                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+            )
+        }
     }
 }
 
-// ── Google Calendar Export Row ──
+// collapsible group: a header row that expands to reveal its child settings
+@Composable
+private fun SettingsGroup(
+    title: String,
+    icon: ImageVector,
+    iconTint: Color = MaterialTheme.colorScheme.primary,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val rotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        label = "group_chevron",
+    )
+    Column {
+        ListCard(onClick = { expanded = !expanded }) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp, vertical = 18.dp)
+                    .heightIn(min = 32.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconBubble(
+                    icon = icon,
+                    tint = iconTint,
+                    background = iconTint.copy(alpha = 0.14f),
+                    size = 44.dp,
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    imageVector = Icons.Rounded.KeyboardArrowDown,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.rotate(rotation),
+                )
+            }
+        }
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
+            Column(
+                modifier = Modifier.padding(top = 10.dp, start = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                content = content,
+            )
+        }
+    }
+}
+
+// google calendar export row
 
 @Composable
-private fun GoogleCalendarExportRow(
+fun GoogleCalendarExportRow(
     isExporting: Boolean,
     linkedEmail: String?,
+    avatarUrl: String?,
     onExport: () -> Unit,
     onDisconnect: () -> Unit
 ) {
     val isConnected = linkedEmail != null
     val rowClickable = !isConnected && !isExporting
 
-    ListCard {
-        Column(modifier = Modifier.fillMaxWidth()) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(26.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 2.dp,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(18.dp)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(enabled = rowClickable, onClick = onExport)
-                    .padding(horizontal = 16.dp, vertical = 16.dp)
-                    .heightIn(min = 60.dp),
+                    .heightIn(min = 68.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(
-                        1.dp,
-                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
-                    ),
-                    modifier = Modifier.size(IconCircleSize)
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
+                Box(Modifier.size(62.dp)) {
+                    Surface(
+                        modifier = Modifier.size(56.dp).align(Alignment.TopStart),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(2.dp, MaterialTheme.colorScheme.surface),
+                        shadowElevation = 3.dp,
                     ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_google_calendar),
-                            contentDescription = null,
-                            tint = Color.Unspecified,
-                            modifier = Modifier.size(26.dp)
-                        )
+                        if (isConnected && !avatarUrl.isNullOrBlank()) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current).data(avatarUrl).crossfade(true).build(),
+                                contentDescription = "Google account photo",
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                            )
+                        } else {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    linkedEmail?.firstOrNull()?.uppercaseChar()?.toString() ?: "G",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                    }
+                    Surface(
+                        modifier = Modifier.size(25.dp).align(Alignment.BottomEnd),
+                        shape = CircleShape,
+                        color = Color.White,
+                        shadowElevation = 2.dp,
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_google_calendar),
+                                contentDescription = null,
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
                     }
                 }
 
@@ -789,14 +1544,14 @@ private fun GoogleCalendarExportRow(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Google Calendar",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        text = if (isConnected) "Google Calendar" else "Connect Google Calendar",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = if (isConnected) "Sync your calendar events to Google Calendar"
+                        text = if (isConnected) linkedEmail.orEmpty()
                         else "Connect to push your events to Google Calendar",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -817,16 +1572,15 @@ private fun GoogleCalendarExportRow(
             }
 
             if (linkedEmail != null) {
-                ConnectedAccountChip(
-                    email = linkedEmail,
-                    onDisconnect = onDisconnect
-                )
                 Spacer(modifier = Modifier.height(12.dp))
                 ExportActionButton(
                     isExporting = isExporting,
                     onClick = onExport
                 )
-                Spacer(modifier = Modifier.height(14.dp))
+                TextButton(
+                    onClick = onDisconnect,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                ) { Text("Disconnect Google account", color = MaterialTheme.colorScheme.error) }
             }
         }
     }
@@ -834,7 +1588,7 @@ private fun GoogleCalendarExportRow(
 
 @Composable
 private fun StatusPill() {
-    val accent = Color(0xFF8AAE7E)
+    val accent = Color(0xFF0D9488)
     Surface(
         shape = RoundedCornerShape(999.dp),
         color = accent.copy(alpha = 0.14f),
@@ -942,11 +1696,8 @@ private fun ExportActionButton(
     isExporting: Boolean,
     onClick: () -> Unit
 ) {
-    val gradient = if (isSystemInDarkTheme()) {
-        Brush.horizontalGradient(listOf(AiButtonDark, AiButtonDarkEnd))
-    } else {
-        Brush.horizontalGradient(listOf(AiButtonLight, AiButtonLightEnd))
-    }
+    val accents = MaterialTheme.myndoraAccents
+    val gradient = Brush.horizontalGradient(listOf(accents.accent, accents.accentEnd))
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -999,44 +1750,111 @@ private fun ExportActionButton(
     }
 }
 
-// ── About Section ──
+// about section
 
 @Composable
-private fun AdhdProfileRow(onClick: () -> Unit) {
-    ListCard(onClick = onClick) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 18.dp)
-                .heightIn(min = 68.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconBubble(
-                icon = Icons.Outlined.Person,
-                tint = MaterialTheme.colorScheme.secondary,
-                background = MaterialTheme.colorScheme.secondary.copy(alpha = 0.14f),
-                size = 48.dp,
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
+private fun AdhdProfileRow(completed: Boolean, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val accent = colors.secondary
+    val green = Color(0xFF3E9E5E)
+    val red = Color(0xFFD84A4A)
+    val statusColor = if (completed) green else red
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(22.dp),
+        color = colors.surface,
+        border = BorderStroke(1.dp, colors.outlineVariant.copy(alpha = 0.55f)),
+    ) {
+        Column {
+            // header band, survey icon on a soft accent gradient
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(accent.copy(alpha = 0.18f), accent.copy(alpha = 0.05f))
+                        )
+                    )
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(colors.surface),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_survey),
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "ADHD Profile",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onSurface,
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Personalizes how your assistant helps you.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
+            }
+
+            // footer: status pill and action
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = statusColor.copy(alpha = 0.12f),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(statusColor),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (completed) "Complete" else "Not finished",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = statusColor,
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = "ADHD Profile",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = if (completed) "Edit" else "Finish now",
+                    style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = accent,
                 )
-                Spacer(modifier = Modifier.height(3.dp))
-                Text(
-                    text = "Edit your survey responses",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                Icon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = null,
+                    tint = accent,
                 )
             }
-            Icon(
-                imageVector = Icons.Rounded.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-            )
         }
     }
 }
@@ -1065,7 +1883,7 @@ private fun AboutSection() {
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
-            // Pill badge
+            // pill badge
             Surface(
                 shape = RoundedCornerShape(999.dp),
                 color = MaterialTheme.colorScheme.surfaceContainer,
@@ -1087,7 +1905,7 @@ private fun AboutSection() {
     }
 }
 
-// ── Shared settings components ──
+// shared settings components
 
 @Composable
 fun SectionLabel(icon: ImageVector, label: String) {
@@ -1107,120 +1925,44 @@ fun SectionLabel(icon: ImageVector, label: String) {
     }
 }
 
-// ── Simplified Workspace Toggle ──
-
-@Composable
-private fun SimplifiedWorkspaceRow(
-    enabled: Boolean,
-    onToggle: (Boolean) -> Unit
-) {
-    val shape = RoundedCornerShape(CardCorner)
-    val cardColor = if (enabled)
-        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.55f)
-    else
-        MaterialTheme.colorScheme.surface
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(
-                width = 1.dp,
-                color = if (enabled)
-                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f)
-                else
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
-                shape = shape,
-            ),
-        shape = shape,
-        color = cardColor,
-        shadowElevation = 0.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 18.dp, vertical = 18.dp)
-                .heightIn(min = 68.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconBubble(
-                icon = Icons.Rounded.VisibilityOff,
-                tint = MaterialTheme.colorScheme.tertiary,
-                background = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.18f),
-                size = 48.dp,
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Simplified workspace",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(3.dp))
-                Text(
-                    text = if (enabled)
-                        "Showing only actionable items"
-                    else
-                        "Hide distractions in workspace",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Switch(
-                checked = enabled,
-                onCheckedChange = onToggle,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color.White,
-                    checkedTrackColor = MaterialTheme.colorScheme.tertiary,
-                    checkedBorderColor = MaterialTheme.colorScheme.tertiary,
-                )
-            )
-        }
-    }
-}
-
 @Composable
 private fun SignOutRow(onSignOut: () -> Unit) {
     val errorColor = MaterialTheme.colorScheme.error
     val shape = RoundedCornerShape(999.dp)
 
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .clickable(onClick = onSignOut)
-            .border(
-                width = 1.dp,
-                color = errorColor.copy(alpha = 0.35f),
-                shape = shape,
-            ),
-        shape = shape,
-        color = errorColor.copy(alpha = 0.05f),
-        shadowElevation = 0.dp
-    ) {
-        Row(
+    // compact centred pill, not a full-width banner
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Surface(
             modifier = Modifier
-                .padding(horizontal = 22.dp, vertical = 18.dp)
-                .heightIn(min = 52.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+                .clip(shape)
+                .clickable(onClick = onSignOut)
+                .border(
+                    width = 1.dp,
+                    color = errorColor.copy(alpha = 0.30f),
+                    shape = shape,
+                ),
+            shape = shape,
+            color = errorColor.copy(alpha = 0.05f),
+            shadowElevation = 0.dp,
         ) {
-            Icon(
-                imageVector = Icons.Rounded.Logout,
-                contentDescription = null,
-                tint = errorColor,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = "Sign out",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = errorColor,
-                letterSpacing = 0.3.sp
-            )
+            Row(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Logout,
+                    contentDescription = null,
+                    tint = errorColor,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Sign out",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = errorColor,
+                )
+            }
         }
     }
 }
@@ -1247,7 +1989,7 @@ fun PillOption(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
             .background(bg)
-            .clickable(onClick = onClick)
+            .clickable(onClick = speaking(label, onClick))
             .padding(vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {

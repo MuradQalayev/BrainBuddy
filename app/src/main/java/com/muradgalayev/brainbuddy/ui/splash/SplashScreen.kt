@@ -41,7 +41,7 @@ fun SplashScreen(
     val textAlpha = remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
-        // Logo spins in and scales up together
+        // logo spins in and scales up together
         launch {
             rotation.animateTo(
                 targetValue = 360f,
@@ -61,7 +61,7 @@ fun SplashScreen(
             )
         }
 
-        // App name fades in after logo settles
+        // app name fades in after the logo settles
         delay(300)
         launch {
             textAlpha.animateTo(
@@ -70,15 +70,17 @@ fun SplashScreen(
             )
         }
 
-        // Short hold so the logo has time to register, then route.
-        // The survey check is a local DataStore read — no network round-trip here.
+        // short hold so the logo has time to register, then route. the survey check is a local
+        // DataStore read, so there's no network round-trip here
         delay(500)
         when {
-            // Reset link cold-started the app: the session is technically Authenticated,
-            // but the user must set a new password before we let them into the app.
+            // a reset link cold-started the app: the session is technically Authenticated, but the user
+            // has to set a new password before we let them in
             viewModel.isInPasswordRecovery() -> onNavigateToAuth()
             !viewModel.isLoggedIn() -> onNavigateToAuth()
             viewModel.isSurveyCompleted() -> onNavigateToHome()
+            // chose 'I'll do it later', so let them in and the account screen keeps nudging
+            viewModel.isOnboardingSkipped() -> onNavigateToHome()
             else -> onNavigateToOnboarding()
         }
     }
@@ -90,7 +92,7 @@ fun SplashScreen(
     ) {
         Icon(
             painter = painterResource(id = R.drawable.ic_ai),
-            contentDescription = "BrainBuddy",
+            contentDescription = "Myndora",
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .size(96.dp)
@@ -100,7 +102,7 @@ fun SplashScreen(
         )
         Spacer(modifier = Modifier.height(20.dp))
         Text(
-            text = "BrainBuddy",
+            text = "Myndora",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,

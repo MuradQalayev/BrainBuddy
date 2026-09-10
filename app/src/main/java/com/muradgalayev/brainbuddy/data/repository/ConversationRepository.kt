@@ -4,6 +4,8 @@ import android.util.Log
 import com.muradgalayev.brainbuddy.data.local.PreferencesManager
 import com.muradgalayev.brainbuddy.data.remote.SupabaseAiMessageDataSource
 import com.muradgalayev.brainbuddy.data.remote.dto.AiMessageDto
+import com.muradgalayev.brainbuddy.domain.ai.AiClient
+import com.muradgalayev.brainbuddy.domain.ai.AiResponse
 import com.muradgalayev.brainbuddy.domain.ai.ChatMessage
 import com.muradgalayev.brainbuddy.domain.ai.ChatRole
 import com.muradgalayev.brainbuddy.domain.ai.ConversationSummary
@@ -24,22 +26,18 @@ class ConversationRepository @Inject constructor(
     private val remote: SupabaseAiMessageDataSource,
     private val authRepository: AuthRepository,
     private val preferencesManager: PreferencesManager,
+    private val aiClient: AiClient,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
-    /**
-     * Emits the active-conversation id for the current user. Null means "no
-     * conversation is active — the next message will start a new one".
-     */
+    // null means no conversation is active, and the next message will start a new one
     fun activeConversationIdFlow(): Flow<String?> {
         val userId = authRepository.getCurrentUserId() ?: return flowOf(null)
         return preferencesManager.activeConversationIdFlow(userId)
     }
 
-    /**
-     * Return the current active id, creating one if none exists yet. Called by
-     * AiAssistantViewModel right before persisting the first message of a turn.
-     */
+    // returns the current active id, creating one if none exists yet. called right before
+    // persisting the first message of a turn
     suspend fun ensureActiveConversationId(): String = withContext(Dispatchers.IO) {
         val userId = authRepository.getCurrentUserId()
             ?: return@withContext newConversationId()
@@ -49,22 +47,19 @@ class ConversationRepository @Inject constructor(
         }
     }
 
-    /** Force-end the current active chat. The next send will mint a fresh id. */
+    // force-ends the current active chat. the next send mints a fresh id
     suspend fun endActiveConversation() = withContext(Dispatchers.IO) {
         val userId = authRepository.getCurrentUserId() ?: return@withContext
         preferencesManager.setActiveConversationId(userId, null)
     }
 
-    /** Switch to a specific past conversation (making it active again). */
+    // switch to a specific past conversation, making it active again
     suspend fun setActiveConversation(id: String) = withContext(Dispatchers.IO) {
         val userId = authRepository.getCurrentUserId() ?: return@withContext
         preferencesManager.setActiveConversationId(userId, id)
     }
 
-    /**
-     * Load history for the currently active conversation. Returns empty when
-     * there's no active chat.
-     */
+    // history for the currently active conversation. empty when there's no active chat
     suspend fun loadActiveHistory(): List<ChatMessage> = withContext(Dispatchers.IO) {
         val userId = authRepository.getCurrentUserId() ?: return@withContext emptyList()
         val activeId = readActiveId(userId) ?: return@withContext emptyList()
@@ -75,7 +70,7 @@ class ConversationRepository @Inject constructor(
         withContext(Dispatchers.IO) {
             val userId = authRepository.getCurrentUserId() ?: return@withContext emptyList()
             try {
-                remote.getForConversation(userId, id).map { it.toDomain() }
+                remote.getRecentForConversation(userId, id).map { it.toDomain() }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to load conversation $id: ${e.message}")
                 emptyList()
@@ -92,13 +87,12 @@ class ConversationRepository @Inject constructor(
         try {
             remote.insert(message.toDto(userId, conversationId))
         } catch (e: Exception) {
-            // Always log the real error text so we can see WHY insert failed.
+            // log the real error text so we can see why the insert failed
             Log.e(TAG, "insert failed: ${e.message}", e)
 
-            // Only fall back for the very specific "column missing" case. This
-            // is the one where Postgrest's schema cache says the column isn't
-            // there — everything else (RLS violations, network, type errors,
-            // etc.) should surface as a normal failure.
+            // only fall back for the specific column-missing case, where Postgrest's schema cache says the
+            // column isn't there. everything else (RLS violations, network, type errors) should surface as
+            // a normal failure
             val msg = e.message.orEmpty().lowercase()
             val looksLikeMissingColumn =
                 msg.contains("pgrst204") ||
@@ -133,10 +127,8 @@ class ConversationRepository @Inject constructor(
             conversationId = conversationId,
         )
 
-    /**
-     * Fetch recent messages across all conversations and group them client-side
-     * into summaries. Cheap for reasonable histories (< a few hundred messages).
-     */
+    // fetches recent messages across all conversations and groups them client-side into summaries.
+    // cheap for reasonable histories, under a few hundred messages
     suspend fun listConversationSummaries(): List<ConversationSummary> =
         withContext(Dispatchers.IO) {
             val userId = authRepository.getCurrentUserId() ?: return@withContext emptyList()
@@ -148,17 +140,20 @@ class ConversationRepository @Inject constructor(
                 return@withContext emptyList()
             }
             rows
-                // Legacy rows with no conversation_id are treated as one
-                // implicit "old conversation" so they don't just vanish.
+                // legacy rows with no conversation_id become one implicit old conversation, so they don't vanish
                 .groupBy { it.conversationId ?: LEGACY_CONVERSATION_ID }
                 .map { (id, msgs) ->
                     val firstUser = msgs
                         .sortedBy { parseTs(it.createdAt) }
                         .firstOrNull { it.role.equals("USER", ignoreCase = true) && it.text.isNotBlank() }
                     val lastTs = msgs.maxOf { parseTs(it.createdAt) }
+                    // prefer the title stamped on the rows, fall back to the first user message, since older chats
+                    // predate title generation
+                    val storedTitle = msgs.firstNotNullOfOrNull { it.title?.trim()?.ifBlank { null } }
                     ConversationSummary(
                         id = id,
-                        title = firstUser?.text?.take(48)?.trim()?.ifBlank { null }
+                        title = storedTitle
+                            ?: firstUser?.text?.take(48)?.trim()?.ifBlank { null }
                             ?: if (id == LEGACY_CONVERSATION_ID) "Older chats" else "New chat",
                         messageCount = msgs.count {
                             it.role.equals("USER", ignoreCase = true) ||
@@ -170,6 +165,59 @@ class ConversationRepository @Inject constructor(
                 }
                 .sortedByDescending { it.lastActivityAt }
         }
+
+    // generates a short title for a conversation and stamps it onto its rows, unless one already
+    // exists. safe to call after every turn, it no-ops once titled. best-effort: any failure
+    // leaves the first-message fallback in place
+    suspend fun ensureConversationTitle(conversationId: String) = withContext(Dispatchers.IO) {
+        val userId = authRepository.getCurrentUserId() ?: return@withContext
+        val rows = runCatching { remote.getForConversation(userId, conversationId) }
+            .getOrNull().orEmpty()
+        if (rows.isEmpty()) return@withContext
+        // already titled, nothing to do
+        if (rows.any { !it.title.isNullOrBlank() }) return@withContext
+
+        val firstUser = rows
+            .firstOrNull { it.role.equals("USER", ignoreCase = true) && it.text.isNotBlank() }
+            ?.text ?: return@withContext
+        val firstAssistant = rows
+            .firstOrNull { it.role.equals("ASSISTANT", ignoreCase = true) && it.text.isNotBlank() }
+            ?.text
+
+        val title = generateTitle(firstUser, firstAssistant) ?: return@withContext
+        runCatching { remote.updateConversationTitle(userId, conversationId, title) }
+            .onFailure { Log.w(TAG, "Failed to store conversation title: ${it.message}") }
+    }
+
+    private suspend fun generateTitle(firstUser: String, firstAssistant: String?): String? {
+        val convo = buildString {
+            append("User: ").append(firstUser.take(500))
+            if (!firstAssistant.isNullOrBlank()) {
+                append("\nAssistant: ").append(firstAssistant.take(500))
+            }
+        }
+        val prompt = ChatMessage(
+            id = UUID.randomUUID().toString(),
+            role = ChatRole.USER,
+            text = "Give this chat a very short title (3–4 words), in the same language the " +
+                "user used. Reply with ONLY the title — no quotes, no trailing punctuation, " +
+                "no emoji.\n\n$convo",
+        )
+        val response = runCatching { aiClient.send(listOf(prompt), emptyList(), TITLE_SYSTEM_PROMPT) }
+            .getOrNull()
+        val raw = (response as? AiResponse.Text)?.text ?: return null
+        return sanitizeTitle(raw)
+    }
+
+    private fun sanitizeTitle(raw: String): String? {
+        // drop any chip line the model might tack on, keep the first real line only
+        var t = raw.substringBefore("[options:").trim()
+        t = t.lineSequence().map { it.trim() }.firstOrNull { it.isNotBlank() } ?: return null
+        t = t.trim('"', '\'', '“', '”', '‘', '’').trim()
+        t = t.trimEnd('.', '!', '?', ',', ':', ';').trim()
+        if (t.isBlank()) return null
+        return t.take(48)
+    }
 
     suspend fun deleteConversation(id: String) = withContext(Dispatchers.IO) {
         val userId = authRepository.getCurrentUserId() ?: return@withContext
@@ -217,5 +265,8 @@ class ConversationRepository @Inject constructor(
     companion object {
         private const val TAG = "ConversationRepository"
         private const val LEGACY_CONVERSATION_ID = "__legacy__"
+        private const val TITLE_SYSTEM_PROMPT =
+            "You generate ultra-short titles for chat conversations. Output ONLY the " +
+                "title text (3–4 words), nothing else — no quotes, no punctuation, no emoji."
     }
 }

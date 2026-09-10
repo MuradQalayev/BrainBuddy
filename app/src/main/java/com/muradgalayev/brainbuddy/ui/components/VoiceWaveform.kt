@@ -2,6 +2,7 @@ package com.muradgalayev.brainbuddy.ui.components
 
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -23,12 +24,19 @@ fun VoiceWaveform(
     isListening: Boolean,
     modifier: Modifier = Modifier,
     barCount: Int = 32,
+    level: Float = 1f,
     activeColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     idleColor: Color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
 ) {
+    // smooth the live mic level so the wave rises and falls naturally instead of jittering
+    val smoothLevel by animateFloatAsState(
+        targetValue = level.coerceIn(0f, 1f),
+        animationSpec = tween(durationMillis = 120),
+        label = "voice_level",
+    )
     val infiniteTransition = rememberInfiniteTransition(label = "voice_wave")
 
-    // Multiple phase offsets for a richer, organic wave
+    // several phase offsets for a richer, organic wave
     val phase1 by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = (Math.PI * 2).toFloat(),
@@ -81,16 +89,18 @@ fun VoiceWaveform(
             val ratio = i.toFloat() / (totalBars - 1).coerceAtLeast(1)
 
             val animatedAmp = if (isListening) {
-                // Three overlapping sine waves for organic movement
+                // three overlapping sine waves for organic movement
                 val w1 = kotlin.math.sin((ratio * Math.PI * 3) + phase1).toFloat()
                 val w2 = kotlin.math.sin((ratio * Math.PI * 5) + phase2).toFloat() * 0.5f
                 val w3 = kotlin.math.sin((ratio * Math.PI * 7) + phase3).toFloat() * 0.3f
                 val combined = (w1 + w2 + w3) / 1.8f  // normalize
-                // Gentle center-weighted envelope so edges are slightly shorter
+                // gentle centre-weighted envelope so the edges are slightly shorter
                 val envelope = 0.6f + 0.4f * kotlin.math.sin((ratio * Math.PI).toFloat())
-                ((combined + 1f) / 2f * envelope).coerceIn(0.08f, 1f)
+                val wave = ((combined + 1f) / 2f * envelope)
+                // scale by live mic loudness: near-flat when silent, tall when speaking
+                (wave * smoothLevel).coerceIn(0.06f, 1f)
             } else {
-                // Idle: small static bars
+                // idle: small static bars
                 val idle = 0.08f + 0.06f * kotlin.math.sin((ratio * Math.PI * 4).toFloat())
                 idle
             }

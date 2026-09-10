@@ -63,12 +63,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.muradgalayev.brainbuddy.ui.theme.myndoraAccents
 import androidx.core.content.ContextCompat
 import com.muradgalayev.brainbuddy.R
-import com.muradgalayev.brainbuddy.ui.theme.AiButtonDark
-import com.muradgalayev.brainbuddy.ui.theme.AiButtonDarkEnd
-import com.muradgalayev.brainbuddy.ui.theme.AiButtonLight
-import com.muradgalayev.brainbuddy.ui.theme.AiButtonLightEnd
 import com.muradgalayev.brainbuddy.ui.utils.SpeechRecognitionHelper
 
 @Composable
@@ -83,13 +80,10 @@ fun AiPromptCard(
     val context = LocalContext.current
 
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val aiGradient = if (isDark) {
-        Brush.horizontalGradient(listOf(AiButtonDark, AiButtonDarkEnd))
-    } else {
-        Brush.horizontalGradient(listOf(AiButtonLight, AiButtonLightEnd))
-    }
+    val accents = MaterialTheme.myndoraAccents
+    val aiGradient = Brush.horizontalGradient(listOf(accents.accent, accents.accentEnd))
 
-    // Background speech recognizer
+    // background speech recognizer
     val speechHelper = remember {
         SpeechRecognitionHelper(
             context = context,
@@ -116,7 +110,7 @@ fun AiPromptCard(
         onDispose { speechHelper.destroy() }
     }
 
-    // Permission launcher for RECORD_AUDIO
+    // permission launcher for RECORD_AUDIO
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -136,7 +130,7 @@ fun AiPromptCard(
         color = MaterialTheme.colorScheme.surface
     ) {
         Column {
-            // Modern gradient header with sparkle icon (popup mode only)
+            // gradient header with sparkle icon, popup mode only
             if (!embedded) {
                 Box(
                     modifier = Modifier
@@ -168,7 +162,7 @@ fun AiPromptCard(
                         Spacer(modifier = Modifier.size(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "BrainBuddy AI",
+                                text = "Myndora AI",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -200,7 +194,7 @@ fun AiPromptCard(
                 }
             }
 
-            // Input area
+            // input area
             Column(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
             ) {
@@ -306,7 +300,7 @@ fun AiPromptCard(
                     return@Column
                 }
 
-                // Text field with send button
+                // text field with send button
                 Row(
                     verticalAlignment = Alignment.Bottom,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -344,7 +338,7 @@ fun AiPromptCard(
                         )
                     }
 
-                    // --- Animated Mic Button ---
+                    // animated mic button
                     val micScale by animateFloatAsState(
                         targetValue = if (isListening) 1.08f else 1f,
                         animationSpec = spring(
@@ -372,7 +366,7 @@ fun AiPromptCard(
                         label = "mic_icon_tint"
                     )
 
-                    // Pulsing ring animation
+                    // pulsing ring animation
                     val pulseTransition = rememberInfiniteTransition(label = "pulse")
                     val pulseScale by pulseTransition.animateFloat(
                         initialValue = 1f,
@@ -411,7 +405,7 @@ fun AiPromptCard(
                         label = "pulse2_alpha"
                     )
 
-                    // Glow border animation
+                    // glow border animation
                     val glowAlpha by pulseTransition.animateFloat(
                         initialValue = 0.7f,
                         targetValue = 0.25f,
@@ -430,7 +424,7 @@ fun AiPromptCard(
                             .height(if (showVoiceExpanded) 52.dp else 52.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        // Pulsing rings (only when listening & collapsed)
+                        // pulsing rings, only when listening and collapsed
                         if (isListening && !showVoiceExpanded) {
                             Box(
                                 modifier = Modifier
@@ -454,7 +448,7 @@ fun AiPromptCard(
                             )
                         }
 
-                        // Main button
+                        // main button
                         Box(
                             modifier = Modifier
                                 .then(
@@ -522,7 +516,7 @@ fun AiPromptCard(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    // Mic icon with its own mini pulse when listening
+                                    // mic icon with its own mini pulse when listening
                                     Box(contentAlignment = Alignment.Center) {
                                         if (isListening) {
                                             Box(
@@ -550,12 +544,11 @@ fun AiPromptCard(
                                         isListening = isListening,
                                         modifier = Modifier.weight(1f),
                                         activeColor = if (isListening) {
-                                            if (isDark) AiButtonDark else AiButtonLight
+                                            MaterialTheme.myndoraAccents.accent
                                         } else {
                                             MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
                                         },
-                                        idleColor = if (isDark) AiButtonDarkEnd.copy(alpha = 0.15f)
-                                        else AiButtonLightEnd.copy(alpha = 0.15f)
+                                        idleColor = MaterialTheme.myndoraAccents.accentEnd.copy(alpha = 0.15f)
                                     )
 
                                     Icon(
@@ -604,7 +597,7 @@ fun AiPromptCard(
                 if (!embedded) {
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Divider
+                    // divider
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -616,7 +609,7 @@ fun AiPromptCard(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Suggestion chips
+                    // suggestion chips
                     Text(
                         text = "Suggestions",
                         style = MaterialTheme.typography.labelSmall,

@@ -1,22 +1,35 @@
 package com.muradgalayev.brainbuddy.ui.settings
 
+import android.util.Log
+
 import android.app.PendingIntent
 import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.muradgalayev.brainbuddy.data.auth.authErrorMessage
 import com.muradgalayev.brainbuddy.data.google.GoogleCalendarAuthClient
 import com.muradgalayev.brainbuddy.data.google.GoogleCalendarTokenStore
+import com.muradgalayev.brainbuddy.data.health.HealthConnectManager
 import com.muradgalayev.brainbuddy.data.local.FontMode
 import com.muradgalayev.brainbuddy.data.local.FontSize
 import com.muradgalayev.brainbuddy.data.local.PreferencesManager
+import com.muradgalayev.brainbuddy.data.local.TextSpacing
 import com.muradgalayev.brainbuddy.data.local.ThemeMode
+import com.muradgalayev.brainbuddy.data.notifications.PomodoroNudgeFrequency
+import com.muradgalayev.brainbuddy.data.notifications.ReminderBootstrapper
+import com.muradgalayev.brainbuddy.data.notifications.ReminderCategory
+import com.muradgalayev.brainbuddy.data.notifications.ReminderKind
+import com.muradgalayev.brainbuddy.data.notifications.QuestionnaireReminderScheduler
+import com.muradgalayev.brainbuddy.data.network.NetworkObserver
 import com.muradgalayev.brainbuddy.data.repository.AuthRepository
 import com.muradgalayev.brainbuddy.data.repository.ExportResult
 import com.muradgalayev.brainbuddy.data.repository.GoogleCalendarRepository
 import com.muradgalayev.brainbuddy.data.repository.UsernameTakenException
+import com.muradgalayev.brainbuddy.data.sync.CalendarSyncFrequency
 import com.muradgalayev.brainbuddy.data.sync.CalendarSyncScheduler
 import com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability
 import com.muradgalayev.brainbuddy.ui.onboarding.isUsernameSyntaxValid
+import io.github.jan.supabase.auth.status.SessionStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -24,11 +37,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.muradgalayev.brainbuddy.ui.theme.AppTheme
+import com.muradgalayev.brainbuddy.ui.theme.CustomThemeSpec
+import com.muradgalayev.brainbuddy.ui.theme.ThemeSelection
 import javax.inject.Inject
+
+private const val TAG = "SettingsViewModel"
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -37,12 +58,154 @@ class SettingsViewModel @Inject constructor(
     private val todoRepository: com.muradgalayev.brainbuddy.data.repository.TodoRepository,
     private val calendarRepository: com.muradgalayev.brainbuddy.data.repository.CalendarRepository,
     private val pomodoroRepository: com.muradgalayev.brainbuddy.data.repository.PomodoroRepository,
+    private val habitTimingRepository: com.muradgalayev.brainbuddy.data.repository.HabitTimingRepository,
+    private val medicationLogRepository: com.muradgalayev.brainbuddy.data.repository.MedicationLogRepository,
+    private val modeRepository: com.muradgalayev.brainbuddy.data.repository.ModeRepository,
     private val preferencesRepository: com.muradgalayev.brainbuddy.data.repository.PreferencesRepository,
+    private val aiConsentRepository: com.muradgalayev.brainbuddy.data.repository.AiConsentRepository,
+    private val modeManager: com.muradgalayev.brainbuddy.data.local.ModeManager,
     private val googleCalendarRepository: GoogleCalendarRepository,
     private val googleCalendarAuthClient: GoogleCalendarAuthClient,
     private val googleCalendarTokenStore: GoogleCalendarTokenStore,
     private val calendarSyncScheduler: CalendarSyncScheduler,
+    private val reminderBootstrapper: ReminderBootstrapper,
+    private val questionnaireReminderScheduler: QuestionnaireReminderScheduler,
+    private val adhdProfileRepository: com.muradgalayev.brainbuddy.data.repository.AdhdProfileRepository,
+    private val placesRepository: com.muradgalayev.brainbuddy.data.repository.PlacesRepository,
+    private val healthConnectManager: HealthConnectManager,
+    private val profilePdfExporter: com.muradgalayev.brainbuddy.data.export.ProfilePdfExporter,
+    private val togetherRepository: com.muradgalayev.brainbuddy.data.repository.TogetherRepository,
+    private val networkObserver: NetworkObserver,
 ) : ViewModel() {
+    val questionnaireProgress = questionnaireReminderScheduler.progress
+    // drives the '2 waiting' badge and subtitle on the Myndora Together row
+    val pendingTogetherRequests = togetherRepository.incomingRequests
+    val togetherConnections = togetherRepository.connections
+    val healthConnectState = healthConnectManager.state
+    val healthConnectPermissions = healthConnectManager.permissions
+    val healthPermissionLabels = healthConnectManager.permissionLabels
+
+    // download my profile (GDPR art. 20 portability, entirely on-device)
+    private val _profileExportInProgress = MutableStateFlow(false)
+    val profileExportInProgress: StateFlow<Boolean> = _profileExportInProgress.asStateFlow()
+    private val _profileExportMessage = MutableStateFlow<String?>(null)
+    val profileExportMessage: StateFlow<String?> = _profileExportMessage.asStateFlow()
+
+    fun clearProfileExportMessage() { _profileExportMessage.value = null }
+
+    // builds the PDF from the profile row, the survey answers and seven days of Health Connect
+    // figures. nothing leaves the device
+    fun downloadMyProfile() {
+        if (_profileExportInProgress.value) return
+        _profileExportInProgress.value = true
+        viewModelScope.launch {
+            val profile = runCatching { adhdProfileRepository.getProfile() }.getOrNull()
+                ?: adhdProfileRepository.peekProfile()
+            val report = runCatching { healthConnectManager.weeklyReport() }.getOrNull()
+                ?: com.muradgalayev.brainbuddy.data.health.WeeklyHealthReport(
+                    from = java.time.LocalDate.now().minusDays(6),
+                    to = java.time.LocalDate.now(),
+                )
+            val cached = authRepository.peekProfile()
+            val result = profilePdfExporter.export(
+                displayName = cached?.displayName ?: authRepository.getCurrentUserFullName(),
+                email = cached?.email ?: authRepository.getCurrentUserEmail(),
+                profile = profile,
+                report = report,
+            )
+            _profileExportMessage.value = when (result) {
+                is com.muradgalayev.brainbuddy.data.export.PdfExportResult.Saved ->
+                    "Saved to ${result.displayPath}"
+                is com.muradgalayev.brainbuddy.data.export.PdfExportResult.Failed ->
+                    "Couldn't export: ${result.message}"
+            }
+            _profileExportInProgress.value = false
+        }
+    }
+
+    fun refreshHealthConnect() {
+        viewModelScope.launch { healthConnectManager.refresh() }
+    }
+
+    fun disconnectHealthConnect() {
+        viewModelScope.launch { healthConnectManager.disconnect() }
+    }
+
+    fun prepareHealthConnect() {
+        healthConnectManager.prepareToConnect()
+    }
+    // the whole mode rather than just its name, so the status card can use its icon and accent
+    val activeMode: StateFlow<com.muradgalayev.brainbuddy.domain.model.AppMode?> =
+        modeManager.activeMode
+
+    // for small sub-pages that only need to know whether customisation is locked
+    val activeModeName: StateFlow<String?> = modeManager.activeMode
+        .map { it?.name }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    // durable lookup for actions that mustn't trust a cold-start StateFlow seed
+    suspend fun activeModeNow(): com.muradgalayev.brainbuddy.domain.model.AppMode? =
+        modeManager.activeModeNow()
+
+    val aiSpokenResponses = preferencesManager.aiSpokenResponses
+    val aiChatReadAloud = preferencesManager.aiChatReadAloud
+    val aiVoiceName = preferencesManager.aiVoiceName
+    val aiHealthPersonalization = preferencesManager.aiHealthPersonalization
+
+    fun setAiSpokenResponses(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setAiSpokenResponses(enabled) }
+    }
+
+    fun setAiChatReadAloud(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setAiChatReadAloud(enabled) }
+    }
+
+    val readAloudTaps = preferencesManager.readAloudTaps
+
+    val reduceMotion = preferencesManager.reduceMotion
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun setReduceMotion(enabled: Boolean) {
+        viewModelScope.launch {
+            if (modeManager.activeModeNow() != null) return@launch
+            preferencesManager.setReduceMotion(enabled)
+        }
+    }
+
+    fun setReadAloudTaps(enabled: Boolean) {
+        viewModelScope.launch {
+            if (modeManager.activeModeNow() != null) return@launch
+            preferencesManager.setReadAloudTaps(enabled)
+        }
+    }
+
+    fun setAiVoiceName(name: String?) {
+        viewModelScope.launch { preferencesManager.setAiVoiceName(name) }
+    }
+
+    // goes through the consent repository rather than straight to DataStore: this is the one
+    // setting we have to be able to account for later, so the decision is stamped and sent to
+    // the account instead of only flipping a local flag
+    fun setAiHealthPersonalization(enabled: Boolean) {
+        viewModelScope.launch { aiConsentRepository.setWellnessConsent(enabled) }
+    }
+
+    // drives the red 'complete your survey' prompt on the account screen. seeded from the
+    // in-memory profile cache, refreshed from cache/network in init
+    private val _surveyCompleted = MutableStateFlow(
+        adhdProfileRepository.peekProfile()?.surveyCompleted == true
+    )
+    val surveyCompleted: StateFlow<Boolean> = _surveyCompleted.asStateFlow()
+
+    fun refreshSurveyCompleted() {
+        viewModelScope.launch {
+            // null = couldn't resolve (offline, session not restored). keep what we had rather than
+            // accusing a finished user of not having done the survey
+            val done = runCatching { adhdProfileRepository.surveyCompletedOrNull() }
+                .getOrNull() ?: return@launch
+            if (done != _surveyCompleted.value) _surveyCompleted.value = done
+        }
+    }
 
     private val _loggedOut = MutableStateFlow(false)
     val loggedOut: StateFlow<Boolean> = _loggedOut.asStateFlow()
@@ -57,14 +220,13 @@ class SettingsViewModel @Inject constructor(
     val calendarAuthorizationRequest: StateFlow<PendingIntent?> =
         _calendarAuthorizationRequest.asStateFlow()
 
-    // Reactive — flips when SyncCoordinator pulls the linked email from Supabase
-    // after sign-in, or when the user connects/disconnects locally.
+    // flips when SyncCoordinator pulls the linked email after sign-in, or when the user
+    // connects or disconnects locally
     val linkedGoogleEmail: StateFlow<String?> = googleCalendarTokenStore.linkedEmail
 
-    // Seed from AuthRepository's in-memory cached profile if it's been fetched
-    // before in this process — otherwise fall back to whatever the JWT metadata
-    // gave us. This means on re-entry to Settings within the same session we
-    // start with the FULL profile already visible, no refetch flash.
+    // seed from AuthRepository's cached profile if it's been fetched before in this process,
+    // otherwise fall back to the JWT metadata. re-entering Settings in the same session then
+    // starts with the full profile already visible, no refetch flash
     private val _profile = MutableStateFlow(seedProfileFromCache())
 
     private fun seedProfileFromCache(): UserProfile {
@@ -74,10 +236,25 @@ class SettingsViewModel @Inject constructor(
             name = cached?.displayName ?: authRepository.getCurrentUserFullName(),
             username = cached?.username ?: authRepository.getCurrentUserUsername(),
             avatarUrl = cached?.avatarUrl ?: authRepository.getCurrentUserAvatarUrl(),
+            phone = authRepository.getCurrentUserPhone(),
         )
     }
 
     val profile: StateFlow<UserProfile> = _profile.asStateFlow()
+
+    private val _profileLocation = MutableStateFlow<String?>(
+        adhdProfileRepository.peekProfile()?.cityId?.let { cityId ->
+            placesRepository.peekCities()?.firstOrNull { it.id == cityId }?.name
+        },
+    )
+    val profileLocation: StateFlow<String?> = _profileLocation.asStateFlow()
+
+    // re-read the profile from the in-memory cache. Edit Profile is a separate ViewModel and
+    // updates that cache synchronously, so calling this on resume shows the change instantly
+    fun reseedProfileFromCache() {
+        val next = seedProfileFromCache()
+        if (next != _profile.value) _profile.value = next
+    }
 
     private val _profileSaving = MutableStateFlow(false)
     val profileSaving: StateFlow<Boolean> = _profileSaving.asStateFlow()
@@ -85,21 +262,47 @@ class SettingsViewModel @Inject constructor(
     private val _profileSaveMessage = MutableStateFlow<String?>(null)
     val profileSaveMessage: StateFlow<String?> = _profileSaveMessage.asStateFlow()
 
+    private val _passwordResetState = MutableStateFlow(PasswordResetUiState())
+    val passwordResetState: StateFlow<PasswordResetUiState> = _passwordResetState.asStateFlow()
+
     private val _usernameAvailability = MutableStateFlow(UsernameAvailability.Idle)
     val usernameAvailability: StateFlow<UsernameAvailability> = _usernameAvailability.asStateFlow()
     private var usernameCheckJob: Job? = null
 
     init {
-        // Stale-while-revalidate: only hit Supabase on the very first entry
-        // after app start (when there's nothing in the process-level cache).
-        // On subsequent re-entries the constructor already seeded from cache,
-        // and SyncCoordinator keeps the cache warm on network reconnects.
-        if (authRepository.peekProfile() == null) {
-            refreshProfile()
+        // the constructor already seeded the header from the disk-backed cache, so no 'Welcome'
+        // flash on cold start. but the Supabase session restores from disk asynchronously, so right
+        // now getCurrentUser* may still be null and peekProfile's id-guard can't confirm the cache.
+        // re-seed as soon as the session is authenticated, and revalidate once per process
+        viewModelScope.launch {
+            authRepository.sessionStatus
+                .filterIsInstance<SessionStatus.Authenticated>()
+                .collect {
+                    reseedProfileFromCache()
+                    if (authRepository.consumeProfileRevalidationToken()) {
+                        refreshProfile()
+                    }
+                }
         }
-        // linkedGoogleEmail is a reactive StateFlow from the token store, and
-        // SyncCoordinator refreshes it after sign-in / on reconnect. No need
-        // to fire a network call here — that was the source of the flash.
+        refreshSurveyCompleted()
+        refreshProfileLocation()
+        // linkedGoogleEmail is reactive and SyncCoordinator refreshes it after sign-in and on
+        // reconnect. firing a network call here was the source of the flash
+    }
+
+    private fun refreshProfileLocation() {
+        viewModelScope.launch {
+            val adhdProfile = adhdProfileRepository.peekProfile()
+                ?: runCatching { adhdProfileRepository.getProfile() }.getOrNull()
+            val cityId = adhdProfile?.cityId
+            if (cityId == null) {
+                _profileLocation.value = null
+                return@launch
+            }
+            val cities = placesRepository.peekCities()
+                ?: placesRepository.listCities().getOrNull().orEmpty()
+            _profileLocation.value = cities.firstOrNull { it.id == cityId }?.name
+        }
     }
 
     private fun refreshLinkedGoogleEmail() {
@@ -111,7 +314,7 @@ class SettingsViewModel @Inject constructor(
             }
         }
     }
-    // Legacy convenience getters retained for any other callers that read these.
+    // legacy getters, kept for other callers that still read these
     val userEmail: String?
         get() = _profile.value.email
 
@@ -120,49 +323,132 @@ class SettingsViewModel @Inject constructor(
 
     val fontSize = preferencesManager.fontSize
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FontSize.Medium)
+    val textSpacing = preferencesManager.textSpacing
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TextSpacing.DEFAULT)
     val themeMode = preferencesManager.themeMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.System)
 
     val fontMode = preferencesManager.fontMode
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FontMode.Classic)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FontMode.DEFAULT)
+
+    val appTheme = preferencesManager.appTheme
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeSelection.DEFAULT)
+
+    val customThemeSpec = preferencesManager.customThemeSpec
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), CustomThemeSpec())
 
     val enabledNavItems = preferencesManager.enabledNavItems
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
-    val focusModeEnabled = preferencesManager.focusModeEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    // notification frequency
 
-    val simplifiedWorkspace = preferencesManager.simplifiedWorkspace
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val todoReminderKinds = preferencesManager.todoReminderKinds
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReminderKind.entries.toSet())
+
+    val calendarReminderKinds = preferencesManager.calendarReminderKinds
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReminderKind.entries.toSet())
+
+    val dailySummaryEnabled = preferencesManager.dailySummaryEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val pomodoroNudgeFrequency = preferencesManager.pomodoroNudgeFrequency
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PomodoroNudgeFrequency.OFF)
+
+    val pomodoroNudgeTime = preferencesManager.pomodoroNudgeTime
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PreferencesManager.DEFAULT_NUDGE_TIME)
+
+    val pomodoroBreakReminders = preferencesManager.pomodoroBreakReminders
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    fun toggleReminderKind(category: ReminderCategory, kind: ReminderKind, enabled: Boolean) {
+        viewModelScope.launch {
+            val current = when (category) {
+                ReminderCategory.TODO -> todoReminderKinds.value
+                ReminderCategory.CALENDAR -> calendarReminderKinds.value
+            }
+            val next = if (enabled) current + kind else current - kind
+            preferencesRepository.setReminderKinds(category, next)
+            // re-arm alarms so the change takes effect for already-scheduled items
+            reminderBootstrapper.rescheduleItemReminders()
+        }
+    }
+
+    fun setDailySummaryEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setDailySummaryEnabled(enabled)
+            reminderBootstrapper.rescheduleMorningSummary()
+        }
+    }
+
+    fun setPomodoroNudgeFrequency(freq: PomodoroNudgeFrequency) {
+        viewModelScope.launch {
+            preferencesRepository.setPomodoroNudgeFrequency(freq)
+            reminderBootstrapper.rescheduleFocusNudge()
+        }
+    }
+
+    fun setPomodoroNudgeTime(hhmm: String) {
+        viewModelScope.launch {
+            preferencesRepository.setPomodoroNudgeTime(hhmm)
+            reminderBootstrapper.rescheduleFocusNudge()
+        }
+    }
+
+    fun setPomodoroBreakReminders(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setPomodoroBreakReminders(enabled)
+        }
+    }
 
     fun setThemeMode(mode: ThemeMode) {
-        viewModelScope.launch { preferencesRepository.setThemeMode(mode) }
+        viewModelScope.launch {
+            if (modeManager.activeModeNow() != null) return@launch
+            preferencesRepository.setThemeMode(mode)
+        }
+    }
+
+    fun setAppTheme(theme: AppTheme) {
+        viewModelScope.launch {
+            if (modeManager.activeModeNow() != null) return@launch
+            preferencesManager.setAppTheme(theme)
+        }
+    }
+
+    fun setCustomTheme(spec: CustomThemeSpec) {
+        viewModelScope.launch {
+            if (modeManager.activeModeNow() != null) return@launch
+            preferencesManager.setCustomTheme(spec)
+        }
     }
 
     fun setFontMode(mode: FontMode) {
-        viewModelScope.launch { preferencesRepository.setFontMode(mode) }
+        viewModelScope.launch {
+            if (modeManager.activeModeNow() != null) return@launch
+            preferencesRepository.setFontMode(mode)
+        }
     }
 
     fun toggleNavItem(route: String, enabled: Boolean) {
         viewModelScope.launch {
-            // update local set fully via repository
-            // read the current set once and compute the new set
+            if (modeManager.activeModeNow() != null) return@launch
+            // read the current set once and compute the new one
             val set = preferencesManager.enabledNavItems.firstOrNull() ?: emptySet()
             val newSet = if (enabled) set + route else set - route
             preferencesRepository.setEnabledNavItems(newSet)
         }
     }
 
-    fun toggleFocusMode(enabled: Boolean) {
-        viewModelScope.launch { preferencesRepository.setFocusModeEnabled(enabled) }
-    }
-
-    fun toggleSimplifiedWorkspace(enabled: Boolean) {
-        viewModelScope.launch { preferencesRepository.setSimplifiedWorkspace(enabled) }
-    }
     fun setFontSize(fontSize: FontSize) {
         viewModelScope.launch {
+            if (modeManager.activeModeNow() != null) return@launch
             preferencesRepository.setFontSize(fontSize)
+        }
+    }
+
+    fun setTextSpacing(spacing: TextSpacing) {
+        viewModelScope.launch {
+            if (modeManager.activeModeNow() != null) return@launch
+            preferencesRepository.setTextSpacing(spacing)
         }
     }
 
@@ -184,10 +470,8 @@ class SettingsViewModel @Inject constructor(
                         _exportingToCalendar.value = false
                     }
                     is GoogleCalendarAuthClient.AuthorizationStep.NeedsUserConsent -> {
-                        // Hand the PendingIntent to the screen; the screen will
-                        // launch it and call onCalendarAuthorizationResult().
-                        // Keep _exportingToCalendar=true so the spinner stays
-                        // until the user completes (or cancels) consent.
+                        // hand the PendingIntent to the screen, which launches it and calls back. keep
+                        // _exportingToCalendar true so the spinner stays until consent is done or cancelled
                         _calendarAuthorizationRequest.value = step.pendingIntent
                     }
                 }
@@ -219,11 +503,37 @@ class SettingsViewModel @Inject constructor(
 
     private suspend fun refreshLinkedEmail(token: String) {
         val email = googleCalendarAuthClient.fetchAndStoreUserEmail(token)
-        // linkedGoogleEmail flows from the token store now — no need to write it here.
+        // linkedGoogleEmail comes from the token store now, no need to write it here
         if (email != null) {
-            // First successful connect — kick off the twice-daily background
-            // sync. KEEP policy makes repeat calls a no-op.
-            calendarSyncScheduler.schedulePeriodic()
+            // first connect: a mode may overlay the base cadence but must never replace it in DataStore
+            calendarSyncScheduler.applyFrequency(
+                modeManager.effectiveCalendarSyncFrequencyNow()
+            )
+        }
+    }
+
+    val calendarSyncFrequency: StateFlow<CalendarSyncFrequency> =
+        preferencesManager.calendarSyncFrequency
+            .stateIn(viewModelScope, SharingStarted.Eagerly, CalendarSyncFrequency.DEFAULT)
+
+    // written by CalendarSyncWorker so the settings screen can prove sync ran
+    val calendarLastSyncedAt: StateFlow<Long?> = preferencesManager.calendarLastSyncedAt
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val calendarLastSyncResult: StateFlow<String?> = preferencesManager.calendarLastSyncResult
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun setCalendarSyncFrequency(freq: CalendarSyncFrequency) {
+        viewModelScope.launch {
+            // writes local DataStore and syncs to user_preferences, so it crosses devices
+            preferencesRepository.setCalendarSyncFrequency(freq)
+            // only affects background sync, manual export still works. if a mode overlays this, keep its
+            // effective cadence in force but remember the new base for when the mode ends
+            if (googleCalendarTokenStore.getLinkedEmail() != null) {
+                calendarSyncScheduler.applyFrequency(
+                    modeManager.effectiveCalendarSyncFrequencyNow()
+                )
+            }
         }
     }
 
@@ -245,8 +555,8 @@ class SettingsViewModel @Inject constructor(
 
     fun disconnectGoogleCalendar() {
         viewModelScope.launch {
-            // Explicit user action — revoke Google grant AND null out the Supabase column
-            // so signing in on another device won't resurrect the link.
+            // explicit user action: revoke the Google grant and null the Supabase column, so signing in
+            // on another device won't resurrect the link
             googleCalendarAuthClient.signOut()
             runCatching { authRepository.setLinkedGoogleEmail(null) }
             calendarSyncScheduler.cancel()
@@ -258,33 +568,83 @@ class SettingsViewModel @Inject constructor(
         _calendarExportMessage.value = null
     }
 
+    // This also gives Google-created accounts an email/password sign-in method. Supabase keeps
+    // the Google identity linked, so the user can use either method after choosing a password.
+    fun sendPasswordReset() {
+        if (_passwordResetState.value.sending) return
+        val email = authRepository.getCurrentUserEmail()
+            ?: _profile.value.email
+
+        if (email.isNullOrBlank()) {
+            _passwordResetState.value = PasswordResetUiState(
+                error = "This account does not have an email address",
+            )
+            return
+        }
+
+        _passwordResetState.value = PasswordResetUiState(sending = true)
+        viewModelScope.launch {
+            if (!networkObserver.isOnline.first()) {
+                _passwordResetState.value = PasswordResetUiState(
+                    error = "No internet connection",
+                )
+                return@launch
+            }
+
+            try {
+                authRepository.sendPasswordReset(email)
+                _passwordResetState.value = PasswordResetUiState(sentTo = email)
+            } catch (e: Exception) {
+                _passwordResetState.value = PasswordResetUiState(
+                    error = authErrorMessage(
+                        error = e,
+                        fallback = "Couldn't send the password email. Please try again.",
+                    ),
+                )
+            }
+        }
+    }
+
+    fun clearPasswordResetFeedback() {
+        if (!_passwordResetState.value.sending) {
+            _passwordResetState.value = PasswordResetUiState()
+        }
+    }
+
     fun signOut() {
         viewModelScope.launch {
-            // Capture user id BEFORE signing out so we know which local caches to clear.
-            val currentUserId = authRepository.getCurrentUserId()
+            // capture the user id before signing out so we know which local caches to clear
+            val currentUserId = authRepository.getCurrentOrCachedUserId()
+            healthConnectManager.clearForAccountSwitch()
+            currentUserId?.let { modeRepository.clearLocalForUser(it) }
+            // clear the selection and restore ringer/DND while the departing account still exists,
+            // otherwise its mode leaks into the signed-out screen or into the next account
+            modeManager.clearForSignOut()
+            currentUserId?.let(questionnaireReminderScheduler::cancelForUser)
             authRepository.signOut()
-            // Important: don't call googleCalendarAuthClient.signOut() here — that revokes
-            // the Google consent on this device, which forces a full re-auth (with picker
-            // and consent screen) after Supabase login. We just want to log out of Supabase;
-            // the Google link stays in the profiles table and is re-hydrated on next sign-in.
+            // don't call googleCalendarAuthClient.signOut() here: that revokes Google consent on this
+            // device and forces a full re-auth after Supabase login. we only want out of Supabase, the
+            // Google link stays in profiles and is re-hydrated on the next sign-in
             googleCalendarTokenStore.clearForSupabaseSignOut()
             calendarSyncScheduler.cancel()
             currentUserId?.let {
-                // Clear local tasks + calendar events + pomodoro sessions for the user
-                // that just signed out so the next user doesn't see stale data.
+                // so the next user doesn't see the previous one's tasks, events or sessions
                 todoRepository.clearLocalForUser(it)
                 calendarRepository.clearLocalForUser(it)
                 pomodoroRepository.clearLocalForUser(it)
+                // learned event timings are as personal as the events behind them
+                habitTimingRepository.clearLocalForUser(it)
+                medicationLogRepository.clearLocalForUser(it)
             }
+            adhdProfileRepository.clearLocalCache()
+            // connections and pending requests are another user's business entirely
+            togetherRepository.clear()
             _loggedOut.value = true
         }
     }
 
-    /**
-     * Debounced availability check driven by the edit dialog. Skips the network call
-     * when the field matches the user's current username — that's their own row, not
-     * a conflict.
-     */
+    // debounced availability check from the edit dialog. skips the call when the field matches
+    // the user's current username, that's their own row and not a conflict
     fun onEditingUsername(raw: String) {
         usernameCheckJob?.cancel()
         val trimmed = raw.trim()
@@ -296,7 +656,7 @@ class SettingsViewModel @Inject constructor(
                 return
             }
             trimmed.equals(current, ignoreCase = true) -> {
-                // Same as current → treated as available so Save isn't blocked.
+                // same as current, treat as available so Save isn't blocked
                 _usernameAvailability.value = UsernameAvailability.Available
                 return
             }
@@ -315,18 +675,19 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun updateProfile(name: String, username: String) {
+    fun updateProfile(name: String, username: String, phone: String = _profile.value.phone.orEmpty()) {
         if (_profileSaving.value) return
 
         val cleanName = name.trim()
         val cleanUsername = username.trim()
+        val cleanPhone = phone.trim()
 
         if (cleanName.isBlank()) {
             _profileSaveMessage.value = "Name cannot be empty"
             return
         }
-        // Block save when we already know it's taken/invalid. The DB unique index
-        // is still the ultimate guard — this just avoids the round-trip.
+        // block save when we already know it's taken. the unique index is still the real guard,
+        // this only avoids the round-trip
         when (_usernameAvailability.value) {
             UsernameAvailability.Taken -> {
                 _profileSaveMessage.value = "That username is already taken"
@@ -352,18 +713,27 @@ class SettingsViewModel @Inject constructor(
                     username = cleanUsername
                 )
 
+                // phone lives in auth metadata, not in the profiles row
+                if (cleanPhone != _profile.value.phone.orEmpty()) {
+                    authRepository.updateUserPhone(cleanPhone)
+                }
+
                 _profile.value = UserProfile(
                     email = updatedProfile.email ?: _profile.value.email ?: authRepository.getCurrentUserEmail(),
                     name = updatedProfile.displayName ?: cleanName,
                     username = updatedProfile.username ?: cleanUsername,
-                    avatarUrl = updatedProfile.avatarUrl ?: _profile.value.avatarUrl
+                    avatarUrl = updatedProfile.avatarUrl ?: _profile.value.avatarUrl,
+                    phone = cleanPhone.ifBlank { null },
                 )
 
-                _profileSaveMessage.value = "Profile updated"
+                _profileSaveMessage.value = if (authRepository.hasPendingProfileUpdate()) {
+                    "Saved on this device · will sync when you're online"
+                } else {
+                    "Profile updated"
+                }
             } catch (e: UsernameTakenException) {
-                // The DB rejected via the unique index — either the local check said
-                // "available" incorrectly (RLS masked the row) or someone else grabbed
-                // the name between check and save. Both surface the same message.
+                // the unique index rejected it: either our check said available wrongly (RLS masked the row)
+                // or someone grabbed the name between check and save. same message either way
                 _usernameAvailability.value = UsernameAvailability.Taken
                 _profileSaveMessage.value = "That username is already taken"
             } catch (e: Exception) {
@@ -378,11 +748,33 @@ class SettingsViewModel @Inject constructor(
         _profileSaveMessage.value = null
     }
 
+    private val _avatarUploading = MutableStateFlow(false)
+    val avatarUploading: StateFlow<Boolean> = _avatarUploading.asStateFlow()
+
+    // uploads a picked image to the profile_photos bucket and shows it as the avatar
+    fun uploadAvatar(bytes: ByteArray, extension: String) {
+        if (_avatarUploading.value) return
+        _avatarUploading.value = true
+        viewModelScope.launch {
+            try {
+                val url = authRepository.uploadAvatar(bytes, extension)
+                _profile.value = _profile.value.copy(avatarUrl = url)
+                _profileSaveMessage.value = "Photo updated"
+            } catch (e: Exception) {
+                _profileSaveMessage.value = "Couldn't upload photo: ${e.message ?: "unknown error"}"
+            } finally {
+                _avatarUploading.value = false
+            }
+        }
+    }
 
     private fun refreshProfile() {
         viewModelScope.launch {
+            // silent on failure by design. this is a background top-up of a screen that already rendered
+            // from the disk cache, so nothing is missing and the user asked for nothing. it used to raise
+            // 'Unable to resolve host' whenever Settings opened offline, which read like a broken account
             val fresh = runCatching { authRepository.ensureProfileExists() }.getOrElse {
-                _profileSaveMessage.value = "Couldn't load profile: ${it.message ?: "unknown error"}"
+                Log.d(TAG, "Background profile refresh skipped: ${it.message}")
                 return@launch
             }
             val current = _profile.value
@@ -391,10 +783,9 @@ class SettingsViewModel @Inject constructor(
                 name = fresh.displayName ?: current.name,
                 username = fresh.username ?: current.username,
                 avatarUrl = fresh.avatarUrl ?: current.avatarUrl,
+                phone = authRepository.getCurrentUserPhone() ?: current.phone,
             )
-            // Skip the write when the fresh value matches what's already shown.
-            // Prevents any recomposition even in theory — MutableStateFlow also
-            // deduplicates on ==, but making it explicit documents the intent.
+            // MutableStateFlow dedupes on == anyway, this just makes it explicit
             if (next != current) _profile.value = next
         }
     }
@@ -404,5 +795,12 @@ data class UserProfile(
     val email: String?,
     val name: String?,
     val username: String?,
-    val avatarUrl: String?
+    val avatarUrl: String?,
+    val phone: String? = null,
+)
+
+data class PasswordResetUiState(
+    val sending: Boolean = false,
+    val error: String? = null,
+    val sentTo: String? = null,
 )

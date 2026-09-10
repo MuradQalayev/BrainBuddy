@@ -54,30 +54,47 @@ fun WheelTimePicker(
 
     LaunchedEffect(hour, minute) { onChange(hour, minute) }
 
-    Row(
-        modifier = modifier.height(WheelHeight),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(WheelHeight),
+        contentAlignment = Alignment.Center,
     ) {
-        Wheel(
-            initialIndex = safeHour,
-            count = 24,
-            accentColor = accentColor,
-            onIndexChange = { hour = it }
+        // iOS-style selection band sitting behind the centred row
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth(0.92f)
+                .height(ItemHeight)
+                .clip(RoundedCornerShape(16.dp))
+                .background(accentColor.copy(alpha = 0.12f))
         )
-        Text(
-            text = ":",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
-        Wheel(
-            initialIndex = safeMinute,
-            count = 60,
-            accentColor = accentColor,
-            onIndexChange = { minute = it }
-        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Wheel(
+                initialIndex = safeHour,
+                count = 24,
+                accentColor = accentColor,
+                onIndexChange = { hour = it }
+            )
+            Text(
+                text = ":",
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+            Wheel(
+                initialIndex = safeMinute,
+                count = 60,
+                accentColor = accentColor,
+                onIndexChange = { minute = it }
+            )
+        }
     }
 }
 
@@ -103,17 +120,6 @@ private fun Wheel(
             .height(WheelHeight),
         contentAlignment = Alignment.Center
     ) {
-        // Accent underline sitting just below the centered row's text baseline.
-        Box(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .padding(top = (ItemHeight.value - 6).dp)
-                .fillMaxWidth(0.7f)
-                .height(2.dp)
-                .clip(RoundedCornerShape(1.dp))
-                .background(accentColor)
-        )
-
         LazyColumn(
             state = state,
             flingBehavior = flingBehavior,
@@ -121,7 +127,7 @@ private fun Wheel(
                 .fillMaxWidth()
                 .height(WheelHeight)
         ) {
-            // Top spacer pushes the first real value (index 0) into the center slot at rest.
+            // top spacer pushes the first real value into the centre slot at rest
             item { Spacer(Modifier.height(ItemHeight)) }
             items(count) { index ->
                 val distance = abs(index - centeredIndex)
@@ -146,7 +152,7 @@ private fun Wheel(
                     )
                 }
             }
-            // Bottom spacer lets the last real value land in the center slot.
+            // bottom spacer lets the last real value land in the centre slot
             item { Spacer(Modifier.height(ItemHeight)) }
         }
     }

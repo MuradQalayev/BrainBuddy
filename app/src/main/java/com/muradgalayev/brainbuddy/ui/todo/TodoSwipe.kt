@@ -24,7 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-
+import com.muradgalayev.brainbuddy.ui.accessibility.speaking
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +37,9 @@ fun SwipeableTaskCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    // wrapped here rather than at each call site, so both the active and completed lists get it
+    // from one place
+    val speakingClick = speaking(task.title, onClick)
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             when (value) {
@@ -106,7 +109,7 @@ fun SwipeableTaskCard(
         TaskCard(
             palette = palette,
             task = task,
-            onClick = onClick,
+            onClick = speakingClick,
             onLongClick = onLongClick,
             onFlagClick = onFlagClick
         )

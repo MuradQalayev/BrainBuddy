@@ -11,12 +11,9 @@ import kotlinx.serialization.json.putJsonObject
 import java.time.LocalDate
 import javax.inject.Inject
 
-/**
- * Reads calendar events for a specific date, or a date range if end_date is
- * provided (inclusive). Complements ListTodosForDateTool — the AI should call
- * both when the user asks about their day, since todos and events are separate
- * lists in this app.
- */
+// reads calendar events for a date, or an inclusive range when end_date is given. complements
+// ListTodosForDateTool: the model should call both when the user asks about their day, since
+// todos and events are separate lists in this app
 class ListCalendarEventsForDateTool @Inject constructor(
     private val calendarRepository: CalendarRepository,
 ) : AiTool {
@@ -74,7 +71,8 @@ class ListCalendarEventsForDateTool @Inject constructor(
                     e.endTime.substringAfter('T').take(5)
                 val date = e.startTime.substringBefore('T')
                 val location = if (e.location.isNotBlank()) " @ ${e.location}" else ""
-                append("\n  • [$date $time] ${e.title}$location (id=${e.id})")
+                val link = if (e.link.isNotBlank()) " link: ${e.link}" else ""
+                append("\n  • [$date $time] ${e.title}$location$link (id=${e.id})")
             }
         }
     }

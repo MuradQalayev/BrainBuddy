@@ -17,6 +17,12 @@ data class CalendarEventDto(
     val location: String = "",
     val color: String = "blue",
     val link: String = "",
+    val completed: Boolean = false,
+    // who wrote this row, as opposed to userId, whose calendar it belongs to. they differ only when
+    // a Together connection created the event for someone else. RLS keys the connection's whole
+    // reach off this column, so it must always be set on insert
+    @SerialName("created_by")
+    val createdBy: String? = null,
     @SerialName("updated_at")
     val updatedAt: String? = null
 )

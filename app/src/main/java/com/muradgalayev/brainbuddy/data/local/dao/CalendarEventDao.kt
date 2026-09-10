@@ -22,8 +22,7 @@ interface CalendarEventDao {
     @Query("SELECT * FROM calendar_events WHERE id = :id AND userId = :userId")
     suspend fun getEventById(id: String, userId: String): CalendarEventEntity?
 
-    // ISO datetimes sort lexicographically, so prefix LIKE '2026-05-05%' picks
-    // every event that starts on that date.
+    // ISO datetimes sort lexicographically, so a prefix LIKE picks every event starting on a date
     @Query(
         "SELECT * FROM calendar_events WHERE userId = :userId AND startTime LIKE :datePrefix " +
             "ORDER BY startTime ASC"
@@ -43,6 +42,20 @@ interface CalendarEventDao {
 
     @Query("SELECT * FROM calendar_events WHERE syncStatus != 'SYNCED' AND userId = :userId")
     suspend fun getPendingSyncItems(userId: String): List<CalendarEventEntity>
+
+    // one-shot chronological read, used to seed the learned event timings from history the user
+    // already has. ascending order is required rather than incidental: the stats are replayed in
+    // the order the events happened, so recency decay lands where it would have if they'd been
+    // recorded live
+    @Query(
+        "SELECT * FROM calendar_events WHERE userId = :userId AND startTime >= :fromIso " +
+            "ORDER BY startTime ASC LIMIT :limit"
+    )
+    suspend fun getEventsSince(
+        userId: String,
+        fromIso: String,
+        limit: Int
+    ): List<CalendarEventEntity>
 
     @Query("DELETE FROM calendar_events WHERE id = :id AND userId = :userId")
     suspend fun deleteById(id: String, userId: String)

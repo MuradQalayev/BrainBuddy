@@ -21,6 +21,9 @@ data class TodoItemDto(
     val attendees: Int = 0,
     val color: String = "LIGHT_PINK",
     val category: String = "personal",
+    // see CalendarEventDto.createdBy, same owner/author split
+    @SerialName("created_by")
+    val createdBy: String? = null,
     @SerialName("updated_at")
     val updatedAt: String? = null
 )

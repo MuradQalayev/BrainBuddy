@@ -3,7 +3,6 @@ package com.muradgalayev.brainbuddy.ui.todo
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 
-
 @Immutable
 data class CategoryUi(
     val id: String,
@@ -22,4 +21,8 @@ data class TaskUi(
     val accent: Color,
     val completed: Boolean = false,
     val flagged: Boolean = false,
+    // name of the connection who added this task to your list, or null when you created it. drives
+    // the 'Added by' badge, since a task you never wrote appearing in your list needs to say where
+    // it came from
+    val addedByName: String? = null,
 )

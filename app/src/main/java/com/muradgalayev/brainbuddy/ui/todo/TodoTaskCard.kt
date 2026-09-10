@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.rounded.Diversity3
 import androidx.compose.material.icons.outlined.OutlinedFlag
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,7 +38,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -113,6 +113,49 @@ fun TaskCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+
+                    // attribution, when a connection put this on your list. directly under the title, since 'who
+                    // added this' is the first question about a task you don't remember writing
+                    task.addedByName?.let { author ->
+                        Spacer(Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .background(task.accent.copy(alpha = .16f))
+                                    .padding(horizontal = 7.dp, vertical = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Diversity3,
+                                    contentDescription = null,
+                                    tint = task.accent,
+                                    modifier = Modifier.size(11.dp),
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = "Added by $author",
+                                    color = task.accent,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
+                        }
+                    }
+
+                    if (task.flagged && !task.completed) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "HIGH PRIORITY",
+                            color = palette.flagRed,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(palette.flagRed.copy(alpha = .12f))
+                                .padding(horizontal = 7.dp, vertical = 3.dp),
+                        )
+                    }
 
                     if (!task.subtitle.isNullOrEmpty()) {
                         Spacer(Modifier.height(4.dp))

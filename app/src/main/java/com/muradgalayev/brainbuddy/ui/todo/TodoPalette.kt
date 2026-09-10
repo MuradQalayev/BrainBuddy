@@ -1,8 +1,10 @@
 package com.muradgalayev.brainbuddy.ui.todo
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
-
+import com.muradgalayev.brainbuddy.ui.theme.myndoraAccents
 
 @Immutable
 data class TodoPalette(
@@ -29,50 +31,36 @@ data class TodoPalette(
     val taskYellow: Color,
 )
 
-val LightPalette = TodoPalette(
-    taskRed = Color(0xFFC75A4A),
-    taskBlue = Color(0xFF7FA3C9),
-    taskYellow = Color(0xFFD9B05C),
-    bg = Color(0xFFFAF7F2),
-    ink = Color(0xFF2A2A2A),
-    muted = Color(0xFF6B6B6B),
-    cardBg = Color(0xFFFFFBF6),
-    lavender = Color(0xFFD97A3D),
-    lavenderSoft = Color(0xFFF5E1CB),
-    pillBg = Color(0xFFF0E8DC),
-    flagRed = Color(0xFFC75A4A),
-    sky = Color(0xFF7FA3C9),
-    lilac = Color(0xFFE8A878),
-    lime = Color(0xFFB6C68A),
-    periwinkle = Color(0xFFE8C8A8),
-    progressTrack = Color(0xFFEFE8DC),
-    avatarBg = Color(0xFFF5E1CB),
-    avatarFace = Color(0xFFD97A3D),
-    avatarEyes = Color(0xFFFFFBF6),
-    searchCursor = Color(0xFFD97A3D),
-    dialogBorder = Color(0xFFE5DCCE),
-)
-
-val DarkPalette = TodoPalette(
-    bg = Color(0xFF1F1F1F),
-    ink = Color(0xFFEDE7DF),
-    muted = Color(0xFFA8A8A8),
-    cardBg = Color(0xFF2B2B2B),
-    lavender = Color(0xFFE89866),
-    lavenderSoft = Color(0xFF4A2E1A),
-    pillBg = Color(0xFF353535),
-    flagRed = Color(0xFFD96A5A),
-    sky = Color(0xFF9CB9D9),
-    lilac = Color(0xFFE8B888),
-    lime = Color(0xFFB6C68A),
-    periwinkle = Color(0xFFD9B894),
-    progressTrack = Color(0xFF353535),
-    avatarBg = Color(0xFF4A2E1A),
-    avatarFace = Color(0xFFE89866),
-    avatarEyes = Color(0xFFF0B988),
-    searchCursor = Color(0xFFE89866),
-    dialogBorder = Color(0xFF3F3F3F),
-    taskRed = Color(0xFFD96A5A),
-    taskBlue = Color(0xFF9CB9D9),
-    taskYellow = Color(0xFFD9C570),
-)
+// derived from the active theme rather than hardcoded, so switching colour theme carries the
+// todo list with it. lavender is the accent slot, a name that predates the accent becoming
+// themeable and is threaded through every Todo composable.
+// the three task colours stay fixed: they're choices the user made per task, so they have to
+// keep meaning the same thing after a theme change
+@Composable
+fun rememberTodoPalette(): TodoPalette {
+    val c = MaterialTheme.colorScheme
+    val accents = MaterialTheme.myndoraAccents
+    return TodoPalette(
+        bg = c.background,
+        ink = c.onSurface,
+        muted = c.onSurfaceVariant,
+        cardBg = c.surface,
+        lavender = accents.accent,
+        lavenderSoft = c.primaryContainer,
+        pillBg = c.surfaceContainer,
+        flagRed = c.error,
+        sky = accents.support,
+        lilac = accents.accentEnd,
+        lime = accents.supportEnd,
+        periwinkle = accents.accentEnd,
+        progressTrack = c.surfaceContainerHighest,
+        avatarBg = c.primaryContainer,
+        avatarFace = accents.accent,
+        avatarEyes = c.surface,
+        searchCursor = accents.accent,
+        dialogBorder = c.outlineVariant,
+        taskRed = Color(0xFFEF4444),
+        taskBlue = Color(0xFF0EA5E9),
+        taskYellow = Color(0xFFF59E0B),
+    )
+}

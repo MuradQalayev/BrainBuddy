@@ -8,14 +8,24 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +33,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,15 +41,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -52,18 +62,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.core.content.ContextCompat
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -71,65 +79,46 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.muradgalayev.brainbuddy.R
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.muradgalayev.brainbuddy.R
 import com.muradgalayev.brainbuddy.data.local.TimerState
 import com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionType
-import com.muradgalayev.brainbuddy.ui.theme.AiButtonDark
-import com.muradgalayev.brainbuddy.ui.theme.AiButtonDarkEnd
-import com.muradgalayev.brainbuddy.ui.theme.AiButtonLight
-import com.muradgalayev.brainbuddy.ui.theme.AiButtonLightEnd
-import kotlinx.coroutines.delay
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.graphicsLayer
-import kotlinx.coroutines.launch
-import com.muradgalayev.brainbuddy.ui.pomodoro.components.AmbientMusicSection
+import com.muradgalayev.brainbuddy.ui.theme.myndoraAccents
+import com.muradgalayev.brainbuddy.ui.pomodoro.components.AmbientSoundPill
+import com.muradgalayev.brainbuddy.ui.pomodoro.components.BottomControls
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.CalendarPlanStrip
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.DailyFocusCard
-import com.muradgalayev.brainbuddy.ui.pomodoro.components.SessionTypePills
-import com.muradgalayev.brainbuddy.ui.pomodoro.components.BottomControls
+import com.muradgalayev.brainbuddy.ui.pomodoro.components.FocusRing
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.HistorySummarySwitcher
-import com.muradgalayev.brainbuddy.ui.pomodoro.dialogs.PomodoroHistoryDialog
-import com.muradgalayev.brainbuddy.ui.pomodoro.dialogs.DurationPickerDialog
-
-
-private val FocusPurpleLight = AiButtonLight       // #6366F1
-private val FocusPurpleLightEnd = AiButtonLightEnd // #8B5CF6
-private val FocusPurpleDark = AiButtonDark         // #818CF8
-private val FocusPurpleDarkEnd = AiButtonDarkEnd   // #A78BFA
-
-// Break accent (calm UI)
-private val BreakGreen = Color(0xFF8AAE7E)
-private val BreakBlue = Color(0xFF7FA3C9)
+import com.muradgalayev.brainbuddy.ui.pomodoro.components.SessionTypePills
+import com.muradgalayev.brainbuddy.ui.pomodoro.dialogs.AmbientSoundSheet
+import com.muradgalayev.brainbuddy.ui.pomodoro.dialogs.DurationPickerSheet
+import com.muradgalayev.brainbuddy.ui.pomodoro.dialogs.PomodoroHistorySheet
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun PomodoroScreen(
     onBackClick: () -> Unit,
+    onOpenBreakdown: (String) -> Unit = {},
+    onOpenFocusRoom: (String) -> Unit = {},
     viewModel: PomodoroViewModel = hiltViewModel()
 ) {
     val timerState by viewModel.timerState.collectAsState()
+    // same view-model instance the card below uses, both live in this screen's scope, so there is
+    // one answer to 'is a room running' rather than two
+    val focusTogetherViewModel: FocusTogetherViewModel = hiltViewModel()
+    val focusTogetherState by focusTogetherViewModel.uiState.collectAsState()
+    val roomOwnsTheClock = focusTogetherState.activeSession != null
+    val spotifyPlaylistLink by viewModel.spotifyPlaylistLink.collectAsState()
     val pomodoroQueue by viewModel.pomodoroQueue.collectAsState()
-    var musicExpanded by rememberSaveable { mutableStateOf(false) }
+    val planCompletedIds by viewModel.planCompletedIds.collectAsState()
+    var planExpanded by rememberSaveable { mutableStateOf(false) }
     val recentSessions by viewModel.recentSessions.collectAsState()
+    val focusHistory by viewModel.focusHistory.collectAsState()
     val uiExtra by viewModel.uiExtra.collectAsState()
+    var showSoundSheet by rememberSaveable { mutableStateOf(false) }
     var showFocusStatus by rememberSaveable { mutableStateOf(false) }
     var showHistoryDialog by rememberSaveable { mutableStateOf(false) }
     val sessionTypes = PomodoroSessionType.entries
@@ -192,21 +181,21 @@ fun PomodoroScreen(
     }
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
-    val focusGradient = if (isDark)
-        Brush.linearGradient(listOf(FocusPurpleDark, FocusPurpleDarkEnd))
-    else
-        Brush.linearGradient(listOf(FocusPurpleLight, FocusPurpleLightEnd))
+    // focus wears the theme's accent and break its supporting colour, so the two states are told
+    // apart by hue in every theme without either needing its own palette
+    val accents = MaterialTheme.myndoraAccents
+
+    val focusGradient = Brush.linearGradient(listOf(accents.accent, accents.accentEnd))
+    val breakGradient = Brush.linearGradient(listOf(accents.support, accents.supportEnd))
 
     val targetArcColor = when (timerState.sessionType) {
-        PomodoroSessionType.FOCUS -> if (isDark) FocusPurpleDark else FocusPurpleLight
-        PomodoroSessionType.SHORT_BREAK -> BreakGreen
-        PomodoroSessionType.LONG_BREAK -> BreakBlue
+        PomodoroSessionType.FOCUS -> accents.accent
+        PomodoroSessionType.BREAK -> accents.support
     }
 
     val targetArcColorEnd = when (timerState.sessionType) {
-        PomodoroSessionType.FOCUS -> if (isDark) FocusPurpleDarkEnd else FocusPurpleLightEnd
-        PomodoroSessionType.SHORT_BREAK -> BreakGreen
-        PomodoroSessionType.LONG_BREAK -> BreakBlue
+        PomodoroSessionType.FOCUS -> accents.accentEnd
+        PomodoroSessionType.BREAK -> accents.supportEnd
     }
 
     val infiniteTransition = rememberInfiniteTransition(label = "timer_infinite")
@@ -271,6 +260,10 @@ fun PomodoroScreen(
         label = "cardScale"
     )
 
+    val isIdle = timerState.timerState == TimerState.IDLE
+    val canScrub = timerState.timerState == TimerState.RUNNING ||
+        timerState.timerState == TimerState.PAUSED
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -278,7 +271,7 @@ fun PomodoroScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        // Top bar
+        // top bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -304,13 +297,15 @@ fun PomodoroScreen(
                 accentColor = arcColor,
                 onClick = {
                     showHistoryDialog = true
-                }
+                },
+                // holds still once a session is under way, nothing should move in the corner of the eye
+                animated = isIdle
             )
 
             Spacer(modifier = Modifier.width(8.dp))
 
             AnimatedVisibility(
-                visible = timerState.timerState == TimerState.IDLE,
+                visible = isIdle,
                 enter = fadeIn(tween(200)) + expandHorizontally(
                     animationSpec = tween(250)
                 ),
@@ -319,10 +314,12 @@ fun PomodoroScreen(
                 )
             ) {
                 IconButton(
+                    enabled = !uiExtra.focusModeControlledByMode ||
+                        !uiExtra.focusModePermissionGranted,
                     onClick = {
                         if (!uiExtra.focusModePermissionGranted) {
                             viewModel.requestFocusModePermission()
-                        } else {
+                        } else if (!uiExtra.focusModeControlledByMode) {
                             viewModel.toggleFocusMode(!uiExtra.focusModeEnabled)
                         }
                     }
@@ -335,10 +332,12 @@ fun PomodoroScreen(
                             else
                                 R.drawable.ic_dnd_off
                         ),
-                        contentDescription = if (uiExtra.focusModeEnabled)
-                            "Focus Mode Enabled"
-                        else
-                            "Focus Mode Disabled",
+                        contentDescription = when {
+                            uiExtra.focusModeControlledByMode ->
+                                "Focus silence managed by ${uiExtra.controllingModeName} mode"
+                            uiExtra.focusModeEnabled -> "Focus Mode Enabled"
+                            else -> "Focus Mode Disabled"
+                        },
                         tint = if (uiExtra.focusModeEnabled)
                             arcColor
                         else
@@ -348,58 +347,77 @@ fun PomodoroScreen(
             }
         }
 
+        // a shared session has exactly one home, and it is the room. backing out of it used to leave
+        // the same countdown running on this screen with its own Start, Pause and Reset: two places
+        // to control one agreed session, and Reset here would silently desync a block the other
+        // person is still sitting in. while a room owns the clock there is nothing to show here
+        // except the way back to it
+        if (roomOwnsTheClock) {
+            focusTogetherState.activeSession?.let { shared ->
+                SharedSessionPanel(
+                    session = shared,
+                    onOpenRoom = { onOpenFocusRoom(shared.id) },
+                )
+            }
+            return@Column
+        }
 
-                AnimatedVisibility(
-                    visible = showFocusStatus,
-                    enter = slideInVertically(
-                        initialOffsetY = { -it / 2 },
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessLow
-                        )
-                    ) + fadeIn(
-                        animationSpec = tween(250)
-                    ) + expandVertically(
-                        expandFrom = Alignment.Top,
-                        animationSpec = tween(250)
-                    ),
-                    exit = slideOutVertically(
-                        targetOffsetY = { -it / 3 },
-                        animationSpec = tween(220)
-                    ) + fadeOut(
-                        animationSpec = tween(180)
-                    ) + shrinkVertically(
-                        shrinkTowards = Alignment.Top,
-                        animationSpec = tween(220)
-                    ),
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        tonalElevation = 2.dp,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    ) {
-                        Text(
-                            text = if (uiExtra.focusModeEnabled) {
-                                "Focus mode enabled"
-                            } else {
-                                "Focus mode disabled"
-                            },
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            color = if (uiExtra.focusModeEnabled) {
-                                arcColor
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
+        AnimatedVisibility(
+            visible = showFocusStatus,
+            enter = slideInVertically(
+                initialOffsetY = { -it / 2 },
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            ) + fadeIn(
+                animationSpec = tween(250)
+            ) + expandVertically(
+                expandFrom = Alignment.Top,
+                animationSpec = tween(250)
+            ),
+            exit = slideOutVertically(
+                targetOffsetY = { -it / 3 },
+                animationSpec = tween(220)
+            ) + fadeOut(
+                animationSpec = tween(180)
+            ) + shrinkVertically(
+                shrinkTowards = Alignment.Top,
+                animationSpec = tween(220)
+            ),
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                tonalElevation = 2.dp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                Text(
+                    text = when {
+                        uiExtra.focusModeControlledByMode ->
+                            "${uiExtra.controllingModeName} mode manages focus silence"
+                        uiExtra.focusModeEnabled -> "Focus mode enabled"
+                        else -> "Focus mode disabled"
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    color = if (uiExtra.focusModeEnabled) {
+                        arcColor
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
+        // everything above the controls scrolls, the controls themselves are pinned below so
+        // Start/Pause is reachable without ever scrolling for it
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -409,6 +427,14 @@ fun PomodoroScreen(
             CalendarPlanStrip(
                 queue = pomodoroQueue,
                 accentColor = arcColor,
+                expanded = planExpanded,
+                onToggleExpanded = { planExpanded = !planExpanded },
+                canSelectStep = isIdle,
+                onStartStep = { index -> viewModel.startQueueItem(index) },
+                onOpenBreakdown = {
+                    pomodoroQueue?.eventId?.let(onOpenBreakdown)
+                },
+                completedSubtaskIds = planCompletedIds,
                 onClear = { viewModel.clearQueue() },
             )
 
@@ -417,7 +443,7 @@ fun PomodoroScreen(
             }
 
             AnimatedVisibility(
-                visible = timerState.timerState == TimerState.IDLE && pomodoroQueue == null,
+                visible = isIdle && pomodoroQueue == null,
                 enter = fadeIn(tween(200)) + expandVertically(animationSpec = tween(220)),
                 exit = fadeOut(tween(150)) + shrinkVertically(animationSpec = tween(180))
             ) {
@@ -437,23 +463,23 @@ fun PomodoroScreen(
             SessionTypePills(
                 currentType = timerState.sessionType,
                 onSelect = { type ->
-                    if (timerState.timerState == TimerState.IDLE) {
+                    if (isIdle) {
                         viewModel.selectSessionType(type)
                         scope.launch {
                             pagerState.animateScrollToPage(sessionTypes.indexOf(type))
                         }
                     }
                 },
-                enabled = timerState.timerState == TimerState.IDLE,
+                enabled = isIdle,
                 accentColor = arcColor,
-                collapseToSelected = timerState.timerState != TimerState.IDLE
+                collapseToSelected = !isIdle
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             HorizontalPager(
                 state = pagerState,
-                userScrollEnabled = timerState.timerState == TimerState.IDLE,
+                userScrollEnabled = isIdle,
                 modifier = Modifier.fillMaxWidth()
             ) { _ ->
                 val cardBackground = if (isDark) {
@@ -493,14 +519,13 @@ fun PomodoroScreen(
                                     )
                                 )
                             )
-                            .padding(horizontal = 24.dp, vertical = 26.dp),
+                            .padding(horizontal = 24.dp, vertical = 24.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            // top badge
                             Surface(
                                 shape = RoundedCornerShape(999.dp),
                                 color = arcColor.copy(alpha = 0.14f)
@@ -508,8 +533,7 @@ fun PomodoroScreen(
                                 Text(
                                     text = when (timerState.sessionType) {
                                         PomodoroSessionType.FOCUS -> "FOCUS SESSION"
-                                        PomodoroSessionType.SHORT_BREAK -> "SHORT BREAK"
-                                        PomodoroSessionType.LONG_BREAK -> "LONG BREAK"
+                                        PomodoroSessionType.BREAK -> "BREAK"
                                     },
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                     color = arcColor,
@@ -518,69 +542,25 @@ fun PomodoroScreen(
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(24.dp))
+                            Spacer(modifier = Modifier.height(22.dp))
 
-                            Box(
+                            FocusRing(
+                                progress = animatedProgress,
+                                arcColor = arcColor,
+                                arcColorEnd = arcColorEnd,
+                                trackColor = trackColor,
+                                glowAlpha = glowAlpha,
+                                scrubEnabled = canScrub,
+                                onScrubStart = viewModel::beginScrub,
+                                onScrub = viewModel::scrubToProgress,
+                                onScrubReleased = viewModel::endScrub,
                                 modifier = Modifier
-                                    .fillMaxWidth(0.76f)
-                                    .aspectRatio(1f)
-                                    .scale(timerScale),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize(0.86f)
-                                        .clip(CircleShape)
-                                        .background(
-                                            Brush.radialGradient(
-                                                colors = listOf(
-                                                    arcColor.copy(alpha = glowAlpha + 0.10f),
-                                                    arcColor.copy(alpha = 0.05f),
-                                                    Color.Transparent
-                                                )
-                                            )
-                                        )
-                                )
-
-                                Canvas(modifier = Modifier.fillMaxSize()) {
-                                    val strokeWidth = 14.dp.toPx()
-                                    val radius = (size.minDimension - strokeWidth) / 2f
-                                    val topLeft = Offset(
-                                        (size.width - radius * 2) / 2f,
-                                        (size.height - radius * 2) / 2f
-                                    )
-                                    val arcSize = Size(radius * 2, radius * 2)
-
-                                    drawArc(
-                                        color = trackColor,
-                                        startAngle = -90f,
-                                        sweepAngle = 360f,
-                                        useCenter = false,
-                                        topLeft = topLeft,
-                                        size = arcSize,
-                                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                                    )
-
-                                    drawArc(
-                                        brush = Brush.sweepGradient(
-                                            listOf(
-                                                arcColor,
-                                                arcColorEnd,
-                                                arcColor
-                                            )
-                                        ),
-                                        startAngle = -90f,
-                                        sweepAngle = 360f * animatedProgress,
-                                        useCenter = false,
-                                        topLeft = topLeft,
-                                        size = arcSize,
-                                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                                    )
-                                }
-
+                                    .fillMaxWidth(0.78f)
+                                    .scale(timerScale)
+                            ) { scrubbing, atEnd ->
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = if (timerState.timerState == TimerState.IDLE) {
+                                    modifier = if (isIdle) {
                                         Modifier
                                             .clip(RoundedCornerShape(20.dp))
                                             .clickable { viewModel.showDurationPicker() }
@@ -614,49 +594,38 @@ fun PomodoroScreen(
 
                                     Spacer(modifier = Modifier.height(4.dp))
 
-                                    AnimatedContent(
-                                        targetState = when (timerState.timerState) {
+                                    val statusText = when {
+                                        scrubbing && atEnd -> "Release to finish"
+                                        scrubbing -> "Drag to adjust"
+                                        else -> when (timerState.timerState) {
                                             TimerState.IDLE -> "Tap to set duration"
-                                            TimerState.RUNNING -> "Stay locked in"
+                                            TimerState.RUNNING -> "Drag the ring to adjust"
                                             TimerState.PAUSED -> "Paused"
                                             TimerState.COMPLETED -> "Session completed"
-                                        },
+                                        }
+                                    }
+
+                                    AnimatedContent(
+                                        targetState = statusText,
                                         transitionSpec = {
                                             fadeIn(tween(180)) togetherWith fadeOut(tween(120))
                                         },
                                         label = "statusText"
-                                    ) { statusText ->
+                                    ) { text ->
                                         Text(
-                                            text = statusText,
+                                            text = text,
                                             style = MaterialTheme.typography.bodyMedium,
-                                            color = if (timerState.timerState == TimerState.IDLE) arcColor
+                                            fontWeight = if (scrubbing && atEnd) FontWeight.SemiBold
+                                            else FontWeight.Normal,
+                                            color = if (isIdle || scrubbing) arcColor
                                             else MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(24.dp))
-
-                            Surface(
-                                shape = RoundedCornerShape(18.dp),
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (isDark) 0.08f else 0.05f)
-                            ) {
-                                Text(
-                                    text = when (timerState.sessionType) {
-                                        PomodoroSessionType.FOCUS -> "${timerState.totalDurationMs / 60000} min deep focus"
-                                        PomodoroSessionType.SHORT_BREAK -> "${timerState.totalDurationMs / 60000} min short recharge"
-                                        PomodoroSessionType.LONG_BREAK -> "${timerState.totalDurationMs / 60000} min long recharge"
-                                    },
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-
                             if (timerState.completedSessions > 0) {
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(14.dp))
 
                                 Text(
                                     text = "${timerState.completedSessions} session${if (timerState.completedSessions > 1) "s" else ""} completed",
@@ -666,200 +635,75 @@ fun PomodoroScreen(
                                 )
                             }
 
-                            if (timerState.timerState == TimerState.IDLE) {
-                                Spacer(modifier = Modifier.height(18.dp))
+                            Spacer(modifier = Modifier.height(18.dp))
 
-                                Surface(
-                                    shape = RoundedCornerShape(999.dp),
-                                    color = arcColor.copy(alpha = 0.14f),
-                                    onClick = { viewModel.showDurationPicker() }
-                                ) {
-                                    Text(
-                                        text = "Duration: ${timerState.totalDurationMs / 60000} min",
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                        style = MaterialTheme.typography.labelLarge,
-                                        color = arcColor,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
+                            AmbientSoundPill(
+                                selectedSound = timerState.selectedAmbientSound,
+                                accentColor = arcColor,
+                                onClick = { showSoundSheet = true }
+                            )
                         }
                     }
                 }
             }
-
 
             Spacer(modifier = Modifier.height(20.dp))
-
-            // Add / Subtract time
-            AnimatedVisibility(
-                visible = timerState.timerState == TimerState.RUNNING || timerState.timerState == TimerState.PAUSED,
-                enter = fadeIn(tween(200)),
-                exit = fadeOut(tween(200))
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    SmallControlButton(
-                        icon = Icons.Rounded.Remove,
-                        label = "-5 min",
-                        onClick = viewModel::subtractTime,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(32.dp))
-                    SmallControlButton(
-                        icon = Icons.Rounded.Add,
-                        label = "+5 min",
-                        onClick = viewModel::addTime,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            AnimatedVisibility(
-                visible = timerState.timerState == TimerState.IDLE,
-                enter = fadeIn(tween(250)) + expandVertically(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessLow
-                    )
-                ),
-                exit = fadeOut(tween(180)) + shrinkVertically(
-                    animationSpec = tween(220)
-                )
-            ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .animateContentSize(
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioNoBouncy,
-                                stiffness = Spring.StiffnessLow
-                            )
-                        ),
-                    shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    tonalElevation = 2.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 14.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable { musicExpanded = !musicExpanded }
-                                .padding(vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = arcColor.copy(alpha = 0.12f),
-                                modifier = Modifier.size(40.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.MusicNote,
-                                        contentDescription = "Ambient Music",
-                                        tint = arcColor
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Ambient Music",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = if (musicExpanded) "Tap to hide sounds" else "Tap to choose a sound",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-
-                            val arrowRotation by animateFloatAsState(
-                                targetValue = if (musicExpanded) 180f else 0f,
-                                animationSpec = tween(300),
-                                label = "arrowRotation"
-                            )
-
-                            Icon(
-                                imageVector = Icons.Rounded.KeyboardArrowDown,
-                                contentDescription = if (musicExpanded) "Collapse" else "Expand",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.graphicsLayer {
-                                    rotationZ = arrowRotation
-                                }
-                            )
-                        }
-
-                        AnimatedVisibility(
-                            visible = musicExpanded,
-                            enter = expandVertically(
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioLowBouncy,
-                                    stiffness = Spring.StiffnessLow
-                                )
-                            ) + fadeIn(tween(250)),
-                            exit = shrinkVertically(
-                                animationSpec = tween(220)
-                            ) + fadeOut(tween(180))
-                        ) {
-                            Column {
-                                Spacer(modifier = Modifier.height(12.dp))
-                                AmbientMusicSection(
-                                    selectedSound = timerState.selectedAmbientSound,
-                                    onSoundSelect = viewModel::selectAmbientSound,
-                                    accentColor = arcColor
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            BottomControls(
-                timerState = timerState.timerState,
-                accentColor = arcColor,
-                accentGradient = if (timerState.sessionType == PomodoroSessionType.FOCUS) focusGradient
-                else Brush.linearGradient(listOf(arcColor, arcColor)),
-                onStart = viewModel::start,
-                onPause = viewModel::pause,
-                onResume = viewModel::resume,
-                onReset = viewModel::reset,
-                onStop = viewModel::stop,
-                onSkip = viewModel::skipToNext
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
+
+        // directly under the ring and always present, invite or not. below the controls it sat past
+        // the fold and was found by nobody, and hidden when no one had granted permission it was
+        // invisible to exactly the person who needed to learn the feature existed
+        FocusTogetherCard(
+            focusMinutes = (timerState.totalDurationMs / 60_000).toInt().coerceIn(5, 180),
+            onOpenRoom = onOpenFocusRoom,
+            viewModel = focusTogetherViewModel,
+            modifier = Modifier.padding(horizontal = 20.dp),
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        BottomControls(
+            timerState = timerState.timerState,
+            accentColor = arcColor,
+            accentGradient = if (timerState.sessionType == PomodoroSessionType.FOCUS) focusGradient
+            else breakGradient,
+            onStart = viewModel::start,
+            onPause = viewModel::pause,
+            onResume = viewModel::resume,
+            onReset = viewModel::reset,
+            onStop = viewModel::stop,
+            onSkip = viewModel::skipToNext,
+            startEnabled = !roomOwnsTheClock,
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
     }
 
-    // Duration picker dialog
     if (uiExtra.showDurationPicker) {
-        DurationPickerDialog(
+        DurationPickerSheet(
             currentMinutes = (timerState.totalDurationMs / 60000).toInt(),
+            accentColor = arcColor,
             onConfirm = { viewModel.setCustomDuration(it) },
             onDismiss = viewModel::dismissDurationPicker,
-            accentColor = arcColor
         )
     }
+
+    if (showSoundSheet) {
+        AmbientSoundSheet(
+            selectedSound = timerState.selectedAmbientSound,
+            onSoundSelect = viewModel::selectAmbientSound,
+            spotifyPlaylistLink = spotifyPlaylistLink,
+            onSpotifyPlaylistLinkChange = viewModel::setSpotifyPlaylistLink,
+            onOpenSpotifyPlaylist = viewModel::openSpotifyPlaylist,
+            accentColor = arcColor,
+            onDismiss = { showSoundSheet = false },
+        )
+    }
+
     if (showHistoryDialog) {
-        PomodoroHistoryDialog(
+        PomodoroHistorySheet(
+            history = focusHistory,
             sessions = recentSessions.take(5),
+            accentColor = arcColor,
             onDismiss = { showHistoryDialog = false }
         )
     }
@@ -871,7 +715,7 @@ fun PomodoroScreen(
             title = { Text("Focus Mode Permission") },
             text = {
                 Text(
-                    "To silence notifications during focus sessions, BrainBuddy needs " +
+                    "To silence notifications during focus sessions, Myndora needs " +
                     "Do Not Disturb access. This lets the app temporarily mute notifications " +
                     "while your timer is running and restore them when it ends."
                 )
@@ -888,76 +732,24 @@ fun PomodoroScreen(
     }
 }
 
-
-@Composable
-private fun SmallControlButton(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    tint: Color
-) {
-    var pressed by rememberSaveable { mutableStateOf(false) }
-
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.92f else 1f,
-        animationSpec = tween(120),
-        label = "smallButtonScale"
-    )
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .scale(scale)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(
-                onClick = {
-                    pressed = true
-                    onClick()
-                    pressed = false
-                }
-            )
-            .padding(8.dp)
-    ) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            modifier = Modifier.size(40.dp)
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = label,
-                    tint = tint,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = tint
-        )
-    }
-}
-
 @Composable
 fun GradientCircleButton(
     icon: ImageVector,
     label: String,
     gradient: Brush,
     size: Int,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    enabled: Boolean = true,
 ) {
     Box(
         modifier = Modifier
             .size(size.dp)
             .clip(CircleShape)
             .background(gradient)
-            .clickable(onClick = onClick),
+            // dimmed as well as inert. an unresponsive button that still looks pressable reads as the app
+            // being broken, a faded one reads as 'not now', which is what it means
+            .alpha(if (enabled) 1f else 0.35f)
+            .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Icon(

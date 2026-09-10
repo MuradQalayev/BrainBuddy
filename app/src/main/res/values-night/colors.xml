@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- EmberDark's background, the default dark palette (see AppTheme.kt). -->
+    <color name="window_background_night">#12100E</color>
+</resources>

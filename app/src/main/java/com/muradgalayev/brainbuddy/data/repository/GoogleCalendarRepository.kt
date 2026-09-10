@@ -27,7 +27,7 @@ class GoogleCalendarRepository @Inject constructor(
 ) {
 
     suspend fun exportAllEvents(): ExportResult = withContext(Dispatchers.IO) {
-        val token = ensureAccessToken()
+        var token = ensureAccessToken()
             ?: return@withContext ExportResult.NeedsGoogleSignIn
 
         val events = calendarRepository.getAllEvents().first()
@@ -38,13 +38,32 @@ class GoogleCalendarRepository @Inject constructor(
         var pushed = 0
         var alreadyExisted = 0
         var failed = 0
+        var alreadyRefreshed = false
 
         for (event in events) {
-            when (pushEvent(event, token)) {
+            var result = pushEvent(event, token)
+
+            if (result == PushResult.Unauthorized && !alreadyRefreshed) {
+                alreadyRefreshed = true
+                // our cached expiry said the token was still good but Google disagreed: Play services had
+                // handed us one minted earlier in its own cache window. evict it, mint a genuinely fresh one
+                // and replay this event before giving up
+                Log.i(TAG, "Access token rejected; forcing a silent refresh")
+                val fresh = authClient.tryGetFreshAccessTokenSilently(forceRefresh = true)
+                    ?: return@withContext ExportResult.NeedsGoogleSignIn
+                token = fresh
+                result = pushEvent(event, token)
+            }
+
+            when (result) {
                 PushResult.Created -> pushed++
                 PushResult.AlreadyExists -> alreadyExisted++
                 PushResult.Unauthorized -> {
-                    tokenStore.clear()
+                    // a freshly minted token was rejected too, so the grant itself is gone. drop the token but
+                    // keep the linked email: it's the account hint we need to reconnect, and clearing it here is
+                    // what used to make background sync go silent until the user reconnected by hand
+                    Log.w(TAG, "Fresh token still unauthorized; consent has been revoked")
+                    authClient.invalidateCurrentToken()
                     return@withContext ExportResult.NeedsGoogleSignIn
                 }
                 PushResult.Failed -> failed++
@@ -54,12 +73,9 @@ class GoogleCalendarRepository @Inject constructor(
         ExportResult.Success(pushed, alreadyExisted, failed)
     }
 
-    /**
-     * Returns a usable access token, refreshing it silently if the cached one
-     * has expired. Returns null only when the user has never connected or
-     * their consent has been revoked — in which case the caller should surface
-     * `NeedsGoogleSignIn` and let the user reconnect interactively.
-     */
+    // returns a usable access token, refreshing silently if the cached one expired. null only
+    // when the user has never connected or their consent has been revoked, in which case the
+    // caller should surface NeedsGoogleSignIn and let them reconnect interactively
     private suspend fun ensureAccessToken(): String? {
         tokenStore.getAccessToken()?.let { return it }
         if (!tokenStore.isLinked()) return null
@@ -117,7 +133,7 @@ class GoogleCalendarRepository @Inject constructor(
 
     private fun buildEventJson(event: CalendarEvent): String {
         val tz = java.util.TimeZone.getDefault().id
-        // Description gets the link appended so it's tappable in Google Calendar too.
+        // the link is appended to the description so it's tappable in Google Calendar too
         val description = buildString {
             append(event.description)
             if (event.link.isNotBlank()) {
@@ -142,15 +158,15 @@ class GoogleCalendarRepository @Inject constructor(
         return Json.encodeToString(JsonObject.serializer(), json)
     }
 
-    // Google Calendar event IDs must match [a-v0-9]{5,1024}.
-    // A UUID without hyphens is hex (0-9, a-f) — valid and stable per event.
+    // Google Calendar event ids must match [a-v0-9]{5,1024}. a UUID without hyphens is hex, so
+    // it's valid and stable per event
     private fun googleCalendarEventId(eventId: String): String =
         eventId.lowercase().replace("-", "").take(1024).padEnd(5, '0')
 
     private fun parseLocalDateTime(raw: String): LocalDateTime? =
         runCatching { LocalDateTime.parse(normalizeIso(raw)) }.getOrNull()
 
-    // Ensure trailing :ss so Google's RFC3339 parser is happy.
+    // ensure trailing seconds so Google's RFC3339 parser is happy
     private fun normalizeIso(raw: String): String {
         if (raw.length == 16 && raw.contains('T')) return "$raw:00"
         return raw

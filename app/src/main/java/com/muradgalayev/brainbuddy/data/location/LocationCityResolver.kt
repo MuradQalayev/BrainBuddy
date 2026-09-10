@@ -32,6 +32,14 @@ sealed class LocationCityOutcome {
     data class Error(val message: String) : LocationCityOutcome()
 }
 
+// raw coordinate fix, or the reason we couldn't get one
+sealed class LocationFixOutcome {
+    data class Located(val lat: Double, val lng: Double) : LocationFixOutcome()
+    data object PermissionMissing : LocationFixOutcome()
+    data object LocationServicesOff : LocationFixOutcome()
+    data object Unavailable : LocationFixOutcome()
+}
+
 @Singleton
 class LocationCityResolver @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -58,6 +66,17 @@ class LocationCityResolver @Inject constructor(
         else LocationCityOutcome.Detected(candidates)
     }
 
+    // true when the app currently holds coarse or finer location permission
+    fun hasLocationPermission(): Boolean = hasCoarsePermission()
+
+    // the device's current coordinates for distance calculations, or the reason we couldn't get them
+    suspend fun currentCoordinates(): LocationFixOutcome {
+        if (!hasCoarsePermission()) return LocationFixOutcome.PermissionMissing
+        if (!isLocationEnabled()) return LocationFixOutcome.LocationServicesOff
+        val loc = obtainLocation() ?: return LocationFixOutcome.Unavailable
+        return LocationFixOutcome.Located(loc.latitude, loc.longitude)
+    }
+
     private fun hasCoarsePermission(): Boolean =
         ContextCompat.checkSelfPermission(
             context, Manifest.permission.ACCESS_COARSE_LOCATION
@@ -77,8 +96,8 @@ class LocationCityResolver @Inject constructor(
 
     @SuppressLint("MissingPermission")
     private suspend fun obtainLocation(): Location? {
-        // Last-known is instant if cached, so try it first to short-circuit
-        // the spinner. Then race a fresh fix with a hard 8s ceiling.
+        // last-known is instant if cached, so try it first to short-circuit the spinner, then race a
+        // fresh fix against a hard 8s ceiling
         lastLocation()?.let { return it }
         return withTimeoutOrNull(CURRENT_FIX_TIMEOUT_MS) { currentLocation() }
     }

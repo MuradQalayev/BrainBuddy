@@ -4,7 +4,21 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.UUID
 
-enum class PomodoroSessionType { FOCUS, SHORT_BREAK, LONG_BREAK }
+// two states only: you're focusing or you're not. the old SHORT_BREAK/LONG_BREAK split made the
+// user pick between two things that felt identical. rows written before the merge still carry
+// those strings, and fromStored folds them back in
+enum class PomodoroSessionType {
+    FOCUS,
+    BREAK;
+
+    companion object {
+        // reads a persisted sessionType, mapping the retired break variants onto BREAK
+        fun fromStored(raw: String): PomodoroSessionType = when (raw) {
+            FOCUS.name -> FOCUS
+            else -> BREAK
+        }
+    }
+}
 enum class PomodoroCompletionStatus { COMPLETED, CANCELLED, RESET, IN_PROGRESS }
 
 @Entity(tableName = "pomodoro_sessions")

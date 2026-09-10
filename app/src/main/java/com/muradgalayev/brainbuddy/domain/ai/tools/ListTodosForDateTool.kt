@@ -11,11 +11,8 @@ import kotlinx.serialization.json.putJsonObject
 import java.time.LocalDate
 import javax.inject.Inject
 
-/**
- * Lets the AI answer "what's on my plate today?" style questions. Reads from the
- * local Room DAO (fast, offline-safe) — returns a compact one-line-per-item
- * summary the model can quote back.
- */
+// answers 'what's on my plate today?' style questions. reads from the local Room DAO, so it's
+// fast and offline-safe, and returns a compact one-line-per-item summary the model can quote
 class ListTodosForDateTool @Inject constructor(
     private val todoRepository: TodoRepository,
 ) : AiTool {

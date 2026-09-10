@@ -18,15 +18,18 @@ class SplashViewModel @Inject constructor(
         return authRepository.getCurrentUserId() != null
     }
 
-    /**
-     * True when the app was just launched via a password-reset deep link. In that case
-     * the user must go through the "Set new password" flow on Auth, even though they
-     * technically have an authenticated recovery session.
-     */
+    // true when the app was just launched via a password-reset deep link. in that case the user has
+    // to go through the set-new-password flow, even though they technically have an authenticated
+    // recovery session
     fun isInPasswordRecovery(): Boolean = passwordRecoveryState.active.value
 
-    /** Local DataStore read. Splash never blocks on Supabase. */
+    // local DataStore read. Splash never blocks on Supabase
     suspend fun isSurveyCompleted(): Boolean {
         return adhdProfileRepository.isSurveyCompletedCached()
+    }
+
+    // true once the user chose to skip onboarding, so let them into the app
+    suspend fun isOnboardingSkipped(): Boolean {
+        return adhdProfileRepository.isOnboardingSkipped()
     }
 }

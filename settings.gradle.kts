@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Brain Buddy"
+rootProject.name = "Myndora"
 include(":app")

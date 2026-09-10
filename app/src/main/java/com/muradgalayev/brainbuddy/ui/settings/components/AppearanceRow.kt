@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Brightness4
 import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.FormatLineSpacing
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.rounded.Apps
@@ -47,7 +48,7 @@ import com.muradgalayev.brainbuddy.data.local.ThemeMode
 import com.muradgalayev.brainbuddy.ui.settings.PillOption
 import com.muradgalayev.brainbuddy.ui.settings.SectionLabel
 import com.muradgalayev.brainbuddy.data.local.FontSize
-
+import com.muradgalayev.brainbuddy.data.local.TextSpacing
 
 @Composable
 fun AppearanceRow(
@@ -55,10 +56,13 @@ fun AppearanceRow(
     fontMode: FontMode,
     expanded: Boolean,
     fontSize: FontSize,
+    textSpacing: TextSpacing,
     onToggle: () -> Unit,
     onThemeChange: (ThemeMode) -> Unit,
     onFontChange: (FontMode) -> Unit,
-    onFontSizeChange: (FontSize) -> Unit
+    onFontSizeChange: (FontSize) -> Unit,
+    onTextSpacingChange: (TextSpacing) -> Unit,
+    embedded: Boolean = false,
 ) {
     val chevronRotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
@@ -70,7 +74,8 @@ fun AppearanceRow(
     )
 
     Column {
-        // The row itself
+        // the collapse header, hidden when embedded on a dedicated page
+        if (!embedded) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -81,7 +86,7 @@ fun AppearanceRow(
                 ),
             shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surfaceContainer,
-            shadowElevation = 1.dp,
+            shadowElevation = 0.dp,
             onClick = onToggle
         ) {
             Row(
@@ -130,10 +135,11 @@ fun AppearanceRow(
                 )
             }
         }
+        }
 
-        // Floating panel below
+        // floating panel below
         AnimatedVisibility(
-            visible = expanded,
+            visible = expanded || embedded,
             enter = expandVertically(
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioLowBouncy,
@@ -149,27 +155,21 @@ fun AppearanceRow(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 10.dp)
                     .border(
                         width = 1.dp,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                         shape = RoundedCornerShape(28.dp)
-                    )
-                    .shadow(
-                        elevation = 18.dp,
-                        shape = RoundedCornerShape(28.dp),
-                        ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
                     ),
                 shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                tonalElevation = 4.dp
+                // neutral surface with no primary tint, so the page background stays calm
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
             ) {
                 Column(
                     modifier = Modifier.padding(22.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    // Theme
+                    // theme
                     SectionLabel(icon = Icons.Outlined.Brightness4, label = "Theme")
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -198,32 +198,32 @@ fun AppearanceRow(
                         )
                     }
 
-                    // Font
+                    // font
                     SectionLabel(icon = Icons.Outlined.TextFields, label = "Font")
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         PillOption(
-                            label = "Classic",
-                            selected = fontMode == FontMode.Classic,
-                            onClick = { onFontChange(FontMode.Classic) },
+                            label = "Arial",
+                            selected = fontMode == FontMode.Arial,
+                            onClick = { onFontChange(FontMode.Arial) },
                             modifier = Modifier.weight(1f)
                         )
                         PillOption(
-                            label = "Modern",
-                            selected = fontMode == FontMode.Modern,
-                            onClick = { onFontChange(FontMode.Modern) },
+                            label = "Dyslexic",
+                            selected = fontMode == FontMode.OpenDyslexic,
+                            onClick = { onFontChange(FontMode.OpenDyslexic) },
                             modifier = Modifier.weight(1f)
                         )
                         PillOption(
-                            label = "Rounded",
-                            selected = fontMode == FontMode.Rounded,
-                            onClick = { onFontChange(FontMode.Rounded) },
+                            label = "Atkinson",
+                            selected = fontMode == FontMode.Atkinson,
+                            onClick = { onFontChange(FontMode.Atkinson) },
                             modifier = Modifier.weight(1f)
                         )
                     }
-                    // Font Size
+                    // font size
                     SectionLabel(icon = Icons.Outlined.TextFields, label = "Font Size")
 
                     Row(
@@ -246,6 +246,40 @@ fun AppearanceRow(
                             label = "Large",
                             selected = fontSize == FontSize.Large,
                             onClick = { onFontSizeChange(FontSize.Large) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    // text spacing, directly under size because the two are usually tried together: 'still hard to
+                    // read' is answered by one or the other, and which one only becomes clear by trying both
+                    SectionLabel(icon = Icons.Outlined.FormatLineSpacing, label = "Text Spacing")
+                    Text(
+                        text = "Adds room between lines and letters. This page updates as you " +
+                            "choose, so you can read the difference here.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        PillOption(
+                            label = "Normal",
+                            selected = textSpacing == TextSpacing.Normal,
+                            onClick = { onTextSpacingChange(TextSpacing.Normal) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        PillOption(
+                            label = "Relaxed",
+                            selected = textSpacing == TextSpacing.Relaxed,
+                            onClick = { onTextSpacingChange(TextSpacing.Relaxed) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        PillOption(
+                            label = "Loose",
+                            selected = textSpacing == TextSpacing.Loose,
+                            onClick = { onTextSpacingChange(TextSpacing.Loose) },
                             modifier = Modifier.weight(1f)
                         )
                     }

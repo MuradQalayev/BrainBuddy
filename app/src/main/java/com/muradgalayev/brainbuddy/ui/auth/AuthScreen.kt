@@ -2,11 +2,15 @@ package com.muradgalayev.brainbuddy.ui.auth
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -115,7 +119,7 @@ private fun AuthBackground() {
                 center = Offset(w * 1.18f, -w * 0.12f)
             )
 
-            // Soft light area near blob edge
+            // soft light area near the blob edge
             drawCircle(
                 color = Color.White.copy(alpha = 0.18f),
                 radius = w * 0.43f,
@@ -161,8 +165,8 @@ fun AuthScreen(
         if (state.isSuccess) onAuthSuccess()
     }
 
-    // Reset the "Loading" state if the user backs out of the Google Custom Tab
-    // without finishing. Fires each time we come back to the foreground.
+    // reset the loading state if the user backs out of the Google Custom Tab without finishing.
+    // fires each time we come back to the foreground
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.onScreenResumed()
     }
@@ -185,7 +189,7 @@ fun AuthScreen(
 
             Icon(
                 painter = painterResource(id = R.drawable.ic_ai),
-                contentDescription = "BrainBuddy",
+                contentDescription = "Myndora",
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(64.dp)
             )
@@ -215,7 +219,7 @@ fun AuthScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Sign-up only fields
+            // sign-up only fields
             AnimatedVisibility(
                 visible = !state.isLoginMode,
                 enter = expandVertically() + fadeIn(),
@@ -506,7 +510,7 @@ private fun SoftPillTextField(
                 onValueChange = onValueChange,
                 singleLine = true,
                 textStyle = androidx.compose.ui.text.TextStyle(
-                    color = Color(0xFF2A2A2A),
+                    color = Color(0xFF1C1917),
                     fontSize = 16.sp
                 ),
                 visualTransformation = visualTransformation,
@@ -589,16 +593,24 @@ private fun GoogleSignInButton(
     var showText by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        delay(350)
+        delay(260)
         expanded = true
-        delay(300)
+        delay(170)
         showText = true
     }
 
     val buttonWidth by animateDpAsState(
         targetValue = if (expanded) 320.dp else 56.dp,
-        animationSpec = tween(durationMillis = 450),
+        animationSpec = spring(
+            dampingRatio = .92f,
+            stiffness = Spring.StiffnessLow,
+        ),
         label = "googleButtonWidth"
+    )
+    val horizontalPadding by animateDpAsState(
+        targetValue = if (expanded) 20.dp else 0.dp,
+        animationSpec = spring(dampingRatio = .95f, stiffness = Spring.StiffnessLow),
+        label = "googleButtonPadding",
     )
 
     Row(
@@ -613,7 +625,7 @@ private fun GoogleSignInButton(
                 shape = RoundedCornerShape(28.dp)
             )
             .clickable(enabled = enabled && expanded) { onClick() }
-            .padding(horizontal = if (expanded) 20.dp else 0.dp),
+            .padding(horizontal = horizontalPadding),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -626,7 +638,15 @@ private fun GoogleSignInButton(
 
         AnimatedVisibility(
             visible = showText,
-            enter = fadeIn(animationSpec = tween(250))
+            enter = fadeIn(animationSpec = tween(360)) +
+                expandHorizontally(
+                    expandFrom = Alignment.Start,
+                    animationSpec = spring(dampingRatio = .94f, stiffness = Spring.StiffnessLow),
+                ) +
+                slideInHorizontally(
+                    initialOffsetX = { it / 5 },
+                    animationSpec = tween(380),
+                ),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Spacer(modifier = Modifier.width(14.dp))
@@ -735,9 +755,9 @@ private fun NewPasswordDialog(
     var visible by remember { mutableStateOf(false) }
     val mismatch = confirm.isNotEmpty() && password != confirm
 
-    // No dismiss button — Supabase already put the account into recovery mode via the link.
-    // If the user backs out, their session is still authenticated but with an unchanged password.
-    // The onDismissRequest is a no-op so the OS back button doesn't drop the dialog silently.
+    // no dismiss button: Supabase already put the account into recovery mode via the link, and if
+    // the user backs out their session is still authenticated with an unchanged password. the
+    // onDismissRequest is a no-op so the OS back button doesn't drop the dialog silently
     AlertDialog(
         onDismissRequest = {},
         shape = RoundedCornerShape(28.dp),

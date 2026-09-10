@@ -12,30 +12,55 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
+// how often background Google Calendar sync runs. chosen by the user
+enum class CalendarSyncFrequency(val label: String, val intervalHours: Long?) {
+    MANUAL("Manual only", null),
+    WEEKLY("Once a week", 24 * 7),
+    DAILY("Once a day", 24),
+    TWICE_DAILY("Twice a day", 12),
+    EVERY_6H("Every 6 hours", 6);
+
+    companion object {
+        val DEFAULT = TWICE_DAILY
+        fun fromNameOrNull(name: String?): CalendarSyncFrequency? =
+            entries.firstOrNull { it.name == name }
+
+        fun fromName(name: String?): CalendarSyncFrequency =
+            fromNameOrNull(name) ?: DEFAULT
+    }
+}
+
 @Singleton
 class CalendarSyncScheduler @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
 
-    fun schedulePeriodic() {
+    // cancels for MANUAL, otherwise re-schedules at the chosen cadence
+    fun applyFrequency(frequency: CalendarSyncFrequency) {
+        val hours = frequency.intervalHours
+        if (hours == null) cancel() else schedulePeriodic(hours)
+    }
+
+    fun schedulePeriodic(intervalHours: Long = CalendarSyncFrequency.DEFAULT.intervalHours!!) {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
-        // Twice-a-day cadence. Flex window lets WorkManager pick the best
-        // moment within the last 2 hours of each 12h cycle so it can batch
-        // with other jobs and respect Doze.
+        // a flex window, about a sixth of the interval and at least an hour, lets WorkManager batch
+        // with other jobs and respect Doze rather than firing at an exact instant
+        val flexHours = (intervalHours / 6).coerceAtLeast(1)
         val request = PeriodicWorkRequestBuilder<CalendarSyncWorker>(
-            12, TimeUnit.HOURS,
-            2, TimeUnit.HOURS,
+            intervalHours, TimeUnit.HOURS,
+            flexHours, TimeUnit.HOURS,
         )
             .setConstraints(constraints)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
             .build()
 
+        // UPDATE so a changed cadence replaces the existing schedule
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.UPDATE,
             request,
         )
     }

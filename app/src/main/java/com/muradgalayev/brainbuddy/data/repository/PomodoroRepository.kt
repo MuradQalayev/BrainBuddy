@@ -26,7 +26,7 @@ class PomodoroRepository @Inject constructor(
         private const val TAG = "PomodoroRepository"
     }
 
-    private fun getCurrentUserId(): String? = authRepository.getCurrentUserId()
+    private fun getCurrentUserId(): String? = authRepository.getCurrentOrCachedUserId()
 
     fun getAllSessions(): Flow<List<PomodoroSession>> {
         val userId = getCurrentUserId() ?: return emptyFlow()
@@ -44,6 +44,21 @@ class PomodoroRepository @Inject constructor(
         ).map { list ->
             list.map { it.toDomain() }
         }
+    }
+
+    // completed focus sessions in a window, the raw material for the history chart
+    fun observeCompletedFocusSessionsInRange(
+        startMs: Long,
+        endMs: Long
+    ): Flow<List<PomodoroSession>> {
+        val userId = getCurrentUserId() ?: return emptyFlow()
+        return pomodoroSessionDao.observeCompletedSessionsInRange(
+            userId = userId,
+            sessionType = PomodoroSessionType.FOCUS.name,
+            completionStatus = PomodoroCompletionStatus.COMPLETED.name,
+            startMs = startMs,
+            endMs = endMs
+        ).map { list -> list.map { it.toDomain() } }
     }
 
     fun getSessionsByType(type: String): Flow<List<PomodoroSession>> {
@@ -97,7 +112,7 @@ class PomodoroRepository @Inject constructor(
         return (totalMs / 60000L).toInt()
     }
 
-    /** Emits whenever completed focus sessions in the range change — no polling needed. */
+    // emits whenever completed focus sessions in the range change, so no polling
     fun observeCompletedFocusMinutesForRange(startMs: Long, endMs: Long): Flow<Int> {
         val userId = getCurrentUserId() ?: return emptyFlow()
         return pomodoroSessionDao.observeCompletedDurationForRange(

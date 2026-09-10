@@ -37,26 +37,40 @@ class CalendarRepository @Inject constructor(
         private const val TAG = "CalendarRepository"
     }
 
-    private fun getCurrentUserId(): String? = authRepository.getCurrentUserId()
+    private fun getCurrentUserId(): String? = authRepository.getCurrentOrCachedUserId()
 
-    // ── Read ──
+    // read
+
+    // last emission per date, kept for the life of the process. the Calendar ViewModel is scoped
+    // to its nav back-stack entry, so every tab-tap rebuilt it and started from an empty list, and
+    // the day list flashed its empty state before Room's first emission landed. that read as
+    // fetching even though everything was already local. seeding synchronously from here removes
+    // the flash, and the flow still arrives right behind it and corrects anything stale
+    private val eventsByDateCache = java.util.concurrent.ConcurrentHashMap<String, List<CalendarEvent>>()
+
+    @Volatile
+    private var subtaskCache: List<CalendarSubtask>? = null
+
+    // synchronous peek for instant seeding. null means nothing observed yet
+    fun peekEventsForDate(date: String): List<CalendarEvent>? = eventsByDateCache[date]
+
+    // synchronous peek at every subtask seen this process
+    fun peekSubtasks(): List<CalendarSubtask>? = subtaskCache
 
     fun getEventsByDate(date: String): Flow<List<CalendarEvent>> {
         val userId = getCurrentUserId() ?: return emptyFlow()
-        // ISO datetimes start with the date, so a "YYYY-MM-DD%" prefix match works.
+        // ISO datetimes start with the date, so a YYYY-MM-DD% prefix match works
         return calendarEventDao.getEventsByDatePrefix("$date%", userId).map { items ->
             items.filter { it.syncStatus != SyncStatus.PENDING_DELETE.name }
                 .map { it.toDomain() }
+                .also { eventsByDateCache[date] = it }
         }
     }
 
-    /**
-     * Events whose `startTime` falls on a date in `[startDate, endDate]` (inclusive).
-     * Pass plain `YYYY-MM-DD` strings.
-     */
+    // events whose startTime falls in [startDate, endDate] inclusive. plain YYYY-MM-DD strings
     fun getEventsInDateRange(startDate: String, endDate: String): Flow<List<CalendarEvent>> {
         val userId = getCurrentUserId() ?: return emptyFlow()
-        // endExclusive = day after endDate at 00:00 — string comparison stops correctly.
+        // the day after endDate at 00:00, so the string comparison stops correctly
         val endExclusive = java.time.LocalDate.parse(endDate).plusDays(1).toString() + "T00:00:00"
         val startInclusive = "${startDate}T00:00:00"
         return calendarEventDao.getEventsInRange(startInclusive, endExclusive, userId).map { items ->
@@ -78,7 +92,7 @@ class CalendarRepository @Inject constructor(
         return calendarEventDao.getEventById(id, userId)?.toDomain()
     }
 
-    // ── Write ──
+    // write
 
     suspend fun insertEvent(event: CalendarEvent) {
         val userId = getCurrentUserId() ?: return
@@ -87,8 +101,32 @@ class CalendarRepository @Inject constructor(
             lastModifiedAt = System.currentTimeMillis()
         )
         calendarEventDao.insertEvent(entity)
-        reminderScheduler.scheduleForItem(event.id, event.title, event.startTime)
+        reminderScheduler.scheduleForItem(
+            event.id, event.title, event.startTime,
+            category = com.muradgalayev.brainbuddy.data.notifications.ReminderCategory.CALENDAR
+        )
         tryRemoteUpsert(entity)
+    }
+
+    // Room only, no per-row network call. see TodoRepository.insertTodoItemLocal
+    suspend fun insertEventLocal(event: CalendarEvent) {
+        val userId = getCurrentUserId() ?: return
+        val entity = event.toEntity(userId).copy(
+            syncStatus = SyncStatus.PENDING_INSERT.name,
+            lastModifiedAt = System.currentTimeMillis(),
+        )
+        calendarEventDao.insertEvent(entity)
+    }
+
+    // Room only. see insertEventLocal
+    suspend fun deleteEventLocal(event: CalendarEvent) {
+        val userId = getCurrentUserId() ?: return
+        val entity = event.toEntity(userId).copy(
+            syncStatus = SyncStatus.PENDING_DELETE.name,
+        )
+        calendarEventDao.updateEvent(entity)
+        calendarSubtaskDao.deleteForEvent(event.id, userId)
+        reminderScheduler.cancelForItem(event.id)
     }
 
     suspend fun updateEvent(event: CalendarEvent) {
@@ -99,7 +137,33 @@ class CalendarRepository @Inject constructor(
         )
         calendarEventDao.updateEvent(entity)
         reminderScheduler.cancelForItem(event.id)
-        reminderScheduler.scheduleForItem(event.id, event.title, event.startTime)
+        reminderScheduler.scheduleForItem(
+            event.id, event.title, event.startTime,
+            category = com.muradgalayev.brainbuddy.data.notifications.ReminderCategory.CALENDAR
+        )
+        tryRemoteUpsert(entity)
+    }
+
+    // ticks an event off or un-ticks it without touching its other fields. reminders are cancelled
+    // on completion: nudging someone about something they've already finished is the fastest way
+    // to teach them to ignore the notification. re-opening an event re-arms it
+    suspend fun setEventCompleted(eventId: String, completed: Boolean) {
+        val userId = getCurrentUserId() ?: return
+        val existing = calendarEventDao.getEventById(eventId, userId) ?: return
+        val entity = existing.copy(
+            completed = completed,
+            syncStatus = SyncStatus.PENDING_UPDATE.name,
+            lastModifiedAt = System.currentTimeMillis(),
+        )
+        calendarEventDao.updateEvent(entity)
+        if (completed) {
+            reminderScheduler.cancelForItem(eventId)
+        } else {
+            reminderScheduler.scheduleForItem(
+                eventId, entity.title, entity.startTime,
+                category = com.muradgalayev.brainbuddy.data.notifications.ReminderCategory.CALENDAR,
+            )
+        }
         tryRemoteUpsert(entity)
     }
 
@@ -109,19 +173,19 @@ class CalendarRepository @Inject constructor(
             syncStatus = SyncStatus.PENDING_DELETE.name
         )
         calendarEventDao.updateEvent(entity)
-        // Remote DB has ON DELETE CASCADE so the server cleans subtasks; locally
-        // we drop them too — no need to sync individual deletes.
+        // the remote DB has ON DELETE CASCADE so the server cleans up subtasks, and locally we drop
+        // them too, so individual deletes never need syncing
         calendarSubtaskDao.deleteForEvent(event.id, userId)
         reminderScheduler.cancelForItem(event.id)
         tryRemoteDelete(entity.id, userId)
     }
 
-    // ── Subtasks (local-only) ──
+    // subtasks (local-only)
 
     fun observeSubtasksForUser(): Flow<List<CalendarSubtask>> {
         val userId = getCurrentUserId() ?: return emptyFlow()
         return calendarSubtaskDao.observeAllForUser(userId).map { items ->
-            items.map { it.toSubtaskDomain() }
+            items.map { it.toSubtaskDomain() }.also { subtaskCache = it }
         }
     }
 
@@ -134,14 +198,14 @@ class CalendarRepository @Inject constructor(
 
     suspend fun replaceSubtasks(eventId: String, subtasks: List<CalendarSubtask>) {
         val userId = getCurrentUserId() ?: return
-        // Diff: rows missing from the new list become PENDING_DELETE; remaining rows are
-        // upserted as PENDING_INSERT/PENDING_UPDATE so the server stays in lockstep.
+        // diff: rows missing from the new list become PENDING_DELETE, remaining rows are upserted as
+        // PENDING_INSERT or PENDING_UPDATE so the server stays in lockstep
         val existing = calendarSubtaskDao.getAllForEvent(eventId, userId)
         val newIds = subtasks.map { it.id }.toSet()
         val toDelete = existing.filter { it.id !in newIds }
         for (gone in toDelete) {
             if (gone.syncStatus == SyncStatus.PENDING_INSERT.name) {
-                // Never made it to the server, just drop locally.
+                // never made it to the server, so just drop it locally
                 calendarSubtaskDao.deleteById(gone.id, userId)
             } else {
                 calendarSubtaskDao.markPendingDelete(gone.id, userId)
@@ -172,7 +236,7 @@ class CalendarRepository @Inject constructor(
             calendarSubtaskDao.insertAll(rows)
             tryFlushSubtasks(rows, userId)
         }
-        // Try to push any pending deletes too so the UI stays in sync.
+        // try to push any pending deletes too, so the UI stays in sync
         if (toDelete.isNotEmpty()) {
             tryFlushSubtaskDeletes(toDelete.map { it.id }, userId)
         }
@@ -222,7 +286,7 @@ class CalendarRepository @Inject constructor(
         kind = runCatching { SubtaskKind.valueOf(kind) }.getOrDefault(SubtaskKind.FOCUS),
     )
 
-    // ── Sync ──
+    // sync
 
     suspend fun sync() {
         val userId = getCurrentUserId() ?: return

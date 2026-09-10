@@ -14,8 +14,7 @@ val localProperties = Properties().apply {
     val file = rootProject.file("local.properties")
     if (file.exists()) file.inputStream().use { load(it) }
 }
-val geminiApiKey: String = localProperties.getProperty("GEMINI_API_KEY", "")
-val deepseekApiKey: String = localProperties.getProperty("DEEPSEEK_API_KEY", "")
+val mistralApiKey: String = localProperties.getProperty("MISTRAL_API_KEY", "")
 val mapsApiKey: String = localProperties.getProperty("MAPS_API_KEY", "")
 
 android {
@@ -35,8 +34,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
-        buildConfigField("String", "DEEPSEEK_API_KEY", "\"$deepseekApiKey\"")
+        buildConfigField("String", "MISTRAL_API_KEY", "\"$mistralApiKey\"")
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
@@ -57,15 +55,22 @@ android {
         compose = true
         buildConfig = true
     }
+    testOptions {
+        unitTests {
+            // android.util.Log is a stub that throws in JVM unit tests. returning defaults instead lets us
+            // test code that logs on its error paths, which is most of the error-mapping logic worth testing
+            isReturnDefaultValues = true
+        }
+    }
 }
 
 dependencies {
-    // === Core Android ===
+    // core android
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
 
-    // === Compose UI ===
+    // compose ui
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
@@ -73,57 +78,62 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
 
-    // === Hilt (Dependency Injection) ===
+    // hilt
     implementation(libs.hilt.android)
     implementation(libs.androidx.material3)
     ksp(libs.hilt.android.compiler)
     implementation(libs.hilt.navigation.compose)
 
-    // === Room (Local Database) ===
+    // room
     implementation(libs.room.runtime)
     ksp(libs.room.compiler)
     implementation(libs.room.ktx)
 
-    // === Navigation ===
+    // navigation
     implementation(libs.navigation.compose)
 
-    // === DataStore (User Preferences) ===
+    // datastore
     implementation(libs.datastore.preferences)
 
-    // === ViewModel for Compose ===
+    // viewmodel for compose
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
 
-    // === Calendar ===
+    // calendar
     implementation(libs.calendar.compose)
 
-    // === Supabase (Online Sync) ===
+    // supabase
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.postgrest)
     implementation(libs.supabase.auth)
+    implementation(libs.supabase.storage)
+    implementation(libs.supabase.functions)
+    implementation(libs.image.cropper)
     implementation(libs.ktor.client.android)
     implementation(libs.kotlinx.serialization.json)
 
-    // === Google Identity (OAuth for Calendar scope, decoupled from Supabase auth) ===
+    // google identity, OAuth for the calendar scope, decoupled from Supabase auth
     implementation(libs.play.services.auth)
 
-    // === WorkManager + Hilt-Work (background calendar sync) ===
+    // workmanager + hilt-work, for background calendar sync
     implementation(libs.androidx.work.runtime)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
 
-    // === Coil (remote image loading for avatars) ===
+    // coil, remote image loading for avatars
     implementation(libs.coil.compose)
 
-    // === Google Maps Compose ===
+    // google maps compose
     implementation(libs.maps.compose)
     implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
-    // === Firebase Cloud Messaging ===
+    // health connect, optional and read-only
+    implementation(libs.androidx.health.connect)
+    // firebase cloud messaging
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("androidx.core:core-ktx:1.13.1")
-    // === Testing ===btw
+    // testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

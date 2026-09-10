@@ -7,6 +7,7 @@ import com.muradgalayev.brainbuddy.data.mapper.toDomain
 import com.muradgalayev.brainbuddy.data.mapper.toDto
 import com.muradgalayev.brainbuddy.data.mapper.toEntity
 import com.muradgalayev.brainbuddy.data.notifications.ReminderScheduler
+import com.muradgalayev.brainbuddy.data.local.PreferencesManager
 import com.muradgalayev.brainbuddy.data.remote.SupabaseTodoDataSource
 import com.muradgalayev.brainbuddy.domain.model.TodoItem
 import kotlinx.coroutines.flow.Flow
@@ -22,14 +23,20 @@ class TodoRepository @Inject constructor(
     private val remoteDataSource: SupabaseTodoDataSource,
     private val authRepository: AuthRepository,
     private val reminderScheduler: ReminderScheduler,
+    private val preferencesManager: PreferencesManager,
+    // lazy on both: CalendarRepository and MedicationLogRepository sit alongside this one in the
+    // graph, and reaching them eagerly risks a construction cycle
+    private val calendarRepository: dagger.Lazy<CalendarRepository>,
+    private val medicationLogRepository: dagger.Lazy<MedicationLogRepository>,
 ) {
     companion object {
         private const val TAG = "TodoRepository"
+        private val MEDICATION_TODO_ID = Regex("^med-(.+)-(morning|afternoon|evening|night)-(\\d{4}-\\d{2}-\\d{2})$")
     }
 
-    private fun getCurrentUserId(): String? = authRepository.getCurrentUserId()
+    private fun getCurrentUserId(): String? = authRepository.getCurrentOrCachedUserId()
 
-    // ── Read operations (always from Room, filtered by userId) ──
+    // reads, always from Room and filtered by userId
 
     fun getAllTodoItems(): Flow<List<TodoItem>> {
         val userId = getCurrentUserId() ?: return emptyFlow()
@@ -76,7 +83,7 @@ class TodoRepository @Inject constructor(
         return todoItemDao.getTodoItemById(id, userId)?.toDomain()
     }
 
-    // ── Write operations ──
+    // writes
 
     suspend fun insertTodoItem(todoItem: TodoItem) {
         val userId = getCurrentUserId() ?: return
@@ -89,9 +96,40 @@ class TodoRepository @Inject constructor(
         tryRemoteUpsert(entity)
     }
 
-    suspend fun updateTodoItem(todoItem: TodoItem) {
+    // Room only, no network call. for bulk writers like the medication rebuild. insertTodoItem
+    // pushes to Supabase per row, which is right for one to-do a person just typed and ruinous
+    // for fifty-six generated ones: a two-a-day medication over the fortnight window meant a
+    // delete round-trip and an insert round-trip each, awaited in sequence, and the screen sat
+    // there for the length of all of them. nothing is lost by skipping it, the row is marked
+    // PENDING_INSERT which is exactly what sync() looks for
+    suspend fun insertTodoItemLocal(todoItem: TodoItem) {
         val userId = getCurrentUserId() ?: return
         val entity = todoItem.toEntity(userId).copy(
+            syncStatus = SyncStatus.PENDING_INSERT.name,
+            lastModifiedAt = System.currentTimeMillis(),
+        )
+        todoItemDao.insertTodoItem(entity)
+        scheduleReminderIfDue(todoItem)
+    }
+
+    // Room only. see insertTodoItemLocal
+    suspend fun deleteTodoItemLocal(todoItem: TodoItem) {
+        val userId = getCurrentUserId() ?: return
+        val entity = todoItem.toEntity(userId).copy(
+            syncStatus = SyncStatus.PENDING_DELETE.name,
+        )
+        todoItemDao.updateTodoItem(entity)
+        reminderScheduler.cancelForItem(todoItem.id)
+    }
+
+    suspend fun updateTodoItem(todoItem: TodoItem) {
+        val userId = getCurrentUserId() ?: return
+        // TodoItem carries no authorship, so toEntity() stamps createdBy with the current user. carry
+        // the stored value over instead: for a task a Together connection added, overwriting it would
+        // silently cut off their access to the row they created the moment the owner edited it
+        val existingCreatedBy = todoItemDao.getTodoItemById(todoItem.id, userId)?.createdBy
+        val entity = todoItem.toEntity(userId).copy(
+            createdBy = existingCreatedBy ?: userId,
             syncStatus = SyncStatus.PENDING_UPDATE.name,
             lastModifiedAt = System.currentTimeMillis()
         )
@@ -120,11 +158,51 @@ class TodoRepository @Inject constructor(
             lastModifiedAt = System.currentTimeMillis()
         )
         todoItemDao.updateTodoItem(updated)
+        medicationLogKey(id)?.let { syncMedicationDose(it, updated.isCompleted) }
         if (updated.isCompleted) reminderScheduler.cancelForItem(id)
         tryRemoteUpsert(updated)
     }
 
-    private fun scheduleReminderIfDue(todo: TodoItem) {
+    suspend fun setTodoItemCompletion(id: String, completed: Boolean) {
+        val userId = getCurrentUserId() ?: return
+        val item = todoItemDao.getTodoItemById(id, userId) ?: return
+        if (item.isCompleted == completed) return
+        val updated = item.copy(
+            isCompleted = completed,
+            syncStatus = SyncStatus.PENDING_UPDATE.name,
+            lastModifiedAt = System.currentTimeMillis(),
+        )
+        todoItemDao.updateTodoItem(updated)
+        // same mirroring as the toggle above. this path is what the Medications and Calendar screens
+        // call, so without it the sync only worked one way
+        medicationLogKey(id)?.let { syncMedicationDose(it, completed) }
+        if (completed) reminderScheduler.cancelForItem(id) else scheduleReminderIfDue(updated.toDomain())
+        tryRemoteUpsert(updated)
+    }
+
+    // writes a dose to the one place that counts, and mirrors it to the calendar. this used to
+    // write to DataStore while the Medications screen read Room, two stores for one fact, so
+    // ticking a dose off in the to-do list left the Medications screen showing it outstanding.
+    // Room is the source of truth, the DataStore copy is kept only because older code reads it.
+    // the calendar write is best-effort: the event only exists when that destination is on
+    private suspend fun syncMedicationDose(logKey: String, taken: Boolean) {
+        runCatching { medicationLogRepository.get().setTaken(logKey, taken) }
+        preferencesManager.setMedicationDoseLogged(logKey, taken)
+
+        val parts = logKey.split('|')
+        if (parts.size != 3) return
+        val (date, medicationId, slot) = parts
+        val eventId = MedicationTodoSyncer.MEDICATION_EVENT_PREFIX + "$medicationId-$slot-$date"
+        runCatching { calendarRepository.get().setEventCompleted(eventId, taken) }
+    }
+
+    private fun medicationLogKey(todoId: String): String? {
+        val match = MEDICATION_TODO_ID.matchEntire(todoId) ?: return null
+        val (medicationId, slot, date) = match.destructured
+        return "$date|$medicationId|$slot"
+    }
+
+    private suspend fun scheduleReminderIfDue(todo: TodoItem) {
         if (todo.isCompleted) return
         if (todo.date.isBlank() || todo.startTime.isBlank()) return
         reminderScheduler.scheduleForItem(
@@ -132,10 +210,11 @@ class TodoRepository @Inject constructor(
             title = todo.title,
             dateIso = todo.date,
             timeIso = todo.startTime,
+            category = com.muradgalayev.brainbuddy.data.notifications.ReminderCategory.TODO,
         )
     }
 
-    // ── Sync operations ──
+    // sync
 
     suspend fun sync() {
         val userId = getCurrentUserId() ?: return
@@ -209,4 +288,5 @@ class TodoRepository @Inject constructor(
     suspend fun clearLocalForUser(userId: String) {
         todoItemDao.deleteAllForUser(userId)
     }
+
 }

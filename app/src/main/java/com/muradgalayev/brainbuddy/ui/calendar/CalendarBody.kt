@@ -1,8 +1,15 @@
 package com.muradgalayev.brainbuddy.ui.calendar
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.compose.HorizontalCalendar
@@ -38,71 +47,113 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
-// Dot colors for multi-event indicators (like the reference shows)
-private val dotColors = listOf(
-    Color(0xFFD97A3D), // accent orange
-    Color(0xFF7FA3C9), // accent blue
-    Color(0xFFC75A4A), // muted red
-    Color(0xFFB6C68A), // sage lime
-    Color(0xFFE8A878), // soft peach
-)
-
-/* ── Calendar body (month or week) ── */
+// calendar body (month or week)
 @Composable
 fun CalendarBody(
     mode: CalendarMode,
     monthState: com.kizitonwose.calendar.compose.CalendarState,
     weekState: com.kizitonwose.calendar.compose.weekcalendar.WeekCalendarState,
     selectedDate: LocalDate,
-    datesWithTasks: Set<LocalDate>,
+    datesWithTasks: Map<LocalDate, CalendarDayMarks>,
     onDateSelect: (LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val today = remember { LocalDate.now() }
 
-    when (mode) {
-        CalendarMode.Monthly -> {
-            HorizontalCalendar(
-                state = monthState,
-                dayContent = { day ->
-                    MonthDay(
-                        day = day,
-                        isSelected = day.date == selectedDate,
-                        isToday = day.date == today,
-                        hasEvents = day.date in datesWithTasks,
-                        onClick = { onDateSelect(day.date) }
-                    )
-                },
-                modifier = modifier.padding(horizontal = 4.dp)
-            )
-        }
+    BoxWithConstraints(modifier) {
+        // a month needs up to six rows and the grid has no scroll of its own, so a fixed row height
+        // silently cuts the last week off wherever the calendar is short, which is every landscape
+        // phone. sizing to the worst case means no month is ever clipped, and in portrait there's more
+        // than enough room so the cell keeps its natural size
+        val dayHeight = (maxHeight / MonthGridRows).coerceIn(MinDayHeight, MaxDayHeight)
 
-        CalendarMode.Weekly -> {
-            WeekCalendar(
-                state = weekState,
-                dayContent = { day ->
-                    WeekDayItem(
-                        day = day,
-                        isSelected = day.date == selectedDate,
-                        isToday = day.date == today,
-                        hasEvents = day.date in datesWithTasks,
-                        onClick = { onDateSelect(day.date) }
-                    )
-                },
-                modifier = modifier.padding(horizontal = 4.dp)
-            )
-        }
+        CalendarPager(
+            mode = mode,
+            monthState = monthState,
+            weekState = weekState,
+            selectedDate = selectedDate,
+            today = today,
+            datesWithTasks = datesWithTasks,
+            dayHeight = dayHeight,
+            onDateSelect = onDateSelect,
+        )
     }
 }
 
+// the tallest a month can be, and the smallest a cell can shrink to before it stops reading
+private const val MonthGridRows = 6
+private val MaxDayHeight = 52.dp
+private val MinDayHeight = 34.dp
+
+@Composable
+private fun CalendarPager(
+    mode: CalendarMode,
+    monthState: com.kizitonwose.calendar.compose.CalendarState,
+    weekState: com.kizitonwose.calendar.compose.weekcalendar.WeekCalendarState,
+    selectedDate: LocalDate,
+    today: LocalDate,
+    datesWithTasks: Map<LocalDate, CalendarDayMarks>,
+    dayHeight: Dp,
+    onDateSelect: (LocalDate) -> Unit,
+) {
+    // cross-fade only, `using null` disables the SizeTransform deliberately. animating the
+    // container height re-measured a full HorizontalCalendar every frame for the whole transition
+    // (the month grid builds ~42 day cells, and both calendars are composed at once mid-swap),
+    // which was the calendar's jank. snapping the size and fading the content keeps the swap
+    // feeling deliberate at a fraction of the layout cost
+    AnimatedContent(
+        targetState = mode,
+        transitionSpec = {
+            fadeIn(tween(durationMillis = 160)) togetherWith
+                fadeOut(tween(durationMillis = 90)) using null
+        },
+        label = "calendar_mode_swap",
+    ) { animatedMode ->
+        when (animatedMode) {
+            CalendarMode.Monthly -> {
+                HorizontalCalendar(
+                    state = monthState,
+                    dayContent = { day ->
+                        MonthDay(
+                            day = day,
+                            isSelected = day.date == selectedDate,
+                            isToday = day.date == today,
+                            marks = datesWithTasks[day.date],
+                            height = dayHeight,
+                            onClick = { onDateSelect(day.date) }
+                        )
+                    },
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+            }
+
+            CalendarMode.Weekly -> {
+                WeekCalendar(
+                    state = weekState,
+                    dayContent = { day ->
+                        WeekDayItem(
+                            day = day,
+                            isSelected = day.date == selectedDate,
+                            isToday = day.date == today,
+                            marks = datesWithTasks[day.date],
+                            onClick = { onDateSelect(day.date) }
+                        )
+                    },
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+            }
+        }
+    }
+}
 
 @Composable
 fun MonthDay(
     day: CalendarDay,
     isSelected: Boolean,
     isToday: Boolean,
-    hasEvents: Boolean,
-    onClick: () -> Unit
+    marks: CalendarDayMarks?,
+    onClick: () -> Unit,
+    height: Dp = 52.dp,
 ) {
     val inMonth = day.position == DayPosition.MonthDate
 
@@ -122,9 +173,13 @@ fun MonthDay(
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
     }
 
+    // the circle gives up room before the cell does, so a shorter row still leaves space for the
+    // task dots underneath rather than pushing them out of the cell
+    val circleSize = (height - 16.dp).coerceIn(24.dp, 36.dp)
+
     Column(
         modifier = Modifier
-            .height(52.dp)
+            .height(height)
             .fillMaxWidth()
             .padding(1.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -132,7 +187,7 @@ fun MonthDay(
     ) {
         Box(
             modifier = Modifier
-                .size(36.dp)
+                .size(circleSize)
                 .clip(CircleShape)
                 .background(bgColor)
                 .clickable(enabled = inMonth) { onClick() },
@@ -150,39 +205,20 @@ fun MonthDay(
             )
         }
 
-        // Colored event dots (like the reference image)
-        if (hasEvents && inMonth) {
+        if (marks != null && marks.total > 0 && inMonth) {
             Spacer(Modifier.height(2.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Show 1-3 colored dots based on day hash for visual variety
-                val dotCount = ((day.date.dayOfMonth % 3) + 1).coerceIn(1, 3)
-                repeat(dotCount) { i ->
-                    val colorIndex = (day.date.dayOfMonth + i) % dotColors.size
-                    Box(
-                        modifier = Modifier
-                            .size(4.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (isSelected) Color.White.copy(alpha = 0.8f)
-                                else dotColors[colorIndex]
-                            )
-                    )
-                }
-            }
+            DayDots(marks = marks, onSelectedBackground = isSelected)
         }
     }
 }
 
-/* ── Week day cell ── */
+// week day cell
 @Composable
 fun WeekDayItem(
     day: WeekDay,
     isSelected: Boolean,
     isToday: Boolean,
-    hasEvents: Boolean,
+    marks: CalendarDayMarks?,
     onClick: () -> Unit
 ) {
     val inWeek = day.position == WeekDayPosition.RangeDate
@@ -233,26 +269,54 @@ fun WeekDayItem(
                 color = textColor
             )
         }
-        if (hasEvents && inWeek) {
+        if (marks != null && marks.total > 0 && inWeek) {
             Spacer(Modifier.height(3.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val dotCount = ((day.date.dayOfMonth % 3) + 1).coerceIn(1, 3)
-                repeat(dotCount) { i ->
-                    val colorIndex = (day.date.dayOfMonth + i) % dotColors.size
-                    Box(
-                        modifier = Modifier
-                            .size(4.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (isSelected) Color.White.copy(alpha = 0.8f)
-                                else dotColors[colorIndex]
+            DayDots(marks = marks, onSelectedBackground = isSelected)
+        }
+    }
+}
+
+// the day-cell markers, one rule applied everywhere: one dot per event in that event's own
+// colour, in start-time order; filled while unfinished and hollow once done, so a cleared day
+// reads as outlines at a glance without losing which events were there; at most three, then a
+// smaller faded dot meaning and-more, because past three 4dp dots stop being countable.
+// they previously derived both count and colour from the day-of-month number, which made them
+// decoration dressed as data: the 7th always showed two dots whether it held one event or nine
+@Composable
+private fun DayDots(marks: CalendarDayMarks, onSelectedBackground: Boolean) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(2.5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        marks.dots.forEach { dot ->
+            // on the selected filled cell event colours would clash and several would vanish into the
+            // background, and white reads on all of them
+            val color = if (onSelectedBackground) Color.White else dot.color
+            Box(
+                modifier = Modifier
+                    .size(4.5.dp)
+                    .clip(CircleShape)
+                    .then(
+                        if (dot.done) {
+                            Modifier.border(1.dp, color.copy(alpha = 0.75f), CircleShape)
+                        } else {
+                            Modifier.background(
+                                if (onSelectedBackground) color.copy(alpha = 0.9f) else color
                             )
-                    )
-                }
-            }
+                        }
+                    ),
+            )
+        }
+        if (marks.hasMore) {
+            Box(
+                modifier = Modifier
+                    .size(3.dp)
+                    .clip(CircleShape)
+                    .background(
+                        (if (onSelectedBackground) Color.White else MaterialTheme.colorScheme.onSurface)
+                            .copy(alpha = 0.35f)
+                    ),
+            )
         }
     }
 }

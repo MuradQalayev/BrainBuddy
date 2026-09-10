@@ -1,10 +1,9 @@
 package com.muradgalayev.brainbuddy.domain.ai.tools
 
 import com.muradgalayev.brainbuddy.data.local.PomodoroTimerManager
-import com.muradgalayev.brainbuddy.data.local.PreferencesManager
 import com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionType
+import com.muradgalayev.brainbuddy.domain.ai.AiNavigator
 import com.muradgalayev.brainbuddy.domain.ai.AiTool
-import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -12,14 +11,12 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import javax.inject.Inject
 
-/**
- * Kicks off a Pomodoro session in the background. The user doesn't have to be on
- * the Pomodoro screen — the shared PomodoroTimerManager keeps state app-wide and
- * PomodoroTimerService picks it up if it isn't already running.
- */
+// kicks off a Pomodoro session in the background. the user doesn't have to be on the Pomodoro
+// screen: the shared PomodoroTimerManager keeps state app-wide and PomodoroTimerService picks
+// it up if it isn't already running
 class StartPomodoroTool @Inject constructor(
     private val timerManager: PomodoroTimerManager,
-    private val preferencesManager: PreferencesManager,
+    private val aiNavigator: AiNavigator,
 ) : AiTool {
 
     override val name: String = "start_pomodoro"
@@ -36,15 +33,15 @@ class StartPomodoroTool @Inject constructor(
                 put("type", "integer")
                 put(
                     "description",
-                    "Length of the session in minutes. Defaults to 25 for focus, 5 " +
-                        "for short_break, 15 for long_break if not provided."
+                    "Length of the session in minutes. Defaults to 25 for focus and 5 " +
+                        "for break if not provided."
                 )
             }
             putJsonObject("session_type") {
                 put("type", "string")
                 put(
                     "description",
-                    "One of: focus, short_break, long_break. Defaults to focus."
+                    "One of: focus, break. Defaults to focus."
                 )
             }
         }
@@ -55,30 +52,31 @@ class StartPomodoroTool @Inject constructor(
             return "A pomodoro session is already active — ask the user if they want " +
                 "to stop it first before starting a new one."
         }
+        if (!timerManager.prepareForStandaloneStart()) {
+            return "A calendar Pomodoro plan is already loaded. Ask the user to finish or " +
+                "clear that plan before starting a separate session."
+        }
 
         val typeRaw = args["session_type"]?.jsonPrimitive?.content
             ?.trim()?.lowercase()?.replace('-', '_') ?: "focus"
+        // still accepts the retired short/long wording, so older phrasings keep working
         val sessionType = when (typeRaw) {
-            "short_break", "short", "break" -> PomodoroSessionType.SHORT_BREAK
-            "long_break", "long" -> PomodoroSessionType.LONG_BREAK
+            "break", "short_break", "short", "long_break", "long" -> PomodoroSessionType.BREAK
             else -> PomodoroSessionType.FOCUS
         }
+        val effective = timerManager.refreshEffectiveSettingsNow()
         timerManager.selectSessionType(sessionType)
 
         val requestedMinutes = args["minutes"]?.jsonPrimitive?.content?.toIntOrNull()
-        val minutes = requestedMinutes?.coerceIn(1, 180) ?: defaultMinutesFor(sessionType)
-        timerManager.setCustomDuration(minutes)
+        val minutes = requestedMinutes?.coerceIn(1, 180) ?: effective.minutesFor(sessionType)
+        if (requestedMinutes != null) timerManager.setCustomDuration(minutes)
 
-        val focusModeEnabled = preferencesManager.focusModeEnabled.first()
-        timerManager.start(focusModeEnabled)
+        timerManager.start(effective.autoDndOnFocusSession)
+
+        // take the user to the Pomodoro screen so they see the running timer
+        aiNavigator.navigateTo("pomodoro")
 
         return "Started a ${minutes}-minute ${sessionType.name.lowercase().replace('_', ' ')} " +
             "session."
-    }
-
-    private fun defaultMinutesFor(type: PomodoroSessionType): Int = when (type) {
-        PomodoroSessionType.FOCUS -> 25
-        PomodoroSessionType.SHORT_BREAK -> 5
-        PomodoroSessionType.LONG_BREAK -> 15
     }
 }

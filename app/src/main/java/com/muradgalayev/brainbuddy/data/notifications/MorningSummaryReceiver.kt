@@ -30,13 +30,28 @@ class MorningSummaryReceiver : BroadcastReceiver() {
     @Inject lateinit var calendarRepository: CalendarRepository
     @Inject lateinit var todoRepository: TodoRepository
     @Inject lateinit var scheduler: ReminderScheduler
+    @Inject lateinit var preferencesManager: com.muradgalayev.brainbuddy.data.local.PreferencesManager
+    @Inject lateinit var modeManager: com.muradgalayev.brainbuddy.data.local.ModeManager
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onReceive(context: Context, intent: Intent) {
         val pending = goAsync()
         scope.launch {
+            val enabled = runCatching { preferencesManager.dailySummaryEnabledSnapshot() }
+                .getOrDefault(true)
             try {
+                if (!enabled) {
+                    // turned off since the last schedule, so post nothing and don't re-arm
+                    scheduler.cancelMorningSummary()
+                    return@launch
+                }
+                // A mode holding the summary back is temporary, unlike the setting above:
+                // skip today but keep the alarm alive for tomorrow.
+                val allowedByMode = modeManager.isNotificationAllowedNow(
+                    com.muradgalayev.brainbuddy.domain.model.ModeNotificationKind.DAILY_SUMMARY
+                )
+                if (!allowedByMode) return@launch
                 val today = LocalDate.now().toString()
                 val events = runCatching {
                     calendarRepository.getEventsByDate(today).first()
@@ -54,7 +69,7 @@ class MorningSummaryReceiver : BroadcastReceiver() {
             } catch (t: Throwable) {
                 Log.w("MorningSummary", "Failed to build summary: ${t.message}")
             } finally {
-                runCatching { scheduler.scheduleMorningSummary() }
+                if (enabled) runCatching { scheduler.scheduleMorningSummary() }
                 pending.finish()
             }
         }

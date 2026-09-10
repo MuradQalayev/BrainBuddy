@@ -1,9 +1,9 @@
 package com.muradgalayev.brainbuddy.data.notifications
 
-enum class ReminderKind(val offsetCode: Int) {
-    DAY_BEFORE(1),
-    MIN_30_BEFORE(2),
-    AT_START(3);
+enum class ReminderKind(val offsetCode: Int, val leadMillis: Long) {
+    DAY_BEFORE(1, 24L * 60L * 60L * 1000L),
+    MIN_30_BEFORE(2, 30L * 60L * 1000L),
+    AT_START(3, 0L);
 
     companion object {
         fun fromName(name: String?): ReminderKind? =
@@ -39,10 +39,28 @@ object ReminderCopy {
                 "$itemTitle is up now. Just begin — perfect can wait.",
             )
         }
-        // Stable per-item variety so the same event keeps the same line each time.
+        // stable per-item variety, so the same event keeps the same line each time
         val idx = ((itemTitle.hashCode() ushr 1) % variants.size + variants.size) % variants.size
         return variants[idx]
     }
+
+    private val focusNudges = listOf(
+        "Ready for a focus sprint?" to "One 25-minute Pomodoro. Pick a task and press start.",
+        "Got 25 minutes?" to "A single focus session now beats a perfect one later. Let's go.",
+        "Time to lock in" to "Start a Pomodoro — momentum comes after you begin, not before.",
+        "Little push" to "Set a timer, silence the noise, and give one thing your full attention.",
+    )
+
+    fun focusNudge(seed: Int = 0): Pair<String, String> {
+        val idx = ((seed % focusNudges.size) + focusNudges.size) % focusNudges.size
+        return focusNudges[idx]
+    }
+
+    fun pomodoroBreakStart(): Pair<String, String> =
+        "Nice work — break time" to "Step away, stretch, hydrate. You earned it."
+
+    fun pomodoroBreakOver(): Pair<String, String> =
+        "Break's over" to "Ready to line up another focus session? Just begin."
 
     fun morningSummary(eventTitles: List<String>): Pair<String, String> {
         if (eventTitles.isEmpty()) {

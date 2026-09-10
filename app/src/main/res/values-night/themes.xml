@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+      The window is painted by the system before any of our code runs, so this is the only
+      thing standing between a dark-mode user and a white flash on launch and on rotation.
+      It follows the *system* night setting; MainActivity repaints it from the user's own
+      theme as soon as it can, for the case where the two disagree.
+    -->
+    <style name="Theme.Myndora" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/window_background_night</item>
+    </style>
+</resources>

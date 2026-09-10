@@ -12,11 +12,8 @@ import kotlinx.serialization.json.add
 import java.time.LocalTime
 import javax.inject.Inject
 
-/**
- * Refines an existing calendar event. Only provided fields overwrite; unset fields
- * keep their prior value. Use the event `id` returned by `create_calendar_event`
- * or by asking the user which event they mean.
- */
+// refines an existing calendar event. only provided fields overwrite, unset fields keep their
+// prior value. use the id returned by create_calendar_event, or ask the user which event
 class UpdateCalendarEventTool @Inject constructor(
     private val calendarRepository: CalendarRepository
 ) : AiTool {
@@ -50,6 +47,10 @@ class UpdateCalendarEventTool @Inject constructor(
             }
             putJsonObject("description") { put("type", "string") }
             putJsonObject("location") { put("type", "string") }
+            putJsonObject("link") {
+                put("type", "string")
+                put("description", "URL — meeting/video link, doc, or map link")
+            }
             putJsonObject("color") {
                 put("type", "string")
                 put("description", "blue | red | yellow | green")
@@ -65,7 +66,7 @@ class UpdateCalendarEventTool @Inject constructor(
         val existing = calendarRepository.getEventById(id)
             ?: return "Failed: no event with id=$id."
 
-        // Compose the new start/end from whichever pieces the caller supplied.
+        // compose the new start and end from whichever pieces the caller supplied
         val newDate = args["date"]?.jsonPrimitive?.content?.trim()?.takeIf { it.isNotEmpty() }
             ?: existing.startTime.substringBefore('T')
         val existingStartClock = existing.startTime.substringAfter('T').take(5)
@@ -85,6 +86,7 @@ class UpdateCalendarEventTool @Inject constructor(
                 ?: existing.title,
             description = args["description"]?.jsonPrimitive?.content ?: existing.description,
             location = args["location"]?.jsonPrimitive?.content ?: existing.location,
+            link = args["link"]?.jsonPrimitive?.content ?: existing.link,
             color = args["color"]?.jsonPrimitive?.content ?: existing.color,
             startTime = "${newDate}T${newStartClock}:00",
             endTime = "${newDate}T${newEndClock}:00",

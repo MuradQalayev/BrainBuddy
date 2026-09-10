@@ -11,10 +11,15 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import com.muradgalayev.brainbuddy.MainActivity
 import com.muradgalayev.brainbuddy.R
 import com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionType
+import com.muradgalayev.brainbuddy.data.notifications.NotificationChannels
+import com.muradgalayev.brainbuddy.data.notifications.ReminderCopy
+import com.muradgalayev.brainbuddy.domain.model.ModeNotificationKind
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +35,8 @@ class PomodoroTimerService : Service() {
     companion object {
         const val CHANNEL_ID = "pomodoro_timer_channel"
         const val NOTIFICATION_ID = 1001
+        private const val BREAK_NOTIFICATION_ID = 1002
+        private const val BREAK_TAP_REQUEST_CODE = 1003
 
         const val ACTION_PAUSE = "com.muradgalayev.brainbuddy.PAUSE"
         const val ACTION_RESUME = "com.muradgalayev.brainbuddy.RESUME"
@@ -49,14 +56,17 @@ class PomodoroTimerService : Service() {
     @Inject
     lateinit var timerManager: PomodoroTimerManager
 
+    @Inject
+    lateinit var preferencesManager: PreferencesManager
+
+    @Inject
+    lateinit var modeManager: ModeManager
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var updateJob: Job? = null
-    /**
-     * Partial wake lock kept while the timer is running so the CPU stays available even
-     * when the screen is off. Without this, OEM aggressive battery savers (Samsung,
-     * Xiaomi, etc.) can suspend the foreground service's coroutines and the countdown
-     * appears to stop until the screen wakes up.
-     */
+    // partial wake lock held while the timer runs, so the CPU stays available with the screen
+    // off. without it, aggressive OEM battery savers can suspend the foreground service's
+    // coroutines and the countdown appears to stop until the screen wakes up
     private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -70,9 +80,12 @@ class PomodoroTimerService : Service() {
             stopSelf()
         }
         timerManager.onTimerCompleted = {
-            // Update notification one last time, then stop after a brief delay
+            // capture the type that just finished, before the next session is primed
+            val finishedType = timerManager.state.value.sessionType
+            // update the notification one last time, then stop after a brief delay
             updateNotification()
             serviceScope.launch {
+                maybePostBreakReminder(finishedType)
                 delay(3000)
                 releaseWakeLock()
                 stopSelf()
@@ -85,11 +98,11 @@ class PomodoroTimerService : Service() {
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = pm.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK,
-            "BrainBuddy:PomodoroTimer"
+            "Myndora:PomodoroTimer"
         ).apply {
             setReferenceCounted(false)
-            // Hard cap matches the longest single session (long break with extras), so
-            // a forgotten release can't drain the battery indefinitely.
+            // hard cap matches the longest single session, so a forgotten release can't drain the battery
+            // indefinitely
             acquire(2 * 60 * 60 * 1000L) // 2 hours
         }
     }
@@ -103,7 +116,7 @@ class PomodoroTimerService : Service() {
         when (intent?.action) {
             ACTION_PAUSE -> {
                 timerManager.pause()
-                // Pause doesn't need the wake lock — the countdown isn't ticking.
+                // pause doesn't need the wake lock, the countdown isn't ticking
                 releaseWakeLock()
             }
             ACTION_RESUME -> {
@@ -112,7 +125,7 @@ class PomodoroTimerService : Service() {
             }
             ACTION_STOP -> timerManager.stop()
             else -> {
-                // Start foreground
+                // start foreground
                 val notification = buildNotification()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     startForeground(
@@ -161,8 +174,7 @@ class PomodoroTimerService : Service() {
 
         val sessionLabel = when (state.sessionType) {
             PomodoroSessionType.FOCUS -> "Focus Session"
-            PomodoroSessionType.SHORT_BREAK -> "Short Break"
-            PomodoroSessionType.LONG_BREAK -> "Long Break"
+            PomodoroSessionType.BREAK -> "Break"
         }
 
         val statusText = when (state.timerState) {
@@ -172,7 +184,7 @@ class PomodoroTimerService : Service() {
             TimerState.IDLE -> "$sessionLabel — Ready"
         }
 
-        // Tap notification -> open app
+        // tap the notification to open the app
         val contentIntent = PendingIntent.getActivity(
             this,
             0,
@@ -185,7 +197,7 @@ class PomodoroTimerService : Service() {
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("BrainBuddy Timer")
+            .setContentTitle("Myndora Timer")
             .setContentText(statusText)
             .setContentIntent(contentIntent)
             .setOngoing(true)
@@ -194,12 +206,12 @@ class PomodoroTimerService : Service() {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
 
-        // Progress bar
+        // progress bar
         if (state.timerState == TimerState.RUNNING || state.timerState == TimerState.PAUSED) {
             builder.setProgress(1000, (state.progress * 1000).toInt(), false)
         }
 
-        // Action buttons
+        // action buttons
         when (state.timerState) {
             TimerState.RUNNING -> {
                 builder.addAction(
@@ -229,6 +241,51 @@ class PomodoroTimerService : Service() {
         }
 
         return builder.build()
+    }
+
+    // posts a heads-up alert when a session finishes, 'break time' after focus and 'break's over'
+    // after a break, gated by the user's break-reminder preference
+    private suspend fun maybePostBreakReminder(finishedType: PomodoroSessionType) {
+        if (!runCatching { preferencesManager.pomodoroBreakRemindersSnapshot() }.getOrDefault(true)) return
+        if (!runCatching {
+                modeManager.isNotificationAllowedNow(ModeNotificationKind.BREAK_REMINDERS)
+            }.getOrDefault(false)
+        ) return
+        if (!hasPostNotificationsPermission()) return
+
+        val (heading, body) = when (finishedType) {
+            PomodoroSessionType.FOCUS -> ReminderCopy.pomodoroBreakStart()
+            PomodoroSessionType.BREAK -> ReminderCopy.pomodoroBreakOver()
+        }
+
+        val tapIntent = PendingIntent.getActivity(
+            this,
+            BREAK_TAP_REQUEST_CODE,
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("navigate_to", "pomodoro")
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(this, NotificationChannels.POMODORO_ALERTS)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(heading)
+            .setContentText(body)
+            .setContentIntent(tapIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .build()
+
+        NotificationManagerCompat.from(this).notify(BREAK_NOTIFICATION_ID, notification)
+    }
+
+    private fun hasPostNotificationsPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
+        return ActivityCompat.checkSelfPermission(
+            this, android.Manifest.permission.POST_NOTIFICATIONS
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
     }
 
     private fun createActionIntent(action: String): PendingIntent {

@@ -7,7 +7,25 @@ import com.muradgalayev.brainbuddy.data.location.LocationCityResolver
 import com.muradgalayev.brainbuddy.data.repository.AdhdProfileRepository
 import com.muradgalayev.brainbuddy.data.repository.AuthRepository
 import com.muradgalayev.brainbuddy.data.repository.PlacesRepository
+import com.muradgalayev.brainbuddy.data.repository.UsernameTakenException
+import com.muradgalayev.brainbuddy.data.notifications.QuestionnaireReminderScheduler
 import com.muradgalayev.brainbuddy.domain.model.AdhdProfile
+import com.muradgalayev.brainbuddy.domain.model.AdhdPresentation
+import com.muradgalayev.brainbuddy.domain.model.BodyDoublingInterest
+import com.muradgalayev.brainbuddy.domain.model.CaptureNeed
+import com.muradgalayev.brainbuddy.domain.model.CheckInCeiling
+import com.muradgalayev.brainbuddy.domain.model.Chronotype
+import com.muradgalayev.brainbuddy.domain.model.CoOccurringCondition
+import com.muradgalayev.brainbuddy.domain.model.ImpulseArea
+import com.muradgalayev.brainbuddy.domain.model.InterruptionRecall
+import com.muradgalayev.brainbuddy.domain.model.MissedTaskResponse
+import com.muradgalayev.brainbuddy.domain.model.NudgeTone
+import com.muradgalayev.brainbuddy.domain.model.PastStrategy
+import com.muradgalayev.brainbuddy.domain.model.PlanChangeImpact
+import com.muradgalayev.brainbuddy.domain.model.SleepScheduleOrigin
+import com.muradgalayev.brainbuddy.domain.model.TaskReturnEffort
+import com.muradgalayev.brainbuddy.domain.model.WorkEnvironment
+import com.muradgalayev.brainbuddy.domain.model.toggleWithExclusives
 import com.muradgalayev.brainbuddy.domain.model.AdhdSymptom
 import com.muradgalayev.brainbuddy.domain.model.AiTone
 import com.muradgalayev.brainbuddy.domain.model.City
@@ -16,6 +34,7 @@ import com.muradgalayev.brainbuddy.domain.model.DiagnosisStatus
 import com.muradgalayev.brainbuddy.domain.model.Medication
 import com.muradgalayev.brainbuddy.domain.model.MedicationSlot
 import com.muradgalayev.brainbuddy.domain.model.MedicationStatus
+import com.muradgalayev.brainbuddy.domain.model.MedicationUnit
 import com.muradgalayev.brainbuddy.domain.model.ProductiveTime
 import com.muradgalayev.brainbuddy.domain.model.SurveyVersion
 import com.muradgalayev.brainbuddy.domain.model.TopGoal
@@ -30,12 +49,15 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class OnboardingUiState(
+    val firstName: String = "",
+    val lastName: String = "",
     val username: String = "",
     val usernameAvailability: UsernameAvailability = UsernameAvailability.Idle,
     val ageRange: String = "",
     val diagnosisStatus: DiagnosisStatus? = null,
     val primarySymptoms: Set<AdhdSymptom> = emptySet(),
-    val topGoal: TopGoal? = null,
+    // N16, up to AdhdProfile.MAX_TOP_GOALS
+    val topGoals: List<TopGoal> = emptyList(),
 
     val productiveTime: ProductiveTime? = null,
     val focusDurationMinutes: Int = 25,
@@ -47,6 +69,23 @@ data class OnboardingUiState(
     val painPoint: String = "",
     val aiTone: AiTone? = null,
 
+    // intake revision (N1-N18)
+    val presentation: AdhdPresentation? = null,
+    val coOccurring: List<CoOccurringCondition> = emptyList(),
+    val chronotype: Chronotype? = null,
+    val sleepScheduleOrigin: SleepScheduleOrigin? = null,
+    val interruptionRecall: InterruptionRecall? = null,
+    val captureNeed: CaptureNeed? = null,
+    val planChangeImpact: PlanChangeImpact? = null,
+    val taskReturnEffort: TaskReturnEffort? = null,
+    val impulseAreas: List<ImpulseArea> = emptyList(),
+    val nudgeTone: NudgeTone? = null,
+    val checkInCeiling: CheckInCeiling? = null,
+    val missedTaskResponse: MissedTaskResponse? = null,
+    val bodyDoublingInterest: BodyDoublingInterest? = null,
+    val workEnvironment: WorkEnvironment? = null,
+    val pastStrategies: List<PastStrategy> = emptyList(),
+
     val cities: List<City> = emptyList(),
     val cityId: String? = null,
     val locationStatus: LocationLookupStatus = LocationLookupStatus.Idle,
@@ -55,8 +94,11 @@ data class OnboardingUiState(
     val isEditing: Boolean = false,
     val previousSurveyVersion: SurveyVersion = SurveyVersion.None,
     val isSubmitting: Boolean = false,
-    val submitError: String? = null,
+    val submitError: SurveyError? = null,
     val submitSuccess: Boolean = false,
+    // true when the last save landed on the device but not on the server. the success panel says
+    // so rather than pretending everything is uploaded
+    val savedOfflineOnly: Boolean = false,
 )
 
 sealed class LocationLookupStatus {
@@ -75,6 +117,7 @@ class OnboardingViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val placesRepository: PlacesRepository,
     private val locationCityResolver: LocationCityResolver,
+    private val questionnaireReminderScheduler: QuestionnaireReminderScheduler,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(buildInitialState())
@@ -83,9 +126,8 @@ class OnboardingViewModel @Inject constructor(
     private var usernameCheckJob: Job? = null
 
     init {
-        // If caches were cold we showed isLoading=true; do a fresh fetch.
-        // Otherwise we already painted with cached data — silently re-validate
-        // in the background so any server-side change appears soon.
+        // cold caches meant isLoading=true, so fetch fresh. otherwise we already painted from cache,
+        // so re-validate quietly in the background instead
         prefillFromNetwork(initialPaintFromCache = !_state.value.isLoading)
     }
 
@@ -100,14 +142,32 @@ class OnboardingViewModel @Inject constructor(
 
         val cities = cachedCities.orEmpty()
         val username = cachedAuth?.username.orEmpty()
+        val (firstName, lastName) = splitName(cachedAuth?.displayName)
 
         return if (cachedProfile != null) {
             OnboardingUiState(
+                firstName = firstName,
+                lastName = lastName,
                 username = username,
                 ageRange = cachedProfile.ageRange,
                 diagnosisStatus = cachedProfile.diagnosisStatus,
                 primarySymptoms = cachedProfile.primarySymptoms.toSet(),
-                topGoal = cachedProfile.topGoal,
+                topGoals = cachedProfile.topGoals,
+                presentation = cachedProfile.presentation,
+                coOccurring = cachedProfile.coOccurring,
+                chronotype = cachedProfile.chronotype,
+                sleepScheduleOrigin = cachedProfile.sleepScheduleOrigin,
+                interruptionRecall = cachedProfile.interruptionRecall,
+                captureNeed = cachedProfile.captureNeed,
+                planChangeImpact = cachedProfile.planChangeImpact,
+                taskReturnEffort = cachedProfile.taskReturnEffort,
+                impulseAreas = cachedProfile.impulseAreas,
+                nudgeTone = cachedProfile.nudgeTone,
+                checkInCeiling = cachedProfile.checkInCeiling,
+                missedTaskResponse = cachedProfile.missedTaskResponse,
+                bodyDoublingInterest = cachedProfile.bodyDoublingInterest,
+                workEnvironment = cachedProfile.workEnvironment,
+                pastStrategies = cachedProfile.pastStrategies,
                 productiveTime = cachedProfile.productiveTime,
                 focusDurationMinutes = cachedProfile.focusDurationMinutes ?: 25,
                 sleepBedtime = cachedProfile.sleepBedtime,
@@ -125,11 +185,19 @@ class OnboardingViewModel @Inject constructor(
             )
         } else {
             OnboardingUiState(
+                firstName = firstName,
+                lastName = lastName,
                 username = username,
                 cities = cities,
                 isLoading = false,
             )
         }
+    }
+
+    private fun splitName(full: String?): Pair<String, String> {
+        val parts = full?.trim().orEmpty().split(" ").filter { it.isNotBlank() }
+        if (parts.isEmpty()) return "" to ""
+        return parts.first() to parts.drop(1).joinToString(" ")
     }
 
     private fun prefillFromNetwork(initialPaintFromCache: Boolean) {
@@ -138,20 +206,37 @@ class OnboardingViewModel @Inject constructor(
                 _state.update { it.copy(isLoading = true) }
             }
             val existing = runCatching { adhdProfileRepository.getProfile() }.getOrNull()
-            val currentUsername = runCatching { authRepository.getProfile()?.username }
-                .getOrNull()
-                .orEmpty()
+            val authProfile = runCatching { authRepository.getProfile() }.getOrNull()
+            val currentUsername = authProfile?.username.orEmpty()
+            val (netFirst, netLast) = splitName(authProfile?.displayName)
             val cities = placesRepository.listCities().getOrDefault(emptyList())
 
             _state.update { current ->
                 if (existing != null) {
                     current.copy(
-                        // Don't clobber edits in flight — only fill blanks/defaults.
+                        // don't clobber edits in flight, only fill blanks and defaults
+                        firstName = current.firstName.ifBlank { netFirst },
+                        lastName = current.lastName.ifBlank { netLast },
                         username = current.username.ifBlank { currentUsername },
                         ageRange = current.ageRange.ifBlank { existing.ageRange },
                         diagnosisStatus = current.diagnosisStatus ?: existing.diagnosisStatus,
                         primarySymptoms = current.primarySymptoms.ifEmpty { existing.primarySymptoms.toSet() },
-                        topGoal = current.topGoal ?: existing.topGoal,
+                        topGoals = current.topGoals.ifEmpty { existing.topGoals },
+                        presentation = current.presentation ?: existing.presentation,
+                        coOccurring = current.coOccurring.ifEmpty { existing.coOccurring },
+                        chronotype = current.chronotype ?: existing.chronotype,
+                        sleepScheduleOrigin = current.sleepScheduleOrigin ?: existing.sleepScheduleOrigin,
+                        interruptionRecall = current.interruptionRecall ?: existing.interruptionRecall,
+                        captureNeed = current.captureNeed ?: existing.captureNeed,
+                        planChangeImpact = current.planChangeImpact ?: existing.planChangeImpact,
+                        taskReturnEffort = current.taskReturnEffort ?: existing.taskReturnEffort,
+                        impulseAreas = current.impulseAreas.ifEmpty { existing.impulseAreas },
+                        nudgeTone = current.nudgeTone ?: existing.nudgeTone,
+                        checkInCeiling = current.checkInCeiling ?: existing.checkInCeiling,
+                        missedTaskResponse = current.missedTaskResponse ?: existing.missedTaskResponse,
+                        bodyDoublingInterest = current.bodyDoublingInterest ?: existing.bodyDoublingInterest,
+                        workEnvironment = current.workEnvironment ?: existing.workEnvironment,
+                        pastStrategies = current.pastStrategies.ifEmpty { existing.pastStrategies },
                         productiveTime = current.productiveTime ?: existing.productiveTime,
                         focusDurationMinutes = if (current.focusDurationMinutes == 25)
                             existing.focusDurationMinutes ?: current.focusDurationMinutes
@@ -171,6 +256,8 @@ class OnboardingViewModel @Inject constructor(
                     )
                 } else {
                     current.copy(
+                        firstName = current.firstName.ifBlank { netFirst },
+                        lastName = current.lastName.ifBlank { netLast },
                         username = current.username.ifBlank { currentUsername },
                         cities = if (cities.isNotEmpty()) cities else current.cities,
                         isLoading = false,
@@ -189,7 +276,13 @@ class OnboardingViewModel @Inject constructor(
         _state.update { it.copy(locationStatus = LocationLookupStatus.Locating) }
 
         viewModelScope.launch {
+            // the fix is often near-instant, so hold the 'locating' animation for a beat and it reads as
+            // deliberate work rather than a flicker
+            val startedAt = System.currentTimeMillis()
             val outcome = locationCityResolver.detectCityCandidates()
+            val elapsed = System.currentTimeMillis() - startedAt
+            val minVisible = 1600L
+            if (elapsed < minVisible) delay(minVisible - elapsed)
             _state.update { current ->
                 when (outcome) {
                     is LocationCityOutcome.PermissionMissing ->
@@ -250,6 +343,9 @@ class OnboardingViewModel @Inject constructor(
         it.copy(locationStatus = LocationLookupStatus.Idle)
     }
 
+    fun setFirstName(value: String) = _state.update { it.copy(firstName = value.take(40)) }
+    fun setLastName(value: String) = _state.update { it.copy(lastName = value.take(40)) }
+
     fun setUsername(value: String) {
         _state.update { it.copy(username = value) }
         scheduleUsernameCheck(value)
@@ -284,13 +380,61 @@ class OnboardingViewModel @Inject constructor(
     }
 
     fun setAgeRange(value: String) = _state.update { it.copy(ageRange = value) }
-    fun setDiagnosisStatus(value: DiagnosisStatus) = _state.update { it.copy(diagnosisStatus = value) }
+    // N1. changing away from 'formally diagnosed' clears the presentation with it: N2 only exists
+    // as a follow-up to that answer, and a stale value would store a subtype for someone who has
+    // just said they don't have one
+    fun setDiagnosisStatus(value: DiagnosisStatus) = _state.update {
+        it.copy(
+            diagnosisStatus = value,
+            presentation = if (value == DiagnosisStatus.Diagnosed) it.presentation else null,
+        )
+    }
     fun toggleSymptom(symptom: AdhdSymptom) = _state.update {
         val newSet = if (symptom in it.primarySymptoms) it.primarySymptoms - symptom
         else it.primarySymptoms + symptom
         it.copy(primarySymptoms = newSet)
     }
-    fun setTopGoal(value: TopGoal) = _state.update { it.copy(topGoal = value) }
+    // N16, multi-select and capped. tapping a fourth is a no-op rather than silently dropping one
+    // of the three already chosen, and the UI greys the rest out so the cap is visible first
+    fun toggleTopGoal(value: TopGoal) = _state.update { s ->
+        val next = when {
+            value in s.topGoals -> s.topGoals - value
+            s.topGoals.size >= AdhdProfile.MAX_TOP_GOALS -> s.topGoals
+            else -> s.topGoals + value
+        }
+        s.copy(topGoals = next)
+    }
+
+    // intake revision (N1-N18)
+    fun setPresentation(value: AdhdPresentation) = _state.update { it.copy(presentation = value) }
+    fun toggleCoOccurring(value: CoOccurringCondition) = _state.update {
+        it.copy(coOccurring = toggleWithExclusives(it.coOccurring, value, CoOccurringCondition.EXCLUSIVE))
+    }
+    fun setChronotype(value: Chronotype) = _state.update { it.copy(chronotype = value) }
+    fun setSleepScheduleOrigin(value: SleepScheduleOrigin) =
+        _state.update { it.copy(sleepScheduleOrigin = value) }
+    fun setInterruptionRecall(value: InterruptionRecall) =
+        _state.update { it.copy(interruptionRecall = value) }
+    fun setCaptureNeed(value: CaptureNeed) = _state.update { it.copy(captureNeed = value) }
+    fun setPlanChangeImpact(value: PlanChangeImpact) =
+        _state.update { it.copy(planChangeImpact = value) }
+    fun setTaskReturnEffort(value: TaskReturnEffort) =
+        _state.update { it.copy(taskReturnEffort = value) }
+    fun toggleImpulseArea(value: ImpulseArea) = _state.update {
+        it.copy(impulseAreas = toggleWithExclusives(it.impulseAreas, value, ImpulseArea.EXCLUSIVE))
+    }
+    fun setNudgeTone(value: NudgeTone) = _state.update { it.copy(nudgeTone = value) }
+    fun setCheckInCeiling(value: CheckInCeiling) = _state.update { it.copy(checkInCeiling = value) }
+    fun setMissedTaskResponse(value: MissedTaskResponse) =
+        _state.update { it.copy(missedTaskResponse = value) }
+    fun setBodyDoublingInterest(value: BodyDoublingInterest) =
+        _state.update { it.copy(bodyDoublingInterest = value) }
+    fun setWorkEnvironment(value: WorkEnvironment) = _state.update { it.copy(workEnvironment = value) }
+    fun togglePastStrategy(value: PastStrategy) = _state.update {
+        it.copy(pastStrategies = toggleWithExclusives(it.pastStrategies, value, PastStrategy.EXCLUSIVE))
+    }
+    fun setMedicationTime(id: String, time: String) = updateMed(id) { it.copy(times = listOf(time)) }
+    fun toggleMedicationAsNeeded(id: String) = updateMed(id) { it.copy(asNeeded = !it.asNeeded) }
 
     fun setProductiveTime(value: ProductiveTime) = _state.update { it.copy(productiveTime = value) }
     fun setFocusDuration(minutes: Int) = _state.update { it.copy(focusDurationMinutes = minutes) }
@@ -313,6 +457,8 @@ class OnboardingViewModel @Inject constructor(
 
     fun setMedicationName(id: String, name: String) = updateMed(id) { it.copy(name = name) }
     fun setMedicationDose(id: String, dose: String) = updateMed(id) { it.copy(dose = dose) }
+    fun setMedicationDoseUnit(id: String, unit: MedicationUnit) =
+        updateMed(id) { it.copy(doseUnit = unit.key) }
     fun toggleMedicationSlot(id: String, slot: MedicationSlot) = updateMed(id) { current ->
         val newSlots = if (slot.key in current.slots) current.slots - slot.key
         else current.slots + slot.key
@@ -336,10 +482,7 @@ class OnboardingViewModel @Inject constructor(
     }
     fun setAiTone(value: AiTone) = _state.update { it.copy(aiTone = value) }
 
-    /**
-     * Validates the fields the chosen survey requires, then persists.
-     * Sets `submitSuccess = true` on success so the screen can navigate.
-     */
+    // validates what the chosen survey requires, then persists. sets submitSuccess so we can navigate
     fun submit(version: SurveyVersion) {
         val s = _state.value
         if (s.isSubmitting) return
@@ -348,22 +491,25 @@ class OnboardingViewModel @Inject constructor(
             s.usernameAvailability == UsernameAvailability.Available ||
                 (s.usernameAvailability == UsernameAvailability.Idle && s.username.isNotBlank())
         if (!usernameOk) {
-            _state.update { it.copy(submitError = "Pick an available username first") }
+            _state.update { it.copy(submitError = SurveyError(SurveyError.Kind.UsernameTaken)) }
             return
         }
-        // First-time onboarding still has to answer the required questions.
-        // When editing an already-completed profile, allow partial saves —
-        // the user might just want to update one field (e.g. their city).
+        // first-time onboarding still has to answer the required questions. when editing an already
+        // completed profile, allow partial saves: they might just want to update their city
         if (!s.isEditing) {
+            if (s.firstName.isBlank()) {
+                _state.update { it.copy(submitError = SurveyError(SurveyError.Kind.MissingAnswers, "your name")) }
+                return
+            }
             if (s.ageRange.isBlank() || s.diagnosisStatus == null ||
-                s.primarySymptoms.isEmpty() || s.topGoal == null
+                s.primarySymptoms.isEmpty() || s.topGoals.isEmpty()
             ) {
-                _state.update { it.copy(submitError = "Please answer all questions") }
+                _state.update { it.copy(submitError = SurveyError(SurveyError.Kind.MissingAnswers)) }
                 return
             }
             if (version == SurveyVersion.Deep) {
                 if (s.productiveTime == null || s.medicationStatus == null || s.aiTone == null) {
-                    _state.update { it.copy(submitError = "Please answer all Deep Dive questions") }
+                    _state.update { it.copy(submitError = SurveyError(SurveyError.Kind.MissingAnswers, "the Deep Dive questions")) }
                     return
                 }
             }
@@ -373,24 +519,35 @@ class OnboardingViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                // First-time signups don't always have a profiles row yet
-                // (the auth.users → profiles trigger may be missing). Make
-                // sure one exists before we try to update it, otherwise
-                // decodeSingle() blows up with "List is empty.".
-                val existing = authRepository.ensureProfileExists()
-                val displayName = existing.displayName
-                    ?: authRepository.getCurrentUserFullName()
-                    ?: ""
+                // the name/username half of the save talks to Supabase. offline it can't, and that must not
+                // stop the ADHD profile itself from being saved. the whole survey being unfinishable without
+                // a connection is what used to trap people on this page with no way out. AuthRepository
+                // queues the profile edit and SyncCoordinator sends it
+                var reachedServer = true
+
+                // first-time signups don't always have a profiles row yet (the auth.users trigger may be
+                // missing), so make sure one exists before updating, or decodeSingle() blows up with
+                // 'List is empty.'
+                val existing = runCatching { authRepository.ensureProfileExists() }
+                    .onFailure { reachedServer = false }
+                    .getOrNull()
+                val enteredName = listOf(s.firstName.trim(), s.lastName.trim())
+                    .filter { it.isNotBlank() }
+                    .joinToString(" ")
+                val displayName = enteredName.ifBlank {
+                    existing?.displayName ?: authRepository.getCurrentUserFullName() ?: ""
+                }
                 authRepository.updateProfile(
                     displayName = displayName,
                     username = s.username.trim().lowercase(),
                 )
 
-                val userId = authRepository.getCurrentUserId()
+                // cached id, not the live-session one: offline on a cold start the session may not be
+                // restored yet, and the survey still has to save
+                val userId = authRepository.getCurrentOrCachedUserId()
                     ?: error("No logged-in user")
 
-                // Preserve the highest survey tier the user has reached. Editing
-                // shouldn't quietly downgrade Deep → Quick.
+                // keep the highest tier reached, editing shouldn't quietly downgrade Deep to Quick
                 val effectiveVersion = if (s.previousSurveyVersion == SurveyVersion.Deep) {
                     SurveyVersion.Deep
                 } else {
@@ -401,7 +558,22 @@ class OnboardingViewModel @Inject constructor(
                     ageRange = s.ageRange,
                     diagnosisStatus = s.diagnosisStatus,
                     primarySymptoms = s.primarySymptoms.toList(),
-                    topGoal = s.topGoal,
+                    topGoals = s.topGoals,
+                    presentation = s.presentation,
+                    coOccurring = s.coOccurring,
+                    chronotype = s.chronotype,
+                    sleepScheduleOrigin = s.sleepScheduleOrigin,
+                    interruptionRecall = s.interruptionRecall,
+                    captureNeed = s.captureNeed,
+                    planChangeImpact = s.planChangeImpact,
+                    taskReturnEffort = s.taskReturnEffort,
+                    impulseAreas = s.impulseAreas,
+                    nudgeTone = s.nudgeTone,
+                    checkInCeiling = s.checkInCeiling,
+                    missedTaskResponse = s.missedTaskResponse,
+                    bodyDoublingInterest = s.bodyDoublingInterest,
+                    workEnvironment = s.workEnvironment,
+                    pastStrategies = s.pastStrategies,
                     productiveTime = s.productiveTime,
                     focusDurationMinutes = if (effectiveVersion == SurveyVersion.Deep) s.focusDurationMinutes else null,
                     sleepBedtime = s.sleepBedtime,
@@ -417,14 +589,33 @@ class OnboardingViewModel @Inject constructor(
                     surveyCompleted = true,
                     surveyVersion = effectiveVersion,
                 )
+                // local-first: this lands on the device with no connection, and pushes itself on reconnect
                 adhdProfileRepository.saveProfile(profile)
 
-                _state.update { it.copy(isSubmitting = false, submitSuccess = true) }
-            } catch (e: Exception) {
+                // updateProfile swallows a failed push by queueing it, so asking the queue is the only
+                // reliable way to know the server actually has this
+                val queued = !reachedServer || authRepository.hasPendingProfileUpdate()
                 _state.update {
                     it.copy(
                         isSubmitting = false,
-                        submitError = "Couldn't save: ${e.message ?: "unknown error"}",
+                        submitSuccess = true,
+                        savedOfflineOnly = queued,
+                    )
+                }
+            } catch (e: Exception) {
+                if (e is UsernameTakenException) {
+                    _state.update {
+                        it.copy(
+                            isSubmitting = false,
+                            submitError = SurveyError(SurveyError.Kind.UsernameTaken),
+                        )
+                    }
+                    return@launch
+                }
+                _state.update {
+                    it.copy(
+                        isSubmitting = false,
+                        submitError = SurveyError(SurveyError.Kind.SaveFailed, e.message),
                     )
                 }
             }
@@ -432,4 +623,89 @@ class OnboardingViewModel @Inject constructor(
     }
 
     fun consumeError() = _state.update { it.copy(submitError = null) }
+
+    // persists whatever is answered so far, keeping the last completed tier
+    fun saveDraft(version: SurveyVersion, onSaved: () -> Unit) {
+        val s = _state.value
+        if (s.isSubmitting) return
+        _state.update { it.copy(isSubmitting = true, submitError = null) }
+        viewModelScope.launch {
+            try {
+                val userId = authRepository.getCurrentOrCachedUserId()
+                    ?: error("No logged-in user")
+                val completedTier = s.previousSurveyVersion
+                val usernameCanSave = s.username.isNotBlank() &&
+                    (s.usernameAvailability == UsernameAvailability.Available || s.isEditing)
+                if (usernameCanSave) {
+                    // best-effort, same as submit: no connection must never be the reason someone can't leave a
+                    // half-finished survey
+                    val existing = runCatching { authRepository.ensureProfileExists() }.getOrNull()
+                    val enteredName = listOf(s.firstName.trim(), s.lastName.trim())
+                        .filter(String::isNotBlank)
+                        .joinToString(" ")
+                    authRepository.updateProfile(
+                        displayName = enteredName.ifBlank { existing?.displayName.orEmpty() },
+                        username = s.username.trim().lowercase(),
+                    )
+                }
+                val draft = AdhdProfile(
+                    userId = userId,
+                    ageRange = s.ageRange,
+                    diagnosisStatus = s.diagnosisStatus,
+                    primarySymptoms = s.primarySymptoms.toList(),
+                    topGoals = s.topGoals,
+                    presentation = s.presentation,
+                    coOccurring = s.coOccurring,
+                    chronotype = s.chronotype,
+                    sleepScheduleOrigin = s.sleepScheduleOrigin,
+                    interruptionRecall = s.interruptionRecall,
+                    captureNeed = s.captureNeed,
+                    planChangeImpact = s.planChangeImpact,
+                    taskReturnEffort = s.taskReturnEffort,
+                    impulseAreas = s.impulseAreas,
+                    nudgeTone = s.nudgeTone,
+                    checkInCeiling = s.checkInCeiling,
+                    missedTaskResponse = s.missedTaskResponse,
+                    bodyDoublingInterest = s.bodyDoublingInterest,
+                    workEnvironment = s.workEnvironment,
+                    pastStrategies = s.pastStrategies,
+                    productiveTime = s.productiveTime,
+                    focusDurationMinutes = s.focusDurationMinutes,
+                    sleepBedtime = s.sleepBedtime,
+                    sleepWakeTime = s.sleepWakeTime,
+                    medicationStatus = s.medicationStatus,
+                    medications = s.medications.filter { it.name.isNotBlank() },
+                    copingStrategies = s.copingStrategies.toList(),
+                    painPoint = s.painPoint.trim(),
+                    aiTonePreference = s.aiTone,
+                    cityId = s.cityId,
+                    surveyCompleted = completedTier != SurveyVersion.None,
+                    surveyVersion = completedTier,
+                )
+                adhdProfileRepository.saveDraft(draft)
+                if (!draft.surveyCompleted) {
+                    val completion = questionnaireCompletion(s, version)
+                    questionnaireReminderScheduler.updateProgress(
+                        userId = userId,
+                        version = version,
+                        answered = completion.count { it },
+                        total = completion.size,
+                        wakeTime = s.sleepWakeTime,
+                    )
+                }
+                _state.update { it.copy(isSubmitting = false) }
+                onSaved()
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        isSubmitting = false,
+                        submitError = SurveyError(SurveyError.Kind.SaveFailed, e.message),
+                    )
+                }
+            }
+        }
+    }
+
+    // remember it so Splash stops forcing onboarding
+    fun skipOnboarding() = adhdProfileRepository.markOnboardingSkipped()
 }

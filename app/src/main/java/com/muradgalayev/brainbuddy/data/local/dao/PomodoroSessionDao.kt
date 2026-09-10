@@ -54,7 +54,7 @@ interface PomodoroSessionDao {
         endOfDay: Long
     ): Long
 
-    /** Flow variant so ViewModels can subscribe instead of polling. */
+    // flow variant so ViewModels can subscribe instead of polling
     @Query("""
     SELECT COALESCE(SUM(actualDurationMs), 0)
     FROM pomodoro_sessions
@@ -98,5 +98,25 @@ interface PomodoroSessionDao {
         userId: String,
         status: String,
         limit: Int
+    ): Flow<List<PomodoroSessionEntity>>
+
+    // every completed session of a type in a window, newest first. bucketing into days happens in
+    // Kotlin rather than SQL because SQLite's date functions have no notion of the device's time
+    // zone, so a UTC-based GROUP BY would put late-evening sessions on the wrong day for anyone
+    // east or west of Greenwich
+    @Query("""
+    SELECT * FROM pomodoro_sessions
+    WHERE userId = :userId
+      AND sessionType = :sessionType
+      AND completionStatus = :completionStatus
+      AND endTime BETWEEN :startMs AND :endMs
+    ORDER BY endTime DESC
+""")
+    fun observeCompletedSessionsInRange(
+        userId: String,
+        sessionType: String,
+        completionStatus: String,
+        startMs: Long,
+        endMs: Long
     ): Flow<List<PomodoroSessionEntity>>
 }

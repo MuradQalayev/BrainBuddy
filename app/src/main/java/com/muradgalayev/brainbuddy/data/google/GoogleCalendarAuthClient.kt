@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.data.google
 
+import android.accounts.Account
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -36,26 +37,40 @@ class GoogleCalendarAuthClient @Inject constructor(
     }
 
     suspend fun requestAuthorization(): AuthorizationStep {
-        val result = awaitAuthorization(buildRequest())
+        val result = awaitAuthorization()
         return interpret(result)
     }
 
-    /**
-     * Mint a fresh access token without showing UI. Returns the token if the
-     * user has already granted consent for this account+scope (just a token
-     * refresh), or null when interactive consent would be required — e.g. the
-     * user revoked access or signed out of Google on the device. Safe to call
-     * from background contexts like a WorkManager job.
-     */
-    suspend fun tryGetFreshAccessTokenSilently(): String? {
+    // mints a fresh access token without showing UI. returns the token if the user has already
+    // granted consent for this account and scope (just a refresh), or null when interactive
+    // consent would be required, e.g. they revoked access or signed out of Google on the device.
+    // safe to call from background contexts like a WorkManager job.
+    // pass forceRefresh after Google has rejected a token: authorize() serves from the Play
+    // services cache, so without evicting the dead entry it hands back the token that just 401'd
+    suspend fun tryGetFreshAccessTokenSilently(forceRefresh: Boolean = false): String? {
+        if (forceRefresh) invalidateCurrentToken()
         return runCatching {
-            val result = awaitAuthorization(buildRequest())
+            val result = awaitAuthorization()
             if (result.pendingIntent != null) null
             else interpretAndPersistToken(result)
         }.getOrNull()
     }
 
-    private fun buildRequest(): AuthorizationRequest =
+    // forgets the current access token locally and in the GMS cache, while keeping the account
+    // link intact. the link is what lets us re-authorize silently, so it has to survive a
+    // merely-expired token
+    suspend fun invalidateCurrentToken() {
+        val stale = tokenStore.peekRawAccessToken()
+        tokenStore.invalidateAccessToken()
+        if (!stale.isNullOrBlank()) clearGmsLocalCache(stale)
+    }
+
+    // accountHint pins the request to the account the user already linked. without it authorize()
+    // falls back to whatever GMS considers the default account, and on a device with several
+    // Google accounts (or none marked default, which is the norm here since sign-in goes through
+    // Supabase rather than Credential Manager) it answers with an account-picker PendingIntent
+    // instead of a token. that is the 'please sign in again' prompt
+    private fun buildRequest(accountHint: String?): AuthorizationRequest =
         AuthorizationRequest.builder()
             .setRequestedScopes(
                 listOf(
@@ -63,6 +78,11 @@ class GoogleCalendarAuthClient @Inject constructor(
                     Scope(SCOPE_USERINFO_EMAIL)
                 )
             )
+            .apply {
+                if (!accountHint.isNullOrBlank()) {
+                    setAccount(Account(accountHint, GOOGLE_ACCOUNT_TYPE))
+                }
+            }
             .build()
 
     fun extractFromActivityResult(data: Intent?): String? {
@@ -81,16 +101,16 @@ class GoogleCalendarAuthClient @Inject constructor(
         }
     }
 
-    // GMS keeps its own cache of granted tokens. Even after server-side revoke,
-    // the next authorize() call would silently reuse the cached token and skip
-    // the picker. clearToken removes the entry so authorize() must re-prompt.
+    // GMS keeps its own cache of granted tokens. even after a server-side revoke the next
+    // authorize() would silently reuse the cached token and skip the picker, so clearToken removes
+    // the entry and forces a re-prompt
     private suspend fun clearGmsLocalCache(token: String) = withContext(Dispatchers.IO) {
         runCatching { GoogleAuthUtil.clearToken(context, token) }
     }
 
-    // Hits https://oauth2.googleapis.com/revoke so Google forgets the consent
-    // for this app+account. Without this, the next authorize() call would
-    // silently return a token for the same account and skip the picker.
+    // hits Google's revoke endpoint so it forgets the consent for this app and account. without
+    // this, the next authorize() would silently return a token for the same account and skip the
+    // picker
     private suspend fun revokeToken(token: String) = withContext(Dispatchers.IO) {
         runCatching {
             val url = URL("https://oauth2.googleapis.com/revoke?token=$token")
@@ -132,9 +152,8 @@ class GoogleCalendarAuthClient @Inject constructor(
 
         if (email != null) {
             tokenStore.saveLinkedEmail(email)
-            // Persist to Supabase so the link survives sign-out. Failure here is
-            // non-fatal — the local link still works, and SyncCoordinator will
-            // reconcile on next connect/sync.
+            // persist to Supabase so the link survives sign-out. failure here is non-fatal, the local link
+            // still works and SyncCoordinator reconciles on the next connect
             runCatching { authRepository.setLinkedGoogleEmail(email) }
         }
         email
@@ -154,10 +173,25 @@ class GoogleCalendarAuthClient @Inject constructor(
     private fun interpretAndPersistToken(result: AuthorizationResult): String? {
         val token = result.accessToken ?: return null
         tokenStore.saveAccessToken(token)
+        // the result already carries the account, so record it even on a silent refresh. that keeps
+        // the account hint alive without the extra userinfo round trip, and re-links a device whose
+        // prefs were cleared
+        result.toGoogleSignInAccount()?.email?.takeIf { it.isNotBlank() }?.let {
+            if (it != tokenStore.getLinkedEmail()) tokenStore.saveLinkedEmail(it)
+        }
         return token
     }
 
-    private suspend fun awaitAuthorization(request: AuthorizationRequest): AuthorizationResult =
+    private suspend fun awaitAuthorization(): AuthorizationResult {
+        val hint = tokenStore.getLinkedEmail()
+        if (hint == null) return authorize(buildRequest(null))
+        // a pinned account that is no longer on the device makes authorize() fail outright, so retry
+        // unpinned and the user still gets a picker rather than an error
+        return runCatching { authorize(buildRequest(hint)) }
+            .getOrElse { authorize(buildRequest(null)) }
+    }
+
+    private suspend fun authorize(request: AuthorizationRequest): AuthorizationResult =
         suspendCancellableCoroutine { cont ->
             Identity.getAuthorizationClient(context)
                 .authorize(request)
@@ -168,5 +202,6 @@ class GoogleCalendarAuthClient @Inject constructor(
     private companion object {
         const val SCOPE_CALENDAR_EVENTS = "https://www.googleapis.com/auth/calendar.events"
         const val SCOPE_USERINFO_EMAIL = "https://www.googleapis.com/auth/userinfo.email"
+        const val GOOGLE_ACCOUNT_TYPE = "com.google"
     }
 }

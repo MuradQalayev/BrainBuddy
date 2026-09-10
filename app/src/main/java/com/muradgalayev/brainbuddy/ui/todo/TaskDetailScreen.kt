@@ -76,7 +76,7 @@ fun TaskDetailScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Title
+            // title
             Text(
                 text = "Title",
                 style = MaterialTheme.typography.labelMedium,
@@ -90,7 +90,7 @@ fun TaskDetailScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Description
+            // description
             if (task.description.isNotEmpty()) {
                 Text(
                     text = "Description",
@@ -104,7 +104,7 @@ fun TaskDetailScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // Date & Time
+            // date and time
             Text(
                 text = "Date & Time",
                 style = MaterialTheme.typography.labelMedium,
@@ -154,7 +154,7 @@ fun TaskDetailScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Priority
+            // priority
             Text(
                 text = "Priority",
                 style = MaterialTheme.typography.labelMedium,
@@ -168,7 +168,7 @@ fun TaskDetailScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Color
+            // colour
             Text(
                 text = "Color",
                 style = MaterialTheme.typography.labelMedium,
@@ -182,7 +182,7 @@ fun TaskDetailScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Status
+            // status
             Text(
                 text = "Status",
                 style = MaterialTheme.typography.labelMedium,
@@ -197,7 +197,7 @@ fun TaskDetailScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Update Button
+            // update button
             Button(
                 onClick = onUpdateClick,
                 modifier = Modifier.fillMaxWidth()

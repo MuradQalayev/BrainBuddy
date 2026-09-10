@@ -4,7 +4,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,16 +30,23 @@ import androidx.compose.ui.unit.dp
 import com.muradgalayev.brainbuddy.R
 import kotlinx.coroutines.delay
 
-
+// today's focus total, doubling as the entry point to history. when animated is false it stops
+// cycling and just sits there: a chip that keeps flipping in the corner is movement in the
+// user's peripheral vision, precisely what a focus timer shouldn't produce mid-session
 @Composable
 fun HistorySummarySwitcher(
     todayFocusMinutes: Int,
     accentColor: Color,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    animated: Boolean = true
 ) {
     var showText by rememberSaveable { mutableStateOf(true) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(animated) {
+        if (!animated) {
+            showText = true
+            return@LaunchedEffect
+        }
         while (true) {
             showText = true
             delay(3000)
@@ -57,6 +66,28 @@ fun HistorySummarySwitcher(
                 .width(108.dp),
             contentAlignment = Alignment.Center
         ) {
+            if (!animated) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_history),
+                        contentDescription = "History",
+                        tint = accentColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "${todayFocusMinutes}m today",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = accentColor,
+                        maxLines = 1
+                    )
+                }
+                return@Box
+            }
+
             androidx.compose.animation.AnimatedContent(
                 targetState = showText,
                 transitionSpec = {

@@ -49,7 +49,8 @@ fun QuickAccessSection(
     enabledRoutes: Set<String>,
     expanded: Boolean,
     onToggleExpanded: () -> Unit,
-    onToggle: (String, Boolean) -> Unit
+    onToggle: (String, Boolean) -> Unit,
+    embedded: Boolean = false,
 ) {
     val chevronRotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
@@ -61,6 +62,7 @@ fun QuickAccessSection(
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (!embedded) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -71,7 +73,7 @@ fun QuickAccessSection(
                 ),
             shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surfaceContainer,
-            shadowElevation = 1.dp,
+            shadowElevation = 0.dp,
             onClick = onToggleExpanded
         ) {
             Row(
@@ -125,9 +127,10 @@ fun QuickAccessSection(
                 )
             }
         }
+        }
 
         AnimatedVisibility(
-            visible = expanded,
+            visible = expanded || embedded,
             enter = expandVertically(
                 animationSpec = spring(
                     dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -169,7 +172,7 @@ fun QuickAccessSection(
                             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
                         else
                             MaterialTheme.colorScheme.surfaceContainer,
-                        shadowElevation = 1.dp,
+                        shadowElevation = 0.dp,
                         onClick = { onToggle(screen.route, !enabled) }
                     ) {
                         Row(

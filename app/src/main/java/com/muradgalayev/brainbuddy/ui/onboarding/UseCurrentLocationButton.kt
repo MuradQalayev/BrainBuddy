@@ -6,7 +6,15 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,18 +22,22 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.LocationOn
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,23 +57,16 @@ fun UseCurrentLocationRow(
         if (granted) onRequest()
     }
 
-    OutlinedButton(
-        onClick = { permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION) },
-        enabled = !isLocating,
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp),
-    ) {
-        if (isLocating) {
-            CircularProgressIndicator(
-                strokeWidth = 2.dp,
-                modifier = Modifier.size(16.dp),
-                color = colors.primary,
-            )
-            Spacer(Modifier.width(10.dp))
-            Text("Locating…")
-        } else {
+    if (isLocating) {
+        LocatingIndicator()
+    } else {
+        OutlinedButton(
+            onClick = { permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION) },
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+        ) {
             Icon(
                 imageVector = Icons.Rounded.LocationOn,
                 contentDescription = null,
@@ -142,5 +147,55 @@ fun UseCurrentLocationRow(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun LocatingIndicator() {
+    val colors = MaterialTheme.colorScheme
+    val transition = rememberInfiniteTransition(label = "locating")
+    val pulse by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "pulse",
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(colors.primary.copy(alpha = 0.10f))
+            .padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(24.dp)) {
+            // expanding radar ring that fades as it grows
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .scale(0.4f + pulse * 0.6f)
+                    .alpha(1f - pulse)
+                    .clip(CircleShape)
+                    .background(colors.primary.copy(alpha = 0.35f)),
+            )
+            Icon(
+                imageVector = Icons.Rounded.LocationOn,
+                contentDescription = null,
+                tint = colors.primary,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = "Finding your location…",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = colors.primary,
+        )
     }
 }

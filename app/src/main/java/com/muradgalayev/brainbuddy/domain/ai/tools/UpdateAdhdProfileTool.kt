@@ -14,15 +14,10 @@ import kotlinx.serialization.json.putJsonObject
 import kotlinx.serialization.json.add
 import javax.inject.Inject
 
-/**
- * Updates the user's ADHD profile fields — the ones filled in during the deep-dive
- * survey. This is separate from `update_profile` (which handles display name and
- * username on the profiles table).
- *
- * Only overwrites the specific fields the caller provides. Everything else on the
- * profile stays intact, so the model can nudge one setting at a time without wiping
- * the rest of what the user filled in.
- */
+// updates the ADHD profile fields, the ones filled in during the deep-dive survey. separate
+// from update_profile, which handles display name and username on the profiles table.
+// only overwrites the specific fields the caller provides, so the model can nudge one setting
+// at a time without wiping the rest of what the user filled in
 class UpdateAdhdProfileTool @Inject constructor(
     private val adhdProfileRepository: AdhdProfileRepository,
 ) : AiTool {
@@ -134,15 +129,13 @@ class UpdateAdhdProfileTool @Inject constructor(
         else "Updated ADHD profile: ${changed.joinToString(", ")}."
     }
 
-    /**
-     * Users might say "25" or "twenty-five" — map to the closest bucket in AGE_RANGES.
-     * Exact bucket labels are also accepted.
-     */
+    // users might say '25' or 'twenty-five', so map to the closest bucket. exact bucket labels are
+    // accepted too
     private fun normalizeAgeRange(input: String): String? {
         val cleaned = input.trim()
-        // Exact match first.
+        // exact match first
         AGE_RANGES.firstOrNull { it.equals(cleaned, ignoreCase = true) }?.let { return it }
-        // Numeric age → bucket.
+        // numeric age to bucket
         val n = cleaned.filter { it.isDigit() }.toIntOrNull() ?: return null
         return when {
             n < 18 -> "Under 18"

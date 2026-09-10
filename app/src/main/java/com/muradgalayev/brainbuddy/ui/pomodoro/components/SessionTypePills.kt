@@ -48,8 +48,7 @@ fun SessionTypePills(
 
             val label = when (type) {
                 PomodoroSessionType.FOCUS -> "Focus"
-                PomodoroSessionType.SHORT_BREAK -> "Short Break"
-                PomodoroSessionType.LONG_BREAK -> "Long Break"
+                PomodoroSessionType.BREAK -> "Break"
             }
 
             val bgColor by animateColorAsState(

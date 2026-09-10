@@ -24,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 fun OnboardingChoiceScreen(
     onPickQuick: () -> Unit,
     onPickDeep: () -> Unit,
+    onSkip: () -> Unit = {},
 ) {
     val colors = MaterialTheme.colorScheme
 
@@ -58,7 +60,7 @@ fun OnboardingChoiceScreen(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Brain Buddy works best when it knows how your ADHD shows up. Pick how much you want to share — you can edit anything later.",
+                text = "Myndora works best when it knows how your ADHD shows up. Pick how much you want to share — you can edit anything later.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
             )
@@ -84,6 +86,22 @@ fun OnboardingChoiceScreen(
                 accent = colors.tertiary,
                 onClick = onPickDeep,
             )
+
+            Spacer(Modifier.weight(1f))
+
+            TextButton(
+                onClick = onSkip,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.CenterHorizontally),
+            ) {
+                Text(
+                    text = "I'll do this later",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.onSurfaceVariant,
+                )
+            }
         }
     }
 }

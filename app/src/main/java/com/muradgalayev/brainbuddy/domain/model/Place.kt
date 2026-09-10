@@ -1,5 +1,8 @@
 package com.muradgalayev.brainbuddy.domain.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class City(
     val id: String,
     val name: String,
@@ -7,6 +10,7 @@ data class City(
     val country: String = "IT",
 )
 
+@Serializable
 data class Place(
     val id: String,
     val cityId: String,
@@ -22,6 +26,7 @@ data class Place(
     val notes: String = "",
 )
 
+@Serializable
 enum class PlaceCategory(val key: String, val label: String) {
     Hospital("hospital", "Hospital"),
     Specialist("specialist", "Specialist"),

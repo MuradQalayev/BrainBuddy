@@ -4,27 +4,35 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -32,9 +40,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.BackHandler
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.muradgalayev.brainbuddy.domain.model.AdhdProfile
 import com.muradgalayev.brainbuddy.domain.model.AGE_RANGES
 import com.muradgalayev.brainbuddy.domain.model.AdhdSymptom
 import com.muradgalayev.brainbuddy.domain.model.DiagnosisStatus
@@ -45,161 +57,210 @@ import com.muradgalayev.brainbuddy.domain.model.TopGoal
 fun QuickSetupScreen(
     onBack: () -> Unit,
     onDone: () -> Unit,
+    onSkip: () -> Unit = {},
     viewModel: OnboardingViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
-    val colors = MaterialTheme.colorScheme
     val snackbar = remember { SnackbarHostState() }
 
-    LaunchedEffect(state.submitSuccess) {
-        if (state.submitSuccess) onDone()
-    }
-    LaunchedEffect(state.submitError) {
-        state.submitError?.let {
-            snackbar.showSnackbar(it)
-            viewModel.consumeError()
+    val complete = questionnaireCompletion(state, SurveyVersion.Quick)
+    val saveAndSkip = {
+        viewModel.saveDraft(SurveyVersion.Quick) {
+            onSkip()
         }
     }
+    val saveAndExit = { viewModel.saveDraft(SurveyVersion.Quick, onBack) }
+    BackHandler(enabled = !state.submitSuccess) {
+        if (!state.isLoading && !state.isSubmitting) saveAndExit()
+    }
 
-    Box(modifier = Modifier.fillMaxSize().background(colors.background)) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 8.dp, top = 16.dp, end = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = colors.onSurface)
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        when {
+            state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+            state.submitSuccess -> NiceWorkPanel(
+                onContinue = onDone,
+                savedOfflineOnly = state.savedOfflineOnly,
+            )
+            else -> SwipeQuestionnaire(
+                title = "Let's get to know you",
+                pageCount = complete.size,
+                completed = complete,
+                onExit = saveAndExit,
+                isSubmitting = state.isSubmitting,
+                submitLabel = if (state.isEditing) "Save changes" else "Finish setup",
+                onSubmit = { viewModel.submit(SurveyVersion.Quick) },
+                onSaveExit = saveAndExit,
+                // editing an existing profile has nothing to skip
+                onSkip = if (state.isEditing) null else saveAndSkip,
+            ) { page ->
+                when (page) {
+                    0 -> SurveyQuestionPage("Personal info", "Tell us what we should call you.") {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            LabeledTextField(state.firstName, viewModel::setFirstName, "First name", Modifier.weight(1f))
+                            LabeledTextField(state.lastName, viewModel::setLastName, "Surname", Modifier.weight(1f))
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        UsernameField(state.username, state.usernameAvailability, viewModel::setUsername)
+                    }
+                    1 -> SurveyQuestionPage("Where do you live?", "We use this to show relevant care in your area.") {
+                        UseCurrentLocationRow(state.locationStatus, viewModel::useCurrentLocation)
+                        Spacer(Modifier.height(16.dp))
+                        SingleChipGrid(state.cities, state.cities.firstOrNull { it.id == state.cityId }, { it.name }) { viewModel.setCity(it.id) }
+                    }
+                    2 -> SurveyQuestionPage("Your age range", "Choose the range that fits you.") {
+                        SingleChipGrid(AGE_RANGES, state.ageRange.takeIf(String::isNotEmpty), { it }, viewModel::setAgeRange)
+                    }
+                    3 -> SurveyQuestionPage("Diagnosis", "This helps tailor advice to you.") {
+                        SingleChipGrid(DiagnosisStatus.OPTIONS, state.diagnosisStatus, { it.label }, viewModel::setDiagnosisStatus)
+                    }
+                    4 -> SurveyQuestionPage("What feels hardest?", "Pick all that apply.") {
+                        ChipGrid(AdhdSymptom.entries.toList(), state.primarySymptoms, { it.label }, viewModel::toggleSymptom)
+                    }
+                    else -> SurveyQuestionPage("What do you want to get better at?", "Pick up to three — we'll shape Myndora around them.") {
+                        CappedChipGrid(
+                            options = TopGoal.entries.toList(),
+                            selected = state.topGoals,
+                            max = AdhdProfile.MAX_TOP_GOALS,
+                            label = { it.label },
+                            onToggle = viewModel::toggleTopGoal,
+                        )
+                    }
                 }
-                Spacer(Modifier.size(4.dp))
-                Text(
-                    text = "Quick Setup",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.onSurface,
+            }
+        }
+        com.muradgalayev.brainbuddy.ui.sharedcomponents.MyndoraSnackbarHost(
+            snackbar,
+            Modifier.align(Alignment.TopCenter).padding(top = 12.dp),
+        )
+
+        // errors are a panel, not a snackbar: they carry the way out with them
+        SurveyErrorPanel(
+            error = state.submitError,
+            onDismiss = viewModel::consumeError,
+            onRetry = {},
+            onSkip = if (state.isEditing) null else saveAndSkip,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 90.dp),
+        )
+    }
+}
+
+@Composable
+fun SurveyQuestionPage(title: String, subtitle: String, content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp),
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.primary.copy(alpha = .11f),
+            shape = RoundedCornerShape(50),
+        ) {
+            Text(
+                text = "MAKE IT YOURS",
+                modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            )
+        }
+        Spacer(Modifier.height(15.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.height(7.dp))
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(14.dp))
+        Box(
+            Modifier
+                .width(42.dp)
+                .height(4.dp)
+                .clip(RoundedCornerShape(50))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = .7f)),
+        )
+        Spacer(Modifier.height(22.dp))
+        content()
+    }
+}
+
+@Composable
+fun NiceWorkPanel(onContinue: () -> Unit, savedOfflineOnly: Boolean = false) {
+    val rotation = remember { Animatable(-320f) }
+    val scale = remember { Animatable(.15f) }
+    LaunchedEffect(Unit) {
+        rotation.animateTo(0f, tween(760, easing = FastOutSlowInEasing))
+        scale.animateTo(1f, spring(dampingRatio = .48f, stiffness = 260f))
+    }
+    Column(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Surface(
+            modifier = Modifier.size(112.dp).graphicsLayer {
+                rotationZ = rotation.value
+                scaleX = scale.value
+                scaleY = scale.value
+            },
+            shape = CircleShape,
+            color = Color(0xFF2EAD67),
+            shadowElevation = 12.dp,
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = "Completed",
+                    tint = Color.White,
+                    modifier = Modifier.size(62.dp),
                 )
             }
-
-            Column(
+        }
+        Spacer(Modifier.height(28.dp))
+        Text(
+            "Nice work!",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+        )
+        Spacer(Modifier.height(12.dp))
+        Text(
+            "Your Myndora experience is ready.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        // saying 'ready' when the answers are still only on the phone would be a small lie, and the
+        // kind that costs trust when a device is later lost
+        if (savedOfflineOnly) {
+            Spacer(Modifier.height(14.dp))
+            Row(
                 modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp)
-                    .padding(top = 8.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(28.dp),
+                    .clip(RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                // 1 — Username
-                Column {
-                    SectionTitle(1, "Pick a username", "How you'll show up to the assistant.")
-                    Spacer(Modifier.height(12.dp))
-                    UsernameField(
-                        value = state.username,
-                        availability = state.usernameAvailability,
-                        onChange = viewModel::setUsername,
-                    )
-                }
-
-                // 2 — City
-                Column {
-                    SectionTitle(2, "Where do you live?", "We use this to show care nearby.")
-                    Spacer(Modifier.height(12.dp))
-                    UseCurrentLocationRow(
-                        status = state.locationStatus,
-                        onRequest = viewModel::useCurrentLocation,
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    SingleChipGrid(
-                        options = state.cities,
-                        selected = state.cities.firstOrNull { it.id == state.cityId },
-                        label = { it.name },
-                        onSelect = { viewModel.setCity(it.id) },
-                    )
-                }
-
-                // 3 — Age range
-                Column {
-                    SectionTitle(3, "Your age range")
-                    Spacer(Modifier.height(12.dp))
-                    SingleChipGrid(
-                        options = AGE_RANGES,
-                        selected = state.ageRange.takeIf { it.isNotEmpty() },
-                        label = { it },
-                        onSelect = viewModel::setAgeRange,
-                    )
-                }
-
-                // 4 — Diagnosis status
-                Column {
-                    SectionTitle(4, "Diagnosis", "Helps us tailor advice — never required.")
-                    Spacer(Modifier.height(12.dp))
-                    SingleChipGrid(
-                        options = DiagnosisStatus.entries.toList(),
-                        selected = state.diagnosisStatus,
-                        label = { it.label },
-                        onSelect = viewModel::setDiagnosisStatus,
-                    )
-                }
-
-                // 5 — Symptoms
-                Column {
-                    SectionTitle(
-                        5,
-                        "What do you struggle with most?",
-                        "Pick all that apply.",
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    ChipGrid(
-                        options = AdhdSymptom.entries.toList(),
-                        selected = state.primarySymptoms,
-                        label = { it.label },
-                        onToggle = viewModel::toggleSymptom,
-                    )
-                }
-
-                // 6 — Top goal
-                Column {
-                    SectionTitle(6, "What do you most want to improve?")
-                    Spacer(Modifier.height(12.dp))
-                    SingleChipGrid(
-                        options = TopGoal.entries.toList(),
-                        selected = state.topGoal,
-                        label = { it.label },
-                        onSelect = viewModel::setTopGoal,
-                    )
-                }
-            }
-
-            // Submit
-            Button(
-                onClick = { viewModel.submit(SurveyVersion.Quick) },
-                enabled = !state.isSubmitting,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-                    .height(54.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
-            ) {
-                if (state.isSubmitting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = colors.onPrimary,
-                    )
-                } else {
-                    Text(
-                        text = if (state.isEditing) "Save changes" else "Save & continue",
-                        color = colors.onPrimary,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Rounded.CloudOff,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(15.dp),
+                )
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    "Saved on this device — it'll upload when you're back online",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
-
-        SnackbarHost(
-            hostState = snackbar,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
-        )
+        Spacer(Modifier.height(28.dp))
+        Button(onClick = onContinue, modifier = Modifier.fillMaxWidth().height(54.dp)) {
+            Text("Continue")
+        }
     }
 }

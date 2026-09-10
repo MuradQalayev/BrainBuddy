@@ -33,6 +33,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.unit.dp
 import com.muradgalayev.brainbuddy.R
+import com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionType
 import com.muradgalayev.brainbuddy.domain.model.PomodoroSession
 import com.muradgalayev.brainbuddy.ui.pomodoro.utils.formatSessionTime
 import java.text.SimpleDateFormat
@@ -157,27 +158,25 @@ fun PomodoroHistoryDialog(
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             sortedSessions.forEach { session ->
-                                val sessionLabel = when (session.sessionType) {
-                                    "FOCUS" -> "Focus"
-                                    "SHORT_BREAK" -> "Short Break"
-                                    "LONG_BREAK" -> "Long Break"
-                                    else -> session.sessionType
+                                // sessions logged before the two break types merged still carry SHORT_BREAK and LONG_BREAK,
+                                // and fromStored folds them in so old history keeps rendering as a plain Break
+                                val sessionType = PomodoroSessionType.fromStored(session.sessionType)
+
+                                val sessionLabel = when (sessionType) {
+                                    PomodoroSessionType.FOCUS -> "Focus"
+                                    PomodoroSessionType.BREAK -> "Break"
                                 }
 
                                 val durationMinutes = (session.plannedDurationMs / 60000L).toInt()
 
-                                val chipColor = when (session.sessionType) {
-                                    "FOCUS" -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                                    "SHORT_BREAK" -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)
-                                    "LONG_BREAK" -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f)
-                                    else -> MaterialTheme.colorScheme.surfaceContainerHigh
+                                val chipColor = when (sessionType) {
+                                    PomodoroSessionType.FOCUS -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                    PomodoroSessionType.BREAK -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)
                                 }
 
-                                val chipTextColor = when (session.sessionType) {
-                                    "FOCUS" -> MaterialTheme.colorScheme.primary
-                                    "SHORT_BREAK" -> MaterialTheme.colorScheme.tertiary
-                                    "LONG_BREAK" -> MaterialTheme.colorScheme.secondary
-                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                val chipTextColor = when (sessionType) {
+                                    PomodoroSessionType.FOCUS -> MaterialTheme.colorScheme.primary
+                                    PomodoroSessionType.BREAK -> MaterialTheme.colorScheme.tertiary
                                 }
 
                                 Surface(

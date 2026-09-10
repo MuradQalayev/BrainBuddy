@@ -34,6 +34,30 @@ data class PomodoroTimerState(
 
 enum class TimerState { IDLE, RUNNING, PAUSED, COMPLETED }
 
+// null when an in-flight or queued session owns the timer. kept pure so the completed-state
+// regression is covered by a JVM test
+internal fun prepareStandaloneTimerState(
+    current: PomodoroTimerState,
+    hasQueue: Boolean,
+    defaultDurationMs: Long,
+): PomodoroTimerState? = when {
+    hasQueue -> null
+    current.timerState == TimerState.RUNNING || current.timerState == TimerState.PAUSED -> null
+    current.timerState == TimerState.COMPLETED -> {
+        val duration = defaultDurationMs.coerceAtLeast(1L)
+        current.copy(
+            timerState = TimerState.IDLE,
+            totalDurationMs = duration,
+            remainingMs = duration,
+            progress = 0f,
+            resetCount = 0,
+            extraTimeAddedMs = 0L,
+            focusModeActive = false,
+        )
+    }
+    else -> current
+}
+
 enum class AmbientSound(val label: String) {
     RAIN("Rain"),
     FOREST("Forest"),
@@ -67,18 +91,22 @@ data class PomodoroQueueState(
 @Singleton
 class PomodoroTimerManager @Inject constructor(
     private val pomodoroRepository: PomodoroRepository,
-    // Lazy because CalendarRepository indirectly references this manager via Hilt graph;
-    // resolving lazily breaks the construction order without changing semantics.
+    // lazy because CalendarRepository references this manager back through the Hilt graph;
+    // resolving lazily breaks the construction order without changing semantics
     private val calendarRepository: Lazy<CalendarRepository>,
-    private val focusModeManager: FocusModeManager
+    private val focusModeManager: FocusModeManager,
+    private val modeManager: ModeManager,
 ) {
     companion object {
-        const val FOCUS_DURATION_MS = 25 * 60 * 1000L
-        const val SHORT_BREAK_DURATION_MS = 5 * 60 * 1000L
-        const val LONG_BREAK_DURATION_MS = 15 * 60 * 1000L
-        const val ADD_TIME_INCREMENT_MS = 5 * 60 * 1000L
-        const val SESSIONS_BEFORE_LONG_BREAK = 4
+        const val DEFAULT_FOCUS_MINUTES = 25
+        const val DEFAULT_BREAK_MINUTES = 5
+        const val FOCUS_DURATION_MS = DEFAULT_FOCUS_MINUTES * 60 * 1000L
+        const val BREAK_DURATION_MS = DEFAULT_BREAK_MINUTES * 60 * 1000L
         private const val TICK_INTERVAL_MS = 100L
+
+        // scrubbing the ring closer to the end than this counts as finish now. without a dead zone
+        // you can never actually land on completion with a fingertip
+        private const val SCRUB_FINISH_THRESHOLD_MS = 1000L
     }
 
     private val scope = CoroutineScope(SupervisorJob())
@@ -89,14 +117,74 @@ class PomodoroTimerManager @Inject constructor(
     private val _queue = MutableStateFlow<PomodoroQueueState?>(null)
     val queue: StateFlow<PomodoroQueueState?> = _queue.asStateFlow()
 
-    /**
-     * Load a calendar event's Pomodoro plan and prime the timer with its first station.
-     * Caller is expected to navigate to the Pomodoro screen right after; the timer stays
-     * IDLE so the user can review the queue before starting.
-     */
+    // why the idle duration has its current value. only a mode-derived default may follow a mode
+    // change: a duration picked by the user, handed over by an agenda item, or loaded from a
+    // calendar plan is deliberate input and must never jump at a schedule boundary
+    private enum class DurationOrigin { MODE_DEFAULT, CUSTOM, QUEUE }
+
+    @Volatile
+    private var effectiveSettings = EffectivePomodoroSettings()
+    private var durationOrigin = DurationOrigin.MODE_DEFAULT
+
+    init {
+        scope.launch {
+            modeManager.effectivePomodoroSettings.collect(::applyEffectiveSettings)
+        }
+    }
+
+    // refreshes from durable mode and preference state, returning what a launch should use.
+    // closes the cold-start window where the eager flows may still hold defaults
+    suspend fun refreshEffectiveSettingsNow(): EffectivePomodoroSettings =
+        runCatching { modeManager.effectivePomodoroSettingsNow() }
+            .getOrElse { effectiveSettings }
+            .also(::applyEffectiveSettings)
+
+    // starts with the active mode's effective auto-DND setting
+    suspend fun startUsingEffectiveSettings() {
+        val settings = refreshEffectiveSettingsNow()
+        start(settings.autoDndOnFocusSession)
+    }
+
+    // makes the timer safe for a new one-off launch such as the AI start tool. a naturally
+    // completed final queue item leaves the shared timer COMPLETED with zero remaining and no
+    // queue, and session pickers ignore non-IDLE state, so starting from there used to create a
+    // zero-length session of the previous type. re-primes without calling reset(), which would
+    // rewrite the already-completed history row as RESET. a loaded calendar queue stays protected
+    fun prepareForStandaloneStart(): Boolean {
+        val current = _state.value
+        val prepared = prepareStandaloneTimerState(
+            current = current,
+            hasQueue = _queue.value != null,
+            defaultDurationMs = getDurationForType(current.sessionType),
+        ) ?: return false
+
+        if (prepared != current) {
+            timerJob?.cancel()
+            durationOrigin = DurationOrigin.MODE_DEFAULT
+            currentSession = null
+            _state.value = prepared
+        }
+        return true
+    }
+
+    fun applyEffectiveSettings(settings: EffectivePomodoroSettings) {
+        effectiveSettings = settings
+        val current = _state.value
+        if (current.timerState != TimerState.IDLE || durationOrigin != DurationOrigin.MODE_DEFAULT) {
+            return
+        }
+        val duration = durationForType(current.sessionType, settings)
+        _state.update {
+            it.copy(totalDurationMs = duration, remainingMs = duration, progress = 0f)
+        }
+    }
+
+    // loads a calendar event's pomodoro plan and primes the timer with its first station. the
+    // caller navigates to the Pomodoro screen straight after, and the timer stays IDLE so the
+    // user can review the queue before starting
     fun loadCalendarQueue(state: PomodoroQueueState) {
         if (isRunningOrPaused) {
-            // Don't yank an in-flight session out from under the user.
+            // don't yank an in-flight session out from under the user
             return
         }
         _queue.value = state
@@ -108,8 +196,22 @@ class PomodoroTimerManager @Inject constructor(
         _queue.value = null
     }
 
+    // points the loaded plan at a specific station and primes the timer with it, so any step can
+    // be run on its own without working through the ones before it. refused mid-session:
+    // re-priming under a running countdown would silently discard the session in flight, and
+    // the caller should surface that as 'stop first' rather than retry
+    fun selectQueueItem(index: Int): Boolean {
+        if (isRunningOrPaused) return false
+        val q = _queue.value ?: return false
+        val item = q.items.getOrNull(index) ?: return false
+        _queue.value = q.copy(currentIndex = index)
+        primeTimerFor(item)
+        return true
+    }
+
     private fun primeTimerFor(item: PomodoroQueueItem) {
-        val type = if (item.isFocus) PomodoroSessionType.FOCUS else PomodoroSessionType.SHORT_BREAK
+        val type = if (item.isFocus) PomodoroSessionType.FOCUS else PomodoroSessionType.BREAK
+        durationOrigin = DurationOrigin.QUEUE
         _state.update {
             it.copy(
                 timerState = TimerState.IDLE,
@@ -123,7 +225,7 @@ class PomodoroTimerManager @Inject constructor(
         }
     }
 
-    // Callback for service to know when to start/stop
+    // so the service knows when to start and stop
     var onTimerStarted: (() -> Unit)? = null
     var onTimerStopped: (() -> Unit)? = null
     var onTimerCompleted: (() -> Unit)? = null
@@ -133,22 +235,54 @@ class PomodoroTimerManager @Inject constructor(
     private var sessionStartTimeMs: Long = 0L
     private var pauseStartTimeMs: Long = 0L
     private var totalPausedMs: Long = 0L
-    private var focusModeEnabledForSession: Boolean = false
 
-    /**
-     * Anchor end time on SystemClock.elapsedRealtime() so the countdown stays accurate
-     * even if the coroutine's delay() gets throttled while the screen is off. Each tick
-     * derives `remainingMs` from this anchor instead of decrementing in place.
-     */
+    // anchored on SystemClock.elapsedRealtime() so the countdown stays accurate even if delay()
+    // gets throttled with the screen off. each tick derives remainingMs from this anchor rather
+    // than decrementing in place
     private var targetEndElapsedMs: Long = 0L
+
+    // starts a focus session locked to a shared session's clock. remainingMs comes from the
+    // server's ends_at, not from the duration, and that's the whole point: two people notice a
+    // session has begun on their own polls, which can be twenty seconds apart, and a fresh full
+    // timer on each device would leave the two clocks that far out for the rest of the session.
+    // no-op unless idle: arriving at a session while already running your own timer is accepting
+    // the company, not a request to restart your work
+    suspend fun startSharedSession(
+        totalMinutes: Int,
+        remainingMs: Long,
+        isBreak: Boolean = false,
+    ) {
+        if (_state.value.timerState != TimerState.IDLE) return
+        if (remainingMs <= 0L) return
+
+        // the user's own DND preference applies here exactly as it does to a solo session. it used to
+        // be hardcoded off, which had it backwards: a block you committed to another person is the
+        // one you least want interrupted, so a shared session got less protection than a private one.
+        // never during a break, though, that's the half where being reachable again is the point
+        val focusModeEnabled = !isBreak && refreshEffectiveSettingsNow().autoDndOnFocusSession
+
+        val totalMs = totalMinutes.coerceIn(1, 180) * 60 * 1000L
+        val clamped = remainingMs.coerceAtMost(totalMs)
+        durationOrigin = DurationOrigin.CUSTOM
+        _state.update {
+            it.copy(
+                sessionType = if (isBreak) PomodoroSessionType.BREAK else PomodoroSessionType.FOCUS,
+                totalDurationMs = totalMs,
+                remainingMs = clamped,
+                progress = 1f - clamped.toFloat() / totalMs,
+            )
+        }
+        start(focusModeEnabled)
+    }
 
     fun start(focusModeEnabled: Boolean) {
         val s = _state.value
-        if (s.timerState == TimerState.RUNNING) return
+        // starting is a transition out of a configured IDLE state only. a COMPLETED state has zero
+        // remaining time and has to be explicitly primed first
+        if (s.timerState != TimerState.IDLE || s.remainingMs <= 0L) return
 
         sessionStartTimeMs = System.currentTimeMillis()
         totalPausedMs = 0L
-        focusModeEnabledForSession = focusModeEnabled
         targetEndElapsedMs = SystemClock.elapsedRealtime() + s.remainingMs
 
         val session = PomodoroSession(
@@ -186,7 +320,7 @@ class PomodoroTimerManager @Inject constructor(
         if (_state.value.timerState != TimerState.RUNNING) return
         timerJob?.cancel()
         pauseStartTimeMs = System.currentTimeMillis()
-        // Freeze remaining time so resume can re-anchor from "now + frozen remaining".
+        // freeze remaining time so resume can re-anchor from now plus the frozen remainder
         val frozen = (targetEndElapsedMs - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
         _state.update { it.copy(timerState = TimerState.PAUSED, remainingMs = frozen) }
     }
@@ -220,7 +354,7 @@ class PomodoroTimerManager @Inject constructor(
             }
         }
 
-        val duration = getDurationForType(s.sessionType)
+        val duration = durationForReset(s)
         _state.update {
             it.copy(
                 timerState = TimerState.IDLE,
@@ -238,7 +372,7 @@ class PomodoroTimerManager @Inject constructor(
     fun stop() {
         timerJob?.cancel()
         deactivateFocusMode()
-        // User explicitly stopped — don't auto-advance any queued plan.
+        // the user explicitly stopped, so don't auto-advance any queued plan
         _queue.value = null
 
         currentSession?.let { session ->
@@ -259,6 +393,7 @@ class PomodoroTimerManager @Inject constructor(
 
         val type = PomodoroSessionType.FOCUS
         val duration = getDurationForType(type)
+        durationOrigin = DurationOrigin.MODE_DEFAULT
         _state.update {
             PomodoroTimerState(
                 sessionType = type,
@@ -272,40 +407,56 @@ class PomodoroTimerManager @Inject constructor(
         onTimerStopped?.invoke()
     }
 
-    fun addTime() {
-        if (_state.value.timerState == TimerState.RUNNING) {
-            targetEndElapsedMs += ADD_TIME_INCREMENT_MS
+    // suspends the countdown for the length of a ring drag. without it the ticker keeps running
+    // under the finger, so holding the knob at the end for a second would complete the session
+    // before the user ever decided to release there
+    fun beginScrub() {
+        if (!isRunningOrPaused) return
+        timerJob?.cancel()
+    }
+
+    // ends a ring drag. finish comes from where the finger lifted: at the end of the ring the
+    // session is banked as completed, anywhere else the countdown picks up from the scrubbed time
+    fun endScrub(finish: Boolean) {
+        if (!isRunningOrPaused) return
+        if (finish) {
+            finishEarly()
+            return
         }
-        _state.update {
-            val newExtra = it.extraTimeAddedMs + ADD_TIME_INCREMENT_MS
-            val newTotal = it.totalDurationMs + ADD_TIME_INCREMENT_MS
-            val newRemaining = it.remainingMs + ADD_TIME_INCREMENT_MS
-            it.copy(
-                extraTimeAddedMs = newExtra,
-                totalDurationMs = newTotal,
-                remainingMs = newRemaining,
-                progress = 1f - (newRemaining.toFloat() / newTotal)
-            )
+        if (_state.value.timerState == TimerState.RUNNING) {
+            targetEndElapsedMs = SystemClock.elapsedRealtime() + _state.value.remainingMs
+            startTicking()
         }
     }
 
-    fun subtractTime() {
-        var actuallySubtracted = 0L
-        _state.update {
-            val subtract = minOf(ADD_TIME_INCREMENT_MS, it.remainingMs - 1000L)
-            if (subtract <= 0) return@update it
-            actuallySubtracted = subtract
-            val newTotal = maxOf(it.totalDurationMs - ADD_TIME_INCREMENT_MS, it.remainingMs - subtract)
-            val newRemaining = it.remainingMs - subtract
-            it.copy(
-                totalDurationMs = maxOf(newTotal, 1000L),
-                remainingMs = maxOf(newRemaining, 1000L),
-                progress = 1f - (maxOf(newRemaining, 1000L).toFloat() / maxOf(newTotal, 1000L))
-            )
+    // drag-the-ring scrubbing. progress is the fraction of the session the knob has been dragged
+    // to, so remaining time is its mirror. the total never grows: you can shorten a session or
+    // hand back time you skipped, but not invent time that was never budgeted. returns true once
+    // the drag has effectively reached the end
+    fun scrubToProgress(progress: Float): Boolean {
+        if (!isRunningOrPaused) return false
+        val clamped = progress.coerceIn(0f, 1f)
+        val total = _state.value.totalDurationMs
+        val newRemaining = ((1f - clamped) * total).toLong().coerceIn(0L, total)
+
+        // re-anchor so the next tick counts from where the finger left it, not the original end time
+        if (_state.value.timerState == TimerState.RUNNING) {
+            targetEndElapsedMs = SystemClock.elapsedRealtime() + newRemaining
         }
-        if (_state.value.timerState == TimerState.RUNNING && actuallySubtracted > 0) {
-            targetEndElapsedMs -= actuallySubtracted
+        _state.update { it.copy(remainingMs = newRemaining, progress = clamped) }
+        return newRemaining <= SCRUB_FINISH_THRESHOLD_MS
+    }
+
+    // ends the session right now and books it as completed, the payoff for dragging the ring all
+    // the way round. distinct from stop(), which files it as cancelled and clears any queued plan
+    fun finishEarly() {
+        if (!isRunningOrPaused) return
+        timerJob?.cancel()
+        // close out an in-flight pause first, or the paused span counts as time spent focusing
+        if (_state.value.timerState == TimerState.PAUSED) {
+            totalPausedMs += System.currentTimeMillis() - pauseStartTimeMs
         }
+        onTimerComplete()
     }
 
     fun skipToNext() {
@@ -338,6 +489,7 @@ class PomodoroTimerManager @Inject constructor(
     fun selectSessionType(type: PomodoroSessionType) {
         if (_state.value.timerState != TimerState.IDLE) return
         val duration = getDurationForType(type)
+        durationOrigin = DurationOrigin.MODE_DEFAULT
         _state.update {
             it.copy(
                 sessionType = type,
@@ -351,7 +503,8 @@ class PomodoroTimerManager @Inject constructor(
 
     fun setCustomDuration(minutes: Int) {
         if (_state.value.timerState != TimerState.IDLE) return
-        val durationMs = minutes * 60 * 1000L
+        val durationMs = minutes.coerceIn(1, 180) * 60 * 1000L
+        durationOrigin = DurationOrigin.CUSTOM
         _state.update {
             it.copy(totalDurationMs = durationMs, remainingMs = durationMs, progress = 0f)
         }
@@ -367,9 +520,9 @@ class PomodoroTimerManager @Inject constructor(
     private fun startTicking() {
         timerJob?.cancel()
         timerJob = scope.launch {
-            // Drive the countdown off SystemClock.elapsedRealtime() so the timer stays
-            // accurate even when delay() gets throttled (Doze, screen-off, OEM aggressive
-            // background limits). If we miss ticks, the next one snaps to true elapsed.
+            // drive the countdown off SystemClock.elapsedRealtime() so it stays accurate when delay() is
+            // throttled by Doze, a screen-off, or aggressive OEM background limits. missed ticks snap to
+            // the true elapsed time on the next one
             while (_state.value.timerState == TimerState.RUNNING) {
                 val nowElapsed = SystemClock.elapsedRealtime()
                 val newRemaining = (targetEndElapsedMs - nowElapsed).coerceAtLeast(0L)
@@ -443,23 +596,20 @@ class PomodoroTimerManager @Inject constructor(
         val nextItem = next.current ?: return
         primeTimerFor(nextItem)
         if (autoStart) {
-            // Re-arm with whatever focus-mode preference was used last; the manager keeps
-            // that flag from the previous start.
-            start(focusModeEnabledForSession)
+            // a mode may have changed during the completed station, so the continuously collected
+            // effective setting is the right policy for this next session
+            start(effectiveSettings.autoDndOnFocusSession)
         }
     }
 
     private fun moveToNextSession() {
         val s = _state.value
         val nextType = when (s.sessionType) {
-            PomodoroSessionType.FOCUS -> {
-                if (s.completedSessions > 0 && s.completedSessions % SESSIONS_BEFORE_LONG_BREAK == 0)
-                    PomodoroSessionType.LONG_BREAK
-                else PomodoroSessionType.SHORT_BREAK
-            }
-            else -> PomodoroSessionType.FOCUS
+            PomodoroSessionType.FOCUS -> PomodoroSessionType.BREAK
+            PomodoroSessionType.BREAK -> PomodoroSessionType.FOCUS
         }
         val duration = getDurationForType(nextType)
+        durationOrigin = DurationOrigin.MODE_DEFAULT
         _state.update {
             it.copy(
                 timerState = TimerState.IDLE,
@@ -503,9 +653,18 @@ class PomodoroTimerManager @Inject constructor(
         }
     }
 
-    private fun getDurationForType(type: PomodoroSessionType): Long = when (type) {
-        PomodoroSessionType.FOCUS -> FOCUS_DURATION_MS
-        PomodoroSessionType.SHORT_BREAK -> SHORT_BREAK_DURATION_MS
-        PomodoroSessionType.LONG_BREAK -> LONG_BREAK_DURATION_MS
+    private fun getDurationForType(type: PomodoroSessionType): Long =
+        durationForType(type, effectiveSettings)
+
+    private fun durationForReset(state: PomodoroTimerState): Long = when (durationOrigin) {
+        DurationOrigin.CUSTOM,
+        DurationOrigin.QUEUE,
+        -> state.totalDurationMs
+        DurationOrigin.MODE_DEFAULT -> getDurationForType(state.sessionType)
     }
+
+    private fun durationForType(
+        type: PomodoroSessionType,
+        settings: EffectivePomodoroSettings,
+    ): Long = settings.minutesFor(type) * 60 * 1000L
 }
