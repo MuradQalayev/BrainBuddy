@@ -27,6 +27,7 @@ class ConversationRepository @Inject constructor(
     private val authRepository: AuthRepository,
     private val preferencesManager: PreferencesManager,
     private val aiClient: AiClient,
+    private val backendTitle: com.muradgalayev.brainbuddy.data.ai.BackendConversationTitle,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -203,6 +204,10 @@ class ConversationRepository @Inject constructor(
                 "user used. Reply with ONLY the title — no quotes, no trailing punctuation, " +
                 "no emoji.\n\n$convo",
         )
+        if (backendTitle.enabled) {
+            val raw = runCatching { backendTitle.generate(prompt.text) }.getOrNull() ?: return null
+            return sanitizeTitle(raw)
+        }
         val response = runCatching { aiClient.send(listOf(prompt), emptyList(), TITLE_SYSTEM_PROMPT) }
             .getOrNull()
         val raw = (response as? AiResponse.Text)?.text ?: return null
