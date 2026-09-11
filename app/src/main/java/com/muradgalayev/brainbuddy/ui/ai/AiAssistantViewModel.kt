@@ -6,9 +6,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.muradgalayev.brainbuddy.data.network.NetworkObserver
 import com.muradgalayev.brainbuddy.data.local.PreferencesManager
+import com.muradgalayev.brainbuddy.data.ai.BackendAssistantClient
+import com.muradgalayev.brainbuddy.data.ai.BackendTurnResult
 import com.muradgalayev.brainbuddy.data.repository.AdhdProfileRepository
 import com.muradgalayev.brainbuddy.data.repository.AuthRepository
+import com.muradgalayev.brainbuddy.data.repository.CalendarRepository
 import com.muradgalayev.brainbuddy.data.repository.ConversationRepository
+import com.muradgalayev.brainbuddy.data.repository.PreferencesRepository
+import com.muradgalayev.brainbuddy.data.repository.TodoRepository
 import com.muradgalayev.brainbuddy.data.health.HealthConnectManager
 import com.muradgalayev.brainbuddy.domain.ai.AiClient
 import com.muradgalayev.brainbuddy.domain.ai.AiNavigator
@@ -64,6 +69,10 @@ class AiAssistantViewModel @Inject constructor(
     private val tools: Set<@JvmSuppressWildcards AiTool>,
     private val aiNavigator: AiNavigator,
     private val networkObserver: NetworkObserver,
+    private val backendAssistantClient: BackendAssistantClient,
+    private val todoRepository: TodoRepository,
+    private val calendarRepository: CalendarRepository,
+    private val preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
     val spokenResponsesEnabled: StateFlow<Boolean> = preferencesManager.aiSpokenResponses
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
@@ -472,6 +481,14 @@ class AiAssistantViewModel @Inject constructor(
     // burning through MAX_TOOL_HOPS used to return with no message and no error set, so the
     // screen just went quiet: a glitch in the chat window, total silence in the voice assistant
     private suspend fun runAgentLoop(conversationId: String) {
+        // Fase 2 cutover, gated by BuildConfig so an empty value is byte-for-byte the existing
+        // path. /v1/assistant/turns is a whole-message call, not a per-hop AiClient: the server
+        // already ran its own tool loop for the tools it owns, so there is no local continuation
+        // here — see BackendAssistantClient.kt and docs/ai-porting-plan.md (Fase 2).
+        if (backendAssistantClient.enabled) {
+            runBackendTurn(conversationId)
+            return
+        }
         // one claim per user message, not per request. the loop can fire several requests for one
         // message when the model calls tools, and charging for its internal steps would make the
         // allowance impossible to predict.
@@ -572,6 +589,70 @@ class AiAssistantViewModel @Inject constructor(
                 conversationId = conversationId,
             )
         )
+    }
+
+    // Fase 2: one whole-message call to the backend, no local hop loop. touched/local-action
+    // handling below is the only thing this path needs beyond runAgentLoop's local branch.
+    private suspend fun runBackendTurn(conversationId: String) {
+        // clears a stale flag from a previous exhausted attempt, same as the local path: the
+        // server's answer decides, not a cached flag
+        if (_uiState.value.quotaExhausted) _uiState.update { it.copy(quotaExhausted = false) }
+
+        val userMessage = _uiState.value.messages.lastOrNull { it.role == ChatRole.USER } ?: return
+        val priorMessages = _uiState.value.messages.dropLast(1)
+        val timeZone = java.time.ZoneId.systemDefault().id
+
+        when (val result = backendAssistantClient.sendTurn(UUID.randomUUID().toString(), userMessage.text, timeZone, priorMessages)) {
+            is BackendTurnResult.Text -> {
+                appendAndPersist(assistantReply(result.text, conversationId))
+                resyncTouched(result.touched)
+            }
+            is BackendTurnResult.Completed -> {
+                appendAndPersist(assistantReply(result.text, conversationId))
+                resyncTouched(result.touched)
+            }
+            is BackendTurnResult.Action -> {
+                // The four client-only tools (pomodoro/navigate/contact/export): the server
+                // proposes, the device executes, exactly as today — see android-tools.ts.
+                val tool = toolByName[result.toolName]
+                val reply = if (tool == null) {
+                    Log.w(TAG, "Backend proposed unknown tool ${result.toolName}")
+                    "That didn't go through — try again in a moment."
+                } else {
+                    runCatching { tool.execute(result.args) }
+                        .onFailure { Log.w(TAG, "Backend-proposed action failed", it) }
+                        .getOrElse { "That didn't go through — try again in a moment." }
+                }
+                appendAndPersist(assistantReply(reply, conversationId))
+            }
+            is BackendTurnResult.Error -> {
+                if (result.httpStatus == 429) {
+                    _uiState.update { it.copy(quotaExhausted = true) }
+                } else {
+                    _uiState.update { it.copy(error = result.message) }
+                }
+            }
+        }
+    }
+
+    private fun assistantReply(text: String, conversationId: String) = ChatMessage(
+        id = UUID.randomUUID().toString(),
+        role = ChatRole.ASSISTANT,
+        text = text,
+        conversationId = conversationId,
+    )
+
+    // Room mirrors Supabase; the backend writes straight to Supabase, so nothing here notices a
+    // server-side change on its own. `profile` (display name/username) isn't resynced yet — it
+    // lives in AuthRepository's own cache, not one of the repositories this view model holds.
+    private suspend fun resyncTouched(touched: Set<String>) {
+        if ("todos" in touched) runCatching { todoRepository.sync() }
+            .onFailure { Log.w(TAG, "Todo resync after backend turn failed", it) }
+        if ("calendar" in touched) runCatching { calendarRepository.sync() }
+            .onFailure { Log.w(TAG, "Calendar resync after backend turn failed", it) }
+        if ("adhd_profile" in touched) refreshProfile()
+        if ("preferences" in touched) runCatching { preferencesRepository.pullRemoteAndApply() }
+            .onFailure { Log.w(TAG, "Preferences resync after backend turn failed", it) }
     }
 
     private fun appendAndPersist(msg: ChatMessage) {

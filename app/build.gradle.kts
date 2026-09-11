@@ -16,6 +16,13 @@ val localProperties = Properties().apply {
 }
 val mistralApiKey: String = localProperties.getProperty("MISTRAL_API_KEY", "")
 val mapsApiKey: String = localProperties.getProperty("MAPS_API_KEY", "")
+// Opt-in title transport only; empty preserves the existing app path.
+val backendTitleUrl = localProperties.getProperty("BRAINBUDDY_TITLE_BACKEND_URL", "")
+require(backendTitleUrl.none { it == '"' || it == '\\' || it == '\n' || it == '\r' })
+// Opt-in main-assistant transport (Fase 2). Empty preserves MistralAiClient + local tools
+// unchanged — see docs/ai-porting-plan.md and BackendAssistantClient.kt.
+val backendAssistantUrl = localProperties.getProperty("BRAINBUDDY_ASSISTANT_BACKEND_URL", "")
+require(backendAssistantUrl.none { it == '"' || it == '\\' || it == '\n' || it == '\r' })
 
 android {
     namespace = "com.muradgalayev.brainbuddy"
@@ -35,6 +42,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "MISTRAL_API_KEY", "\"$mistralApiKey\"")
+        buildConfigField("String", "BRAINBUDDY_TITLE_BACKEND_URL", "\"$backendTitleUrl\"")
+        buildConfigField("String", "BRAINBUDDY_ASSISTANT_BACKEND_URL", "\"$backendAssistantUrl\"")
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
