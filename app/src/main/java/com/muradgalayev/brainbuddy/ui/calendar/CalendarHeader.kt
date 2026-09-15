@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.ChevronLeft
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.UnfoldMore
 import androidx.compose.material3.Icon
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -55,6 +56,8 @@ import java.time.DayOfWeek
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // header: back button, calendar logo, title, mode toggle, AI
 @Composable
@@ -64,6 +67,8 @@ fun CalendarHeader(
     onBackClick: () -> Unit = {},
     onAiClick: () -> Unit = {},
     aiEnabled: Boolean = true,
+    // Myndora Plus not active: still tappable (it opens the plan), marked with a lock
+    aiLocked: Boolean = false,
     // reports the AI button's bounds in root coordinates, so the intro animation can fly its
     // round shape straight into the logo
     onAiButtonPositioned: (Rect) -> Unit = {},
@@ -77,13 +82,13 @@ fun CalendarHeader(
         IconButton(onClick = onBackClick, modifier = Modifier.size(40.dp)) {
             Icon(
                 imageVector = Icons.Rounded.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.common_back),
                 tint = MaterialTheme.colorScheme.onSurface
             )
         }
         Spacer(modifier = Modifier.width(4.dp))
         Text(
-            text = "Calendar",
+            text = stringResource(R.string.together_scope_calendar),
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -93,6 +98,7 @@ fun CalendarHeader(
         Spacer(modifier = Modifier.width(8.dp))
         AiPillButton(
             enabled = aiEnabled,
+            locked = aiLocked,
             onClick = onAiClick,
             onPositioned = onAiButtonPositioned,
         )
@@ -113,6 +119,7 @@ fun CalendarHeader(
 @Composable
 private fun AiPillButton(
     enabled: Boolean,
+    locked: Boolean,
     onClick: () -> Unit,
     onPositioned: (Rect) -> Unit,
 ) {
@@ -121,7 +128,8 @@ private fun AiPillButton(
     // this one repeats forever and reverses, so at zero duration it would arrive and turn around
     // every frame, which is a flicker rather than stillness. the transition is only created while
     // it is allowed to run; when it isn't, there is nothing composed to animate
-    val pulses = enabled && animationsOn()
+    // a locked pill doesn't breathe: the pulse says 'the assistant is here', which it isn't yet
+    val pulses = enabled && !locked && animationsOn()
     val sparkleScale: State<Float>? = if (pulses) {
         val motion = rememberInfiniteTransition(label = "calendar_ai_presence")
         motion.animateFloat(
@@ -191,6 +199,14 @@ private fun AiPillButton(
                 fontWeight = FontWeight.SemiBold,
                 color = accent,
             )
+            if (locked && enabled) {
+                Icon(
+                    androidx.compose.material.icons.Icons.Rounded.Lock,
+                    contentDescription = stringResource(com.muradgalayev.brainbuddy.R.string.plan_locked_cd),
+                    tint = accent,
+                    modifier = Modifier.size(12.dp),
+                )
+            }
         }
     }
 }
@@ -237,14 +253,14 @@ fun ModeToggleButton(
                 label = "modeLabel",
             ) { monthly ->
                 Text(
-                    text = if (monthly) "Month" else "Week",
+                    text = if (monthly) stringResource(R.string.cal_month) else stringResource(R.string.cal_week),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                 )
             }
             Icon(
                 imageVector = Icons.Rounded.UnfoldMore,
-                contentDescription = if (isMonthly) "Switch to week view" else "Switch to month view",
+                contentDescription = if (isMonthly) stringResource(R.string.cal_switch_week) else stringResource(R.string.cal_switch_month),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
                     .size(16.dp)
@@ -277,14 +293,14 @@ fun MonthNavigator(
         IconButton(onClick = onPrevious, modifier = Modifier.size(36.dp)) {
             Icon(
                 imageVector = Icons.Rounded.ChevronLeft,
-                contentDescription = "Previous",
+                contentDescription = stringResource(R.string.common_previous),
                 tint = palette.muted
             )
         }
         IconButton(onClick = onNext, modifier = Modifier.size(36.dp)) {
             Icon(
                 imageVector = Icons.Rounded.ChevronRight,
-                contentDescription = "Next",
+                contentDescription = stringResource(R.string.common_next),
                 tint = palette.muted
             )
         }

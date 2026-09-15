@@ -47,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -55,6 +56,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.muradgalayev.brainbuddy.domain.model.Connection
 import com.muradgalayev.brainbuddy.domain.model.ShareScope
+import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.RemoveDone
 import com.muradgalayev.brainbuddy.domain.scheduling.TimeSuggestion
 import com.muradgalayev.brainbuddy.ui.calendar.TimeSuggestionStrip
 import com.muradgalayev.brainbuddy.ui.calendar.rememberCalendarPalette
@@ -62,6 +65,8 @@ import com.muradgalayev.brainbuddy.ui.sharedcomponents.TimePickerDialog
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // one connection: what you've opened up to them, what they've opened up to you, and where
 // they've allowed it, the things you've added to their calendar or list. the two permission
@@ -75,6 +80,7 @@ fun ConnectionProfileScreen(
 ) {
     val connection by viewModel.connection.collectAsState()
     val busyScopes by viewModel.busyScopes.collectAsState()
+    val optimisticGrants by viewModel.optimisticGrants.collectAsState()
     val message by viewModel.message.collectAsState()
     val myEvents by viewModel.myEventsForThem.collectAsState()
     val myTodos by viewModel.myTodosForThem.collectAsState()
@@ -91,11 +97,11 @@ fun ConnectionProfileScreen(
     LaunchedEffect(removed) { if (removed) onBack() }
 
     val person = connection
-    TogetherScaffold(title = person?.name ?: "Connection", onBack = onBack) {
+    TogetherScaffold(title = person?.name ?: stringResource(R.string.together_connection), onBack = onBack) {
         if (person == null) {
             TogetherCard {
                 Text(
-                    "This connection is no longer available.",
+                    stringResource(R.string.together_conn_unavailable),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -106,19 +112,40 @@ fun ConnectionProfileScreen(
         ProfileHeader(person)
 
         // what I share with them
-        TogetherSectionHeader(title = "What you share with ${person.name}")
+        TogetherSectionHeader(title = stringResource(R.string.together_what_you_share, person.name))
         TogetherCard {
             Text(
-                "You decide, one thing at a time. They'll only ever see what they added " +
-                    "themselves — never the rest of your calendar or list.",
+                stringResource(R.string.together_what_you_share_body),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.height(6.dp))
+            // one tap for the common case of trusting someone with everything, and back again once it's all on
+            val allShared = ShareScope.entries.all { optimisticGrants[it] ?: person.canGrant(it) }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End,
+            ) {
+                androidx.compose.material3.TextButton(
+                    onClick = { viewModel.setAllPermissions(!allShared) },
+                    enabled = busyScopes.isEmpty() && optimisticGrants.isEmpty(),
+                ) {
+                    Icon(
+                        if (allShared) Icons.Rounded.RemoveDone else Icons.Rounded.DoneAll,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        stringResource(if (allShared) R.string.together_turn_all_off else R.string.together_select_all),
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
             for (scope in ShareScope.entries) {
                 ScopeToggleRow(
                     scope = scope,
-                    granted = person.canGrant(scope),
+                    // a select all shows its answer immediately; the server catches up behind it
+                    granted = optimisticGrants[scope] ?: person.canGrant(scope),
                     busy = scope in busyScopes,
                     onChange = { viewModel.togglePermission(scope, it) },
                 )
@@ -127,7 +154,7 @@ fun ConnectionProfileScreen(
 
         // what they share with me, and the actions it unlocks
         TogetherSectionHeader(
-            title = "What ${person.name} shares with you",
+            title = stringResource(R.string.together_what_they_share, person.name),
             accent = MaterialTheme.colorScheme.tertiary,
         )
 
@@ -142,7 +169,7 @@ fun ConnectionProfileScreen(
                     )
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        "Nothing yet. They choose what to share from their side.",
+                        stringResource(R.string.together_nothing_yet_their_side),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -189,7 +216,7 @@ fun ConnectionProfileScreen(
                 contentColor = MaterialTheme.colorScheme.error,
             ),
         ) {
-            Text("Remove connection")
+            Text(stringResource(R.string.together_remove_connection))
         }
 
         message?.let { text ->
@@ -211,11 +238,10 @@ fun ConnectionProfileScreen(
         AlertDialog(
             onDismissRequest = { confirmRemove = false },
             shape = RoundedCornerShape(24.dp),
-            title = { Text("Remove ${person.name}?") },
+            title = { Text(stringResource(R.string.together_remove_person, person.name)) },
             text = {
                 Text(
-                    "You'll both lose access to anything you shared. Events and tasks you " +
-                        "already added to their calendar or list stay where they are.",
+                    stringResource(R.string.together_remove_body),
                 )
             },
             confirmButton = {
@@ -227,25 +253,25 @@ fun ConnectionProfileScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error,
                     ),
-                ) { Text("Remove") }
+                ) { Text(stringResource(R.string.common_remove)) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmRemove = false }) { Text("Keep") }
+                TextButton(onClick = { confirmRemove = false }) { Text(stringResource(R.string.together_keep)) }
             },
         )
     }
 
     eventDraft?.let { draft ->
         ComposeItemDialog(
-            title = "Add to ${person?.name ?: "their"} calendar",
+            title = person?.name?.let { stringResource(R.string.together_add_to_calendar_of, it) }
+                ?: stringResource(R.string.together_add_to_their_calendar),
             draft = draft,
             showTimes = true,
             suggestions = suggestions,
             // named, because 'we're working around someone's calendar' is only reassuring if you know
             // whose, and the sentence has to say what is not happening as plainly as what is
             suggestionNote = if (usingAvailability && person != null) {
-                "Working around the hours ${person.name} is already busy. " +
-                    "Myndora never shows you what those are."
+                stringResource(R.string.together_busy_hours, person.name)
             } else {
                 null
             },
@@ -258,7 +284,8 @@ fun ConnectionProfileScreen(
 
     todoDraft?.let { draft ->
         ComposeItemDialog(
-            title = "Add to ${person?.name ?: "their"} list",
+            title = person?.name?.let { stringResource(R.string.together_add_to_list_of, it) }
+                ?: stringResource(R.string.together_add_to_their_list),
             draft = draft,
             showTimes = true,
             onUpdate = viewModel::updateTodoDraft,
@@ -297,7 +324,9 @@ private fun ProfileHeader(person: Connection) {
                 .background(colors.surface.copy(alpha = .7f))
                 .padding(3.dp),
         ) {
-            TogetherAvatar(name = person.name, avatarUrl = person.avatarUrl, size = 74.dp)
+            Box(Modifier.alpha(if (person.deactivated) .45f else 1f)) {
+                TogetherAvatar(name = person.name, avatarUrl = person.avatarUrl, size = 74.dp)
+            }
         }
         Spacer(Modifier.height(12.dp))
         Text(
@@ -322,18 +351,30 @@ private fun ProfileHeader(person: Connection) {
                 .padding(horizontal = 12.dp, vertical = 5.dp),
         ) {
             Text(
-                person.relation.label,
+                stringResource(person.relation.labelRes),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = colors.primary,
             )
         }
+        if (person.deactivated) {
+            Spacer(Modifier.height(10.dp))
+            DeactivatedChip()
+            Spacer(Modifier.height(6.dp))
+            Text(
+                stringResource(R.string.together_deactivated_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+        }
         Spacer(Modifier.height(14.dp))
         Text(
-            text = buildString {
-                append("You share ${person.grantedByMe.size}")
-                append(" · They share ${person.grantedToMe.size}")
-            },
+            text = stringResource(
+                R.string.together_share_counts,
+                person.grantedByMe.size,
+                person.grantedToMe.size,
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
         )
@@ -352,13 +393,12 @@ private fun SharedCalendarCard(
 ) {
     SharedItemsCard(
         icon = Icons.Rounded.CalendarMonth,
-        heading = "Their calendar",
+        heading = stringResource(R.string.together_their_calendar),
         // stating the limit here, not just in the permission copy, so the person acting on it
         // understands the boundary at the moment they use it
-        explanation = "You can add events for $personName. This list is only what you added — " +
-            "their own events stay private.",
-        addLabel = "Add an event",
-        emptyLabel = "You haven't added anything yet.",
+        explanation = stringResource(R.string.together_their_calendar_body, personName),
+        addLabel = stringResource(R.string.together_add_event),
+        emptyLabel = stringResource(R.string.together_nothing_added),
         items = events,
         onAdd = onAdd,
         onDelete = onDelete,
@@ -374,10 +414,10 @@ private fun SharedTodosCard(
 ) {
     SharedItemsCard(
         icon = Icons.Rounded.TaskAlt,
-        heading = "Their to-dos",
-        explanation = "You can add tasks for $personName. You only see the ones you added.",
-        addLabel = "Add a task",
-        emptyLabel = "You haven't added any tasks yet.",
+        heading = stringResource(R.string.together_their_todos),
+        explanation = stringResource(R.string.together_their_todos_body, personName),
+        addLabel = stringResource(R.string.together_add_task),
+        emptyLabel = stringResource(R.string.together_no_tasks_added),
         items = todos,
         onAdd = onAdd,
         onDelete = onDelete,
@@ -444,7 +484,7 @@ private fun SharedItemsCard(
                     IconButton(onClick = { onDelete(item.id) }) {
                         Icon(
                             Icons.Rounded.Delete,
-                            contentDescription = "Remove",
+                            contentDescription = stringResource(R.string.common_remove),
                             tint = colors.onSurfaceVariant,
                             modifier = Modifier.size(18.dp),
                         )
@@ -482,7 +522,7 @@ private fun WellnessCard(
             )
             Spacer(Modifier.width(8.dp))
             Text(
-                "$personName's wellness",
+                stringResource(R.string.together_wellness_of, personName),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = colors.onSurface,
@@ -493,22 +533,22 @@ private fun WellnessCard(
         val hasAny = listOfNotNull(steps, sleepHours, exerciseMinutes, restingHeartRate, calories).isNotEmpty()
         if (!hasAny) {
             Text(
-                "Shared, but there's no data yet — it fills in once they sync Health Connect.",
+                stringResource(R.string.together_wellness_no_data),
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
             )
             return@TogetherCard
         }
 
-        steps?.let { WellnessMetric(Icons.Rounded.DirectionsWalk, "Steps, last 7 days", "%,d".format(it)) }
-        sleepHours?.let { WellnessMetric(Icons.Rounded.Bedtime, "Last sleep", "%.1f h".format(it)) }
-        exerciseMinutes?.let { WellnessMetric(Icons.Rounded.FitnessCenter, "Exercise, last 7 days", "$it min") }
-        restingHeartRate?.let { WellnessMetric(Icons.Rounded.MonitorHeart, "Resting heart rate", "$it bpm") }
-        calories?.let { WellnessMetric(Icons.Rounded.LocalFireDepartment, "Calories today", "$it kcal") }
+        steps?.let { WellnessMetric(Icons.Rounded.DirectionsWalk, stringResource(R.string.wellness_steps_7d), "%,d".format(it)) }
+        sleepHours?.let { WellnessMetric(Icons.Rounded.Bedtime, stringResource(R.string.wellness_last_sleep), "%.1f h".format(it)) }
+        exerciseMinutes?.let { WellnessMetric(Icons.Rounded.FitnessCenter, stringResource(R.string.wellness_exercise_7d), "$it min") }
+        restingHeartRate?.let { WellnessMetric(Icons.Rounded.MonitorHeart, stringResource(R.string.wellness_resting_hr), "$it bpm") }
+        calories?.let { WellnessMetric(Icons.Rounded.LocalFireDepartment, stringResource(R.string.wellness_calories_today), "$it kcal") }
 
         Spacer(Modifier.height(8.dp))
         Text(
-            "A summary only — Myndora never shares raw health records, and this isn't medical advice.",
+            stringResource(R.string.together_wellness_disclaimer),
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
         )
@@ -571,7 +611,7 @@ private fun ComposeItemDialog(
                     value = draft.title,
                     onValueChange = { value -> onUpdate { it.copy(title = value) } },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("What is it?") },
+                    label = { Text(stringResource(R.string.together_what_is_it)) },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                 )
@@ -580,13 +620,13 @@ private fun ComposeItemDialog(
                     value = draft.description,
                     onValueChange = { value -> onUpdate { it.copy(description = value) } },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Note (optional)") },
+                    label = { Text(stringResource(R.string.together_note_optional)) },
                     shape = RoundedCornerShape(14.dp),
                 )
 
                 Spacer(Modifier.height(14.dp))
                 Text(
-                    "When",
+                    stringResource(R.string.common_when),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = colors.onSurface,
@@ -594,17 +634,17 @@ private fun ComposeItemDialog(
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     DayPill(
-                        label = "Today",
+                        label = stringResource(R.string.common_today),
                         selected = draft.date == LocalDate.now(),
                         onClick = { onUpdate { it.copy(date = LocalDate.now()) } },
                     )
                     DayPill(
-                        label = "Tomorrow",
+                        label = stringResource(R.string.common_tomorrow),
                         selected = draft.date == LocalDate.now().plusDays(1),
                         onClick = { onUpdate { it.copy(date = LocalDate.now().plusDays(1)) } },
                     )
                     DayPill(
-                        label = "In a week",
+                        label = stringResource(R.string.common_in_a_week),
                         selected = draft.date == LocalDate.now().plusWeeks(1),
                         onClick = { onUpdate { it.copy(date = LocalDate.now().plusWeeks(1)) } },
                     )
@@ -640,13 +680,13 @@ private fun ComposeItemDialog(
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         TimeBox(
-                            label = "Starts",
+                            label = stringResource(R.string.common_starts),
                             value = draft.startTime,
                             modifier = Modifier.weight(1f),
                             onClick = { picking = TimeField.START },
                         )
                         TimeBox(
-                            label = "Ends",
+                            label = stringResource(R.string.common_ends),
                             value = draft.endTime,
                             modifier = Modifier.weight(1f),
                             onClick = { picking = TimeField.END },
@@ -665,19 +705,19 @@ private fun ComposeItemDialog(
                 if (draft.saving) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("Add")
+                    Text(stringResource(R.string.common_add))
                 }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !draft.saving) { Text("Cancel") }
+            TextButton(onClick = onDismiss, enabled = !draft.saving) { Text(stringResource(R.string.common_cancel)) }
         },
     )
 
     picking?.let { field ->
         val current = if (field == TimeField.START) draft.startTime else draft.endTime
         TimePickerDialog(
-            title = if (field == TimeField.START) "Start time" else "End time",
+            title = if (field == TimeField.START) stringResource(R.string.common_start_time) else stringResource(R.string.common_end_time),
             initialHour = current.hour,
             initialMinute = current.minute,
             onConfirm = { hour, minute ->

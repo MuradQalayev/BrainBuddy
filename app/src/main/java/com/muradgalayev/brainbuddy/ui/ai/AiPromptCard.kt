@@ -18,6 +18,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -64,6 +65,10 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,6 +84,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -99,20 +105,25 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.res.painterResource
 import com.muradgalayev.brainbuddy.R
+import com.muradgalayev.brainbuddy.data.local.AppLocale
+import com.muradgalayev.brainbuddy.ui.accessibility.animationsOn
 import com.muradgalayev.brainbuddy.domain.ai.ChatMessage
 import com.muradgalayev.brainbuddy.domain.ai.ChatRole
 import com.muradgalayev.brainbuddy.ui.components.VoiceWaveform
 import com.muradgalayev.brainbuddy.ui.utils.SpeechRecognitionHelper
 import kotlinx.coroutines.delay
+import kotlin.math.sin
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AiPromptCard(
     onDismiss: () -> Unit,
@@ -158,7 +169,7 @@ fun AiPromptCard(
             if (disposed) return@post
             engine = TextToSpeech(context.applicationContext) { status ->
                 if (status == TextToSpeech.SUCCESS && !disposed) {
-                    engine?.setLanguage(Locale.getDefault())
+                    engine?.setLanguage(AppLocale.voiceLocale(context))
                     engine?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {
                         mainHandler.post { speakingMessageId = utteranceId }
@@ -260,7 +271,7 @@ fun AiPromptCard(
                 partialText = ""
                 isListening = false
                 showVoiceExpanded = false
-                voiceError = speechErrorMessage(code)
+                voiceError = context.getString(speechErrorMessage(code))
                 Log.w("AiPromptCard", "Speech recognition error $code")
             },
             onListeningStarted = {
@@ -289,7 +300,7 @@ fun AiPromptCard(
         } else {
             // denied is an answer, not a dead end. leaving the bar open with no word looked like a crash
             showVoiceExpanded = false
-            voiceError = "Myndora needs microphone access to hear you."
+            voiceError = context.getString(R.string.ai_mic_needed)
         }
     }
 
@@ -299,6 +310,10 @@ fun AiPromptCard(
     // height bounds the column, which lets the message list flex and keeps the composer's space
     val configuration = LocalConfiguration.current
     val maxCardHeight = (configuration.screenHeightDp.dp - 132.dp).coerceAtLeast(200.dp)
+    // the window does not resize for the keyboard (enableEdgeToEdge clears decorFitsSystemWindows),
+    // so without imePadding below the keyboard simply covers the composer. isImeVisible rather than
+    // the inset value, because it answers the question directly and doesn't care who consumed what
+    val keyboardOpen = WindowInsets.isImeVisible
 
     Surface(
         modifier = Modifier
@@ -306,9 +321,16 @@ fun AiPromptCard(
             // full width is right on a phone held upright and absurd across a landscape tablet, where a
             // chat bubble would run the whole way across
             .widthIn(max = 620.dp)
+            // lifts the card to sit on top of the keyboard. without it the keyboard covers the
+            // composer, with it the card needs no bottom padding of its own: 120dp is there to clear
+            // the navigation bar, and the navigation bar is behind the keyboard
+            .imePadding()
             .heightIn(max = maxCardHeight)
             .padding(horizontal = 12.dp)
-            .padding(bottom = 120.dp)
+            // 104dp is exactly what NavGraph reserves for the bottom navigation bar, so the card sits
+            // directly on top of it rather than floating the extra 16dp this used to guess at. with
+            // the keyboard up there is no bar to clear, imePadding has already done the lifting
+            .padding(bottom = if (keyboardOpen) 0.dp else 104.dp)
             .graphicsLayer {
                 alpha = .42f + (.58f * newChatMotion)
                 scaleX = .985f + (.015f * newChatMotion)
@@ -372,7 +394,7 @@ fun AiPromptCard(
                     if (showHistory) {
                         HeaderIconButton(
                             icon = Icons.Rounded.History,
-                            contentDescription = "Chat history",
+                            contentDescription = stringResource(R.string.ai_chat_history),
                             onClick = {
                                 viewModel.refreshConversations()
                                 showHistorySheet = true
@@ -383,14 +405,14 @@ fun AiPromptCard(
                     if (onLiveVoiceClick != null) {
                         HeaderIconButton(
                             icon = Icons.Rounded.Mic,
-                            contentDescription = "Start live voice conversation",
+                            contentDescription = stringResource(R.string.ai_start_voice),
                             onClick = onLiveVoiceClick,
                         )
                         Spacer(modifier = Modifier.size(8.dp))
                     }
                     HeaderIconButton(
                         icon = Icons.Rounded.Add,
-                        contentDescription = "New chat",
+                        contentDescription = stringResource(R.string.ai_new_chat),
                         onClick = {
                             if (!newChatTransitioning) {
                                 scope.launch {
@@ -427,7 +449,7 @@ fun AiPromptCard(
                         modifier = Modifier.weight(1f),
                     )
                     Text(
-                        text = "Dismiss",
+                        text = stringResource(R.string.common_dismiss),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -444,7 +466,10 @@ fun AiPromptCard(
                     modifier = Modifier.weight(1f, fill = false),
                     messages = uiState.messages,
                     error = uiState.error,
+                    isThinking = uiState.isThinking,
                     onChipTap = { viewModel.send(it) },
+                    shouldAnimate = viewModel::shouldAnimateReveal,
+                    onRevealed = viewModel::markRevealed,
                     speakingMessageId = speakingMessageId,
                     onSpeak = { messageId, text ->
                         speechEngine?.let { engine ->
@@ -502,7 +527,7 @@ fun AiPromptCard(
                             modifier = Modifier.fillMaxWidth(),
                             placeholder = {
                                 Text(
-                                    "What can I help you with?",
+                                    stringResource(R.string.ai_what_help),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
@@ -680,7 +705,7 @@ fun AiPromptCard(
                                         // no recognition service on the device, common on emulators and on phones without the Google
                                         // app. nothing to start, so say so instead of pretending
                                         voiceError =
-                                            "Voice input isn't available on this device."
+                                            context.getString(R.string.ai_voice_unavailable)
                                     } else {
                                         showVoiceExpanded = true
                                         voiceError = null
@@ -721,7 +746,7 @@ fun AiPromptCard(
                                         }
                                         Icon(
                                             imageVector = if (isListening) Icons.Rounded.Stop else Icons.Rounded.Mic,
-                                            contentDescription = if (isListening) "Stop listening" else "Voice input",
+                                            contentDescription = if (isListening) stringResource(R.string.ai_stop_listening) else stringResource(R.string.ai_voice_input),
                                             tint = if (isListening)
                                                 MaterialTheme.colorScheme.primary
                                             else
@@ -744,7 +769,7 @@ fun AiPromptCard(
 
                                     Icon(
                                         imageVector = Icons.Rounded.ArrowUpward,
-                                        contentDescription = "Send",
+                                        contentDescription = stringResource(R.string.common_send),
                                         tint = MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -752,7 +777,7 @@ fun AiPromptCard(
                             } else {
                                 Icon(
                                     imageVector = if (isListening) Icons.Rounded.Stop else Icons.Rounded.Mic,
-                                    contentDescription = if (isListening) "Stop listening" else "Voice input",
+                                    contentDescription = if (isListening) stringResource(R.string.ai_stop_listening) else stringResource(R.string.ai_voice_input),
                                     tint = micIconTint,
                                     modifier = Modifier.size(22.dp)
                                 )
@@ -795,25 +820,23 @@ fun AiPromptCard(
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            if (uiState.isThinking) {
-                                CircularProgressIndicator(
-                                    color = MaterialTheme.colorScheme.primary,
-                                    strokeWidth = 2.dp,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Rounded.ArrowUpward,
-                                    contentDescription = "Send",
-                                    tint = sendContent,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
+                            // no spinner while the answer is on its way. the typing dots in the
+                            // conversation already say we're waiting, and saying it twice in two
+                            // different shapes reads as two things happening. the button just goes
+                            // quiet, the same way it does with nothing typed in
+                            Icon(
+                                imageVector = Icons.Rounded.ArrowUpward,
+                                contentDescription = stringResource(R.string.common_send),
+                                tint = sendContent,
+                                modifier = Modifier.size(22.dp)
+                            )
                         }
                     }
                 }
 
-                if (showSuggestions) {
+                // hidden while typing only: they sit below the composer, so with the keyboard up they
+                // are the gap between the field and the keys
+                if (showSuggestions && !keyboardOpen) {
                     Spacer(modifier = Modifier.height(14.dp))
 
                     // divider
@@ -830,7 +853,7 @@ fun AiPromptCard(
 
                     // suggestion chips
                     Text(
-                        text = "Suggestions",
+                        text = stringResource(R.string.ai_suggestions),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         fontWeight = FontWeight.Medium
@@ -839,12 +862,11 @@ fun AiPromptCard(
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        AiSuggestionChip("Summarize my day", aiGradient) {
-                            viewModel.send("Summarize my day")
-                        }
-                        AiSuggestionChip("Help me focus", aiGradient) {
-                            viewModel.send("Help me focus")
-                        }
+                        // the label is also the prompt, so it goes to the model in the app's language
+                        val summarize = stringResource(R.string.ai_suggest_summarize)
+                        val focus = stringResource(R.string.ai_suggest_focus)
+                        AiSuggestionChip(summarize, aiGradient) { viewModel.send(summarize) }
+                        AiSuggestionChip(focus, aiGradient) { viewModel.send(focus) }
                     }
                 }
             }
@@ -895,16 +917,16 @@ private fun OfflineSwitchBar(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (outOfMessages) "That's today's AI messages" else "You're offline",
+                    text = if (outOfMessages) stringResource(R.string.ai_out_of_messages) else stringResource(R.string.ai_offline),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
                 Text(
                     text = if (outOfMessages) {
-                        "More tomorrow — the offline assistant still works"
+                        stringResource(R.string.ai_more_tomorrow)
                     } else {
-                        "Switch to the offline assistant to keep going"
+                        stringResource(R.string.ai_switch_offline)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = .78f),
@@ -980,7 +1002,7 @@ private fun ChatHistorySheet(
                 )
                 Spacer(modifier = Modifier.size(8.dp))
                 Text(
-                    text = "Chat history",
+                    text = stringResource(R.string.ai_chat_history),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = colors.onSurface,
@@ -1046,14 +1068,14 @@ private fun EmptyHistory() {
         }
         Spacer(modifier = Modifier.height(14.dp))
         Text(
-            text = "No chats yet",
+            text = stringResource(R.string.ai_no_chats),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = colors.onSurface,
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Your conversations with Myndora will show up here.",
+            text = stringResource(R.string.ai_no_chats_body),
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -1124,7 +1146,7 @@ private fun HistoryRow(
                         )
                         Spacer(modifier = Modifier.size(5.dp))
                         Text(
-                            text = "Active",
+                            text = stringResource(R.string.ai_active),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = colors.primary,
@@ -1141,8 +1163,8 @@ private fun HistoryRow(
                         DotSeparator()
                     }
                     Text(
-                        text = "${summary.messageCount} message" +
-                            (if (summary.messageCount == 1) "" else "s"),
+                        text = if (summary.messageCount == 1) stringResource(R.string.ai_one_message)
+                        else stringResource(R.string.ai_message_count, summary.messageCount),
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onSurfaceVariant,
                     )
@@ -1158,7 +1180,7 @@ private fun HistoryRow(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Close,
-                    contentDescription = "Delete chat",
+                    contentDescription = stringResource(R.string.ai_delete_chat),
                     tint = colors.onSurfaceVariant.copy(alpha = 0.7f),
                     modifier = Modifier.size(16.dp),
                 )
@@ -1177,15 +1199,16 @@ private fun DotSeparator() {
 }
 
 // relative time: 'Just now', '5m ago', '3h ago', 'Yesterday', 'Mar 4'
+@Composable
 private fun relativeTime(epochMillis: Long): String {
     if (epochMillis <= 0L) return ""
     val diffMin = (System.currentTimeMillis() - epochMillis) / 60_000
     return when {
-        diffMin < 1 -> "Just now"
-        diffMin < 60 -> "${diffMin}m ago"
-        diffMin < 60 * 24 -> "${diffMin / 60}h ago"
-        diffMin < 60 * 24 * 2 -> "Yesterday"
-        diffMin < 60 * 24 * 7 -> "${diffMin / (60 * 24)}d ago"
+        diffMin < 1 -> stringResource(R.string.time_just_now)
+        diffMin < 60 -> stringResource(R.string.time_minutes_ago, diffMin)
+        diffMin < 60 * 24 -> stringResource(R.string.time_hours_ago, diffMin / 60)
+        diffMin < 60 * 24 * 2 -> stringResource(R.string.common_yesterday)
+        diffMin < 60 * 24 * 7 -> stringResource(R.string.time_days_ago, diffMin / (60 * 24))
         else -> Instant.ofEpochMilli(epochMillis)
             .atZone(ZoneId.systemDefault())
             .toLocalDate()
@@ -1234,20 +1257,34 @@ private fun AiSuggestionChip(
 private fun ConversationView(
     messages: List<ChatMessage>,
     error: String?,
+    isThinking: Boolean,
     onChipTap: (String) -> Unit,
+    shouldAnimate: (String) -> Boolean,
+    onRevealed: (String) -> Unit,
     speakingMessageId: String?,
     onSpeak: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
-    LaunchedEffect(messages.size, error) {
-        val target = messages.size + (if (error != null) 1 else 0) - 1
-        if (target >= 0) listState.animateScrollToItem(target)
-    }
     val visible = messages.filter { it.role != ChatRole.TOOL && it.text.isNotBlank() }
     // only the last assistant message has tappable chips. older ones stay visually intact but
     // inert, so nothing gets re-triggered from three turns ago
     val lastAssistantId = visible.lastOrNull { it.role == ChatRole.ASSISTANT }?.id
+
+    // bumped on every chunk of text revealed, so the list follows the answer as it grows rather
+    // than jumping once at the end
+    var revealTick by remember { mutableIntStateOf(0) }
+
+    val itemCount = visible.size + (if (isThinking) 1 else 0) + (if (error != null) 1 else 0)
+    // a new bubble is worth animating to. the reveal isn't: restarting a scroll animation every
+    // frame fights itself, and the few pixels a chunk of text adds are smooth enough jumped. the
+    // large offset just means 'the bottom of that item', clamped to however far the list can go
+    LaunchedEffect(itemCount) {
+        if (itemCount > 0) listState.animateScrollToItem(itemCount - 1)
+    }
+    LaunchedEffect(revealTick) {
+        if (revealTick > 0 && itemCount > 0) listState.scrollToItem(itemCount - 1, 10_000)
+    }
     LazyColumn(
         state = listState,
         modifier = modifier
@@ -1266,7 +1303,15 @@ private fun ConversationView(
                 onChipTap = onChipTap,
                 isSpeaking = speakingMessageId == msg.id,
                 onSpeak = { onSpeak(msg.id, parseOptions(msg.text).first) },
+                // the view model decides, so the answer types itself out once when it arrives and
+                // never again: not when it scrolls back into view, and not when the sheet is reopened
+                animateText = msg.role == ChatRole.ASSISTANT && shouldAnimate(msg.id),
+                onRevealTick = { revealTick++ },
+                onRevealed = { onRevealed(msg.id) },
             )
+        }
+        if (isThinking) {
+            item("typing") { TypingIndicator() }
         }
         if (error != null) {
             item("error") {
@@ -1289,7 +1334,7 @@ private val OPTIONS_REGEX = Regex(
     option = RegexOption.IGNORE_CASE,
 )
 
-private fun parseOptions(raw: String): Pair<String, List<String>> {
+internal fun parseOptions(raw: String): Pair<String, List<String>> {
     val match = OPTIONS_REGEX.find(raw.trimEnd()) ?: return raw to emptyList()
     val labels = match.groupValues[1].split('|')
         .map { it.trim() }
@@ -1306,6 +1351,9 @@ private fun MessageBubble(
     onChipTap: (String) -> Unit,
     isSpeaking: Boolean,
     onSpeak: () -> Unit,
+    animateText: Boolean = false,
+    onRevealTick: () -> Unit = {},
+    onRevealed: () -> Unit = {},
 ) {
     val entrance = remember(msg.id) { androidx.compose.animation.core.Animatable(0f) }
     LaunchedEffect(msg.id) {
@@ -1317,6 +1365,37 @@ private fun MessageBubble(
     val isUser = msg.role == ChatRole.USER
     val (bodyText, chips) = if (isUser) msg.text to emptyList()
     else parseOptions(msg.text)
+
+    // the answer arrives whole from the model, so it is revealed here rather than streamed. a few
+    // characters at a time, because one at a time crawls on a long reply and the eye reads ahead
+    // of the cursor anyway. styling survives it: subSequence carries the bold and italic spans
+    val full = remember(msg.text, isUser) {
+        if (isUser) AnnotatedString(bodyText) else renderInlineMarkdown(bodyText)
+    }
+    // reduce motion means the answer is simply there, the way it was before any of this existed
+    val typewriter = animateText && animationsOn()
+    var shown by remember(msg.id) { mutableIntStateOf(if (typewriter) 0 else full.length) }
+    LaunchedEffect(msg.id, typewriter, full.length) {
+        if (!typewriter) {
+            shown = full.length
+            // still spend the reveal, or turning motion back on later would make an answer read
+            // long ago suddenly type itself out
+            if (animateText) onRevealed()
+            return@LaunchedEffect
+        }
+        // a long answer types faster per character, so the whole reveal stays near the same length
+        // whatever the model said. someone re-reading an answer shouldn't have to wait for it twice
+        val frames = (TYPE_TARGET_MS / TYPE_FRAME_MS).toInt()
+        val step = (full.length / frames).coerceAtLeast(1)
+        while (shown < full.length) {
+            delay(TYPE_FRAME_MS)
+            shown = (shown + step).coerceAtMost(full.length)
+            onRevealTick()
+        }
+        onRevealed()
+    }
+    val typing = shown < full.length
+    val display = remember(full, shown) { full.subSequence(0, shown.coerceIn(0, full.length)) }
 
     Column(
         modifier = Modifier.fillMaxWidth().graphicsLayer {
@@ -1342,7 +1421,7 @@ private fun MessageBubble(
                     .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
                 Text(
-                    text = renderInlineMarkdown(bodyText),
+                    text = display,
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (isUser) MaterialTheme.colorScheme.onPrimaryContainer
                     else MaterialTheme.colorScheme.onTertiaryContainer
@@ -1360,18 +1439,85 @@ private fun MessageBubble(
                 ) {
                     Icon(
                         imageVector = if (isSpeaking) Icons.Rounded.Stop else Icons.Rounded.VolumeUp,
-                        contentDescription = if (isSpeaking) "Stop reading answer" else "Read answer aloud",
+                        contentDescription = if (isSpeaking) stringResource(R.string.ai_stop_reading) else stringResource(R.string.ai_read_aloud),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp),
                     )
                 }
             }
         }
-        if (!isUser && chips.isNotEmpty() && showChips) {
+        if (!isUser && chips.isNotEmpty() && showChips && !typing) {
             Spacer(modifier = Modifier.height(6.dp))
             QuickReplyChips(labels = chips, onTap = onChipTap)
         }
     }
+}
+
+// roughly how long a whole answer should take to appear, however long it is, and how often a
+// chunk is added. 900ms reads as deliberate rather than slow, and 16ms lands one chunk a frame
+private const val TYPE_TARGET_MS = 900L
+private const val TYPE_FRAME_MS = 16L
+
+// the three dots, in a bubble on the assistant's side and at the assistant's size, so the answer
+// lands where the waiting was rather than somewhere else. each dot rises and fades a beat after
+// the one before it, which is what makes the row read as a wave instead of a blink
+@Composable
+private fun TypingIndicator() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(18.dp))
+                .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = .62f))
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (animationsOn()) {
+                    val motion = rememberInfiniteTransition(label = "typing")
+                    repeat(3) { index ->
+                        val phase by motion.animateFloat(
+                            initialValue = 0f,
+                            targetValue = 1f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(1100, easing = LinearEasing),
+                                repeatMode = RepeatMode.Restart,
+                            ),
+                            label = "typingDot$index",
+                        )
+                        // each dot is a beat behind the last, and only lifts during the first half of
+                        // its own cycle, so there is a rest between waves
+                        val offset = (phase + index * .18f) % 1f
+                        val lift = if (offset < .5f) sin(offset * 2f * Math.PI.toFloat()) else 0f
+                        TypingDot(lift = lift, alpha = .45f + lift * .55f)
+                    }
+                } else {
+                    // reduce motion: the same three dots, held still. the bubble still has to say
+                    // an answer is coming, so it stays and only the movement goes
+                    repeat(3) { TypingDot(lift = 0f, alpha = .6f) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TypingDot(lift: Float, alpha: Float) {
+    Box(
+        modifier = Modifier
+            .graphicsLayer {
+                translationY = -lift * 5.dp.toPx()
+                this.alpha = alpha
+            }
+            .size(7.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.onTertiaryContainer),
+    )
 }
 
 // renders the tiny slice of markdown the model actually emits, bold and italic, instead of
@@ -1447,18 +1593,19 @@ private fun QuickReplyChips(
 
 // platform error codes as something a person can act on. NO_MATCH and SPEECH_TIMEOUT aren't
 // faults, the recognizer just heard nothing useful, so they get a nudge not an apology
-private fun speechErrorMessage(code: Int): String = when (code) {
+@androidx.annotation.StringRes
+internal fun speechErrorMessage(code: Int): Int = when (code) {
     android.speech.SpeechRecognizer.ERROR_NO_MATCH,
-    android.speech.SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Didn't catch that \u2014 try again."
+    android.speech.SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> R.string.ai_speech_no_match
     android.speech.SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS ->
-        "Myndora needs microphone access to hear you."
+        R.string.ai_mic_needed
     android.speech.SpeechRecognizer.ERROR_NETWORK,
     android.speech.SpeechRecognizer.ERROR_NETWORK_TIMEOUT ->
-        "Voice input needs a connection right now."
-    android.speech.SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Still finishing the last one."
+        R.string.ai_speech_network
+    android.speech.SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> R.string.ai_speech_busy
     android.speech.SpeechRecognizer.ERROR_CLIENT,
     android.speech.SpeechRecognizer.ERROR_SERVER,
     android.speech.SpeechRecognizer.ERROR_SERVER_DISCONNECTED ->
-        "Voice input isn't working on this device."
-    else -> "Voice input didn't work \u2014 try again."
+        R.string.ai_speech_broken
+    else -> R.string.ai_speech_failed
 }

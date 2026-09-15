@@ -1,5 +1,9 @@
 package com.muradgalayev.brainbuddy.domain.scheduling
 
+import com.muradgalayev.brainbuddy.ui.utils.uiText
+import com.muradgalayev.brainbuddy.ui.utils.asUiText
+import com.muradgalayev.brainbuddy.ui.utils.UiText
+import com.muradgalayev.brainbuddy.R
 import java.time.LocalDate
 
 // why a time was proposed. an enum rather than a baked string, so the wording lives in one
@@ -46,7 +50,7 @@ data class TimeSuggestion(
     val endMinutes: Int,
     val kind: ActivityKind,
     val reason: SuggestionReason,
-    val reasonText: String,
+    val reasonText: UiText,
     // raw engine score, only meaningful relative to the other suggestions
     val score: Double,
 ) {
@@ -63,10 +67,10 @@ data class TimeSuggestion(
     // 25th and being offered the 26th used to read Tomorrow, which a reader on the 24th
     // understands as the 25th, the very day they were trying to move off. so the relative words
     // are only used when they are true of today, and every other day states its date outright
-    fun dayLabel(relativeTo: LocalDate, today: LocalDate): String? = when {
+    fun dayLabel(relativeTo: LocalDate, today: LocalDate): UiText? = when {
         date == relativeTo -> null
-        date == today -> "Today"
-        date == today.plusDays(1) -> "Tomorrow"
+        date == today -> uiText(R.string.common_today)
+        date == today.plusDays(1) -> uiText(R.string.common_tomorrow)
         // inside the week the weekday is the fastest thing to read, but never on its own: 'Fri'
         // alone is the same ambiguity one week out
         date.isBefore(today.plusDays(7)) -> "%s %d".format(
@@ -75,14 +79,14 @@ data class TimeSuggestion(
                 java.util.Locale.getDefault(),
             ),
             date.dayOfMonth,
-        )
+        ).asUiText()
         else -> "%d %s".format(
             date.dayOfMonth,
             date.month.getDisplayName(
                 java.time.format.TextStyle.SHORT,
                 java.util.Locale.getDefault(),
             ),
-        )
+        ).asUiText()
     }
 
     fun movesDay(relativeTo: LocalDate): Boolean = date != relativeTo
@@ -92,3 +96,27 @@ fun formatHhMm(minutes: Int): String {
     val m = wrapMinutes(minutes)
     return "%02d:%02d".format(m / 60, m % 60)
 }
+
+// the kind's name in the app's language, for reason text. label stays English for the model
+val ActivityKind.labelRes: Int
+    get() = when (this) {
+        ActivityKind.Breakfast -> R.string.kind_breakfast
+        ActivityKind.Lunch -> R.string.kind_lunch
+        ActivityKind.Dinner -> R.string.kind_dinner
+        ActivityKind.Snack -> R.string.kind_snack
+        ActivityKind.Workout -> R.string.kind_workout
+        ActivityKind.Walk -> R.string.kind_walk
+        ActivityKind.DeepWork -> R.string.kind_deep_work
+        ActivityKind.Study -> R.string.kind_study
+        ActivityKind.Meeting -> R.string.kind_meeting
+        ActivityKind.Errand -> R.string.kind_errand
+        ActivityKind.Chore -> R.string.kind_chore
+        ActivityKind.Appointment -> R.string.kind_appointment
+        ActivityKind.Medication -> R.string.kind_medication
+        ActivityKind.Social -> R.string.kind_social
+        ActivityKind.Leisure -> R.string.kind_leisure
+        ActivityKind.Commute -> R.string.kind_commute
+        ActivityKind.SelfCare -> R.string.kind_self_care
+        ActivityKind.WindDown -> R.string.kind_wind_down
+        ActivityKind.General -> R.string.kind_general
+    }

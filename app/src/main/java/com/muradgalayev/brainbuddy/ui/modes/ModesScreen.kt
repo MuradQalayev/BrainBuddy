@@ -60,6 +60,8 @@ import com.muradgalayev.brainbuddy.ui.accessibility.animationsOn
 import com.muradgalayev.brainbuddy.ui.settings.components.SettingsDetailHero
 import com.muradgalayev.brainbuddy.ui.settings.components.SettingsSectionLabel
 import com.muradgalayev.brainbuddy.ui.settings.components.SettingsSubScaffold
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // pick a mode, turn modes off, or open the editor. reached from Settings, so it wears the same
 // clothes as every other settings page: the shared sub-page scaffold, the gradient hero,
@@ -76,7 +78,7 @@ fun ModesScreen(
     val selection by viewModel.selection.collectAsState()
     val motionDuration = if (animationsOn()) 360 else 0
 
-    SettingsSubScaffold(title = "Modes", onBack = onBack) {
+    SettingsSubScaffold(title = stringResource(R.string.settings_modes), onBack = onBack) {
         ActiveModeHero(
             activeMode = activeMode,
             selection = selection,
@@ -84,8 +86,8 @@ fun ModesScreen(
         )
 
         SettingsSectionLabel(
-            title = "Choose what's active",
-            subtitle = "Switch your app experience with one tap.",
+            title = stringResource(R.string.modes_choose_active),
+            subtitle = stringResource(R.string.modes_choose_active_sub),
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -104,11 +106,11 @@ fun ModesScreen(
         }
 
         SettingsSectionLabel(
-            title = "Your modes",
+            title = stringResource(R.string.modes_your_modes),
             subtitle = if (modes.size == 1) {
-                "1 mode saved. Tap to switch, or open one to customize it."
+                stringResource(R.string.modes_one_saved)
             } else {
-                "${modes.size} modes saved. Tap to switch, or open one to customize it."
+                stringResource(R.string.modes_n_saved, modes.size)
             },
         )
 
@@ -139,7 +141,7 @@ fun ModesScreen(
                     modifier = Modifier.size(20.dp),
                 )
                 Spacer(Modifier.width(8.dp))
-                Text("Create a mode", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.home_create_mode), fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -162,7 +164,7 @@ private fun ActiveModeHero(
         animationSpec = tween(motionDuration, easing = FastOutSlowInEasing),
         label = "modes_hero_accent",
     )
-    val timing = activeMode?.let(::modeTiming)
+    val timing = activeMode?.let { modeTiming(it) }
 
     SettingsDetailHero(
         icon = when {
@@ -172,13 +174,13 @@ private fun ActiveModeHero(
         },
         title = when {
             activeMode != null -> activeMode.name
-            automaticIdle -> "Between schedules"
-            else -> "No mode"
+            automaticIdle -> stringResource(R.string.modes_between_schedules)
+            else -> stringResource(R.string.home_no_mode)
         },
         description = when {
-            timing != null -> "Active now · ${timing.detail}"
-            automaticIdle -> "Automatic is on. Your settings stay in place until a schedule starts."
-            else -> "Modes are off. Your personal settings are in use."
+            timing != null -> stringResource(R.string.modes_active_now, timing.detail)
+            automaticIdle -> stringResource(R.string.modes_auto_idle)
+            else -> stringResource(R.string.modes_off)
         },
         accent = accent,
     )
@@ -192,21 +194,21 @@ private fun AutomaticModeRow(
     onClick: () -> Unit,
 ) {
     SystemModeRow(
-        title = "Automatic",
+        title = stringResource(R.string.modes_automatic),
         description = if (hasScheduledModes) {
-            "Follow the schedules saved in your modes"
+            stringResource(R.string.modes_follow_schedules)
         } else {
-            "Ready when you add a schedule"
+            stringResource(R.string.modes_ready_schedule)
         },
         accessibilityDescription = if (hasScheduledModes) {
-            "Automatic modes. Follow saved mode schedules."
+            stringResource(R.string.modes_auto_cd)
         } else {
-            "Automatic modes. No schedules are configured yet."
+            stringResource(R.string.modes_auto_none_cd)
         },
         icon = Icons.Rounded.AutoMode,
         accent = MaterialTheme.colorScheme.primary,
         selected = selected,
-        selectedLabel = "On",
+        selectedLabel = stringResource(R.string.common_on),
         motionDuration = motionDuration,
         onClick = onClick,
     )
@@ -219,13 +221,13 @@ private fun NoModeRow(
     onClick: () -> Unit,
 ) {
     SystemModeRow(
-        title = "No mode",
-        description = "Pause schedules and keep personal settings",
-        accessibilityDescription = "No mode. Pause schedules and use personal settings without mode overrides.",
+        title = stringResource(R.string.home_no_mode),
+        description = stringResource(R.string.modes_no_mode_desc),
+        accessibilityDescription = stringResource(R.string.modes_no_mode_cd),
         icon = Icons.Rounded.Tune,
         accent = MaterialTheme.colorScheme.secondary,
         selected = selected,
-        selectedLabel = "Active",
+        selectedLabel = stringResource(R.string.ai_active),
         motionDuration = motionDuration,
         onClick = onClick,
     )
@@ -244,6 +246,7 @@ private fun SystemModeRow(
     onClick: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
+    val selectionState = if (selected) stringResource(R.string.common_selected) else stringResource(R.string.common_not_selected)
     val containerColor by animateColorAsState(
         targetValue = if (selected) {
             lerp(colors.surfaceContainer, accent, 0.12f)
@@ -281,7 +284,7 @@ private fun SystemModeRow(
                 )
                 .semantics(mergeDescendants = true) {
                     contentDescription = accessibilityDescription
-                    stateDescription = if (selected) "Selected" else "Not selected"
+                    stateDescription = selectionState
                 }
                 .padding(horizontal = 14.dp, vertical = 12.dp)
                 .heightIn(min = 56.dp),
@@ -332,6 +335,12 @@ private fun ModeRow(
     val colors = MaterialTheme.colorScheme
     val accent = modeAccentColor(mode.accent)
     val timing = modeTiming(mode)
+    val rowDescription = stringResource(R.string.modes_mode_cd, mode.name, timing.badge, timing.detail)
+    val rowState = when {
+        isSelected -> stringResource(R.string.modes_selected_active)
+        isRunning -> stringResource(R.string.modes_running_auto)
+        else -> stringResource(R.string.modes_not_active)
+    }
     val containerColor by animateColorAsState(
         targetValue = if (isRunning) {
             lerp(colors.surfaceContainer, accent, 0.12f)
@@ -372,12 +381,8 @@ private fun ModeRow(
                         role = Role.RadioButton,
                     )
                     .semantics(mergeDescendants = true) {
-                        contentDescription = "${mode.name} mode. ${timing.badge}. ${timing.detail}."
-                        stateDescription = when {
-                            isSelected -> "Selected and active"
-                            isRunning -> "Running automatically"
-                            else -> "Not active"
-                        }
+                        contentDescription = rowDescription
+                        stateDescription = rowState
                     }
                     .padding(start = 14.dp, top = 12.dp, bottom = 12.dp, end = 6.dp)
                     .heightIn(min = 56.dp),
@@ -407,7 +412,7 @@ private fun ModeRow(
                         SelectionBadge(
                             visible = isRunning,
                             accent = accent,
-                            label = if (isSelected) "Active" else "Running",
+                            label = if (isSelected) stringResource(R.string.ai_active) else stringResource(R.string.modes_running),
                             motionDuration = motionDuration,
                         )
                     }
@@ -430,7 +435,7 @@ private fun ModeRow(
             IconButton(onClick = onEdit) {
                 Icon(
                     imageVector = Icons.Rounded.ChevronRight,
-                    contentDescription = "Customize ${mode.name} mode",
+                    contentDescription = stringResource(R.string.modes_customize_cd, mode.name),
                     tint = colors.onSurfaceVariant,
                 )
             }
@@ -471,7 +476,7 @@ private fun ModeIconTile(
 private fun SelectionBadge(
     visible: Boolean,
     accent: Color,
-    label: String = "Active",
+    label: String = stringResource(R.string.ai_active),
     motionDuration: Int,
 ) {
     AnimatedVisibility(
@@ -562,29 +567,30 @@ private data class ModeTiming(
     val kind: TimingKind,
 )
 
+@Composable
 private fun modeTiming(mode: AppMode): ModeTiming {
     val schedule = mode.schedule
     return when {
         schedule == null -> ModeTiming(
-            badge = "Manual",
-            detail = "Starts when you choose it",
+            badge = stringResource(R.string.modes_manual),
+            detail = stringResource(R.string.modes_starts_when),
             kind = TimingKind.Manual,
         )
 
         mode.hasActiveSchedule() -> ModeTiming(
-            badge = "Scheduled",
+            badge = stringResource(R.string.modes_scheduled),
             detail = scheduleSummary(
                 days = schedule.days,
                 startMinute = schedule.startMinute,
                 endMinute = schedule.endMinute,
                 enabled = true,
-            ) ?: "Automatic schedule",
+            ) ?: stringResource(R.string.modes_auto_schedule),
             kind = TimingKind.Scheduled,
         )
 
         else -> ModeTiming(
-            badge = "Schedule off",
-            detail = "Starts when you choose it",
+            badge = stringResource(R.string.modes_schedule_off),
+            detail = stringResource(R.string.modes_starts_when),
             kind = TimingKind.ScheduleOff,
         )
     }

@@ -6,7 +6,7 @@ import androidx.compose.ui.graphics.Color
 @Immutable
 data class CategoryUi(
     val id: String,
-    val title: String,
+    val title: com.muradgalayev.brainbuddy.ui.utils.UiText,
     val selected: Boolean = false,
 )
 

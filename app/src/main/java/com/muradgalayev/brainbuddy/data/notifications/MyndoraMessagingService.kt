@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.data.notifications
 
+import com.muradgalayev.brainbuddy.R
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -22,12 +23,19 @@ class MyndoraMessagingService : FirebaseMessagingService() {
 
     @Inject lateinit var notifier: FocusInviteNotifier
     @Inject lateinit var deviceTokens: DeviceTokenRepository
+    @Inject lateinit var syncCoordinator: com.muradgalayev.brainbuddy.data.sync.SyncCoordinator
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // fires when FCM mints a new token: first launch, reinstall, app data cleared, or a periodic
     // rotation. registering only at sign-in would leave long-lived installs pushing to a token the
     // server no longer has
+    // services get a fresh system context, not the application's, so before 33 they'd miss the
+    // chosen language without this
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(com.muradgalayev.brainbuddy.data.local.AppLocale.wrap(newBase))
+    }
+
     override fun onNewToken(token: String) {
         scope.launch { deviceTokens.register(token) }
     }
@@ -37,11 +45,13 @@ class MyndoraMessagingService : FirebaseMessagingService() {
             "focus_invite" -> {
                 val sessionId = message.data["session_id"] ?: return
                 notifier.notifyInvite(
-                    hostName = message.data["host_name"] ?: "Someone",
+                    hostName = message.data["host_name"] ?: getString(R.string.common_someone),
                     minutes = message.data["minutes"]?.toIntOrNull() ?: 25,
                     sessionId = sessionId,
                 )
             }
+            // a connection wrote to this user's calendar or list. carries no content, it only says pull now
+            "together_changed" -> syncCoordinator.syncAfterTogetherChange(message.data["kind"])
             else -> Log.d(TAG, "Ignoring push of type ${message.data["type"]}")
         }
     }

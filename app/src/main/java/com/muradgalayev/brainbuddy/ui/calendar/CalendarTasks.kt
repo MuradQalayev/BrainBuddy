@@ -79,6 +79,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -89,6 +90,8 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 import com.muradgalayev.brainbuddy.ui.accessibility.speaking
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // overdue once the end time has passed and it isn't finished. finished covers both routes,
 // ticked off directly or every station done. nagging about work someone already did is the
@@ -146,7 +149,7 @@ private fun OverdueSectionHeader(palette: CalendarPalette, count: Int) {
         )
         Spacer(Modifier.width(7.dp))
         Text(
-            text = if (count == 1) "1 thing slipped past" else "$count things slipped past",
+            text = if (count == 1) stringResource(R.string.cal_slipped_one) else stringResource(R.string.cal_slipped_many, count),
             color = palette.flagRed,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
@@ -158,7 +161,7 @@ private fun OverdueSectionHeader(palette: CalendarPalette, count: Int) {
 @Composable
 private fun StillToComeHeader(palette: CalendarPalette) {
     Text(
-        text = "Still to come",
+        text = stringResource(R.string.cal_still_to_come),
         color = palette.muted,
         fontSize = 12.sp,
         fontWeight = FontWeight.SemiBold,
@@ -183,7 +186,7 @@ private fun DoneSectionHeader(palette: CalendarPalette, count: Int) {
         )
         Spacer(Modifier.width(7.dp))
         Text(
-            text = if (count == 1) "1 done" else "$count done",
+            text = if (count == 1) stringResource(R.string.cal_one_done) else stringResource(R.string.cal_n_done, count),
             color = palette.muted.copy(alpha = 0.85f),
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
@@ -472,14 +475,14 @@ fun EmptyTasksState(palette: CalendarPalette) {
         }
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "No tasks for this day",
+            text = stringResource(R.string.cal_no_tasks_day),
             color = palette.ink,
             fontSize = 16.sp,
             fontWeight = FontWeight.SemiBold
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            text = "Tap + to add a task",
+            text = stringResource(R.string.cal_tap_plus),
             color = palette.muted,
             fontSize = 13.sp
         )
@@ -560,7 +563,7 @@ private fun SwipeableCalendarTaskCard(
                 AnimatedVisibility(visible = showEditBackground) {
                     Icon(
                         imageVector = Icons.Outlined.Edit,
-                        contentDescription = "Edit event",
+                        contentDescription = stringResource(R.string.cal_edit_event),
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
                     )
@@ -568,7 +571,7 @@ private fun SwipeableCalendarTaskCard(
                 AnimatedVisibility(visible = showDeleteBackground) {
                     Icon(
                         imageVector = Icons.Rounded.Delete,
-                        contentDescription = "Delete event",
+                        contentDescription = stringResource(R.string.cal_delete_event),
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
                     )
@@ -597,14 +600,14 @@ private fun SwipeableCalendarTaskCard(
             containerColor = palette.cardBg,
             title = {
                 Text(
-                    text = "Delete event?",
+                    text = stringResource(R.string.cal_delete_event_q),
                     color = palette.ink,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
-                    text = "Are you sure you want to delete \"${task.title}\"? This can't be undone.",
+                    text = stringResource(R.string.cal_delete_confirm, task.title),
                     color = palette.muted
                 )
             },
@@ -614,7 +617,7 @@ private fun SwipeableCalendarTaskCard(
                     onDelete()
                 }) {
                     Text(
-                        "Delete",
+                        stringResource(R.string.common_delete),
                         color = palette.flagRed,
                         fontWeight = FontWeight.Bold
                     )
@@ -623,7 +626,7 @@ private fun SwipeableCalendarTaskCard(
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
                     Text(
-                        "Cancel",
+                        stringResource(R.string.common_cancel),
                         color = palette.muted,
                         fontWeight = FontWeight.Medium
                     )
@@ -650,6 +653,11 @@ fun CalendarTaskCard(
     val context = LocalContext.current
     val tintedBg = androidx.compose.ui.graphics.lerp(palette.cardBg, task.accent, 0.07f)
     val canExpand = task.subtasks.isNotEmpty() || task.totalMinutes > 0
+    val showCompactBreakdown = !task.isDone &&
+        !task.isMedication &&
+        !task.isReservation &&
+        task.subtasks.isEmpty() &&
+        canExpand
     val hasDetails = !task.subtitle.isNullOrEmpty() ||
         !task.location.isNullOrEmpty() ||
         !task.link.isNullOrEmpty()
@@ -735,7 +743,7 @@ fun CalendarTaskCard(
                                         )
                                         Spacer(Modifier.width(4.dp))
                                         Text(
-                                            text = "Added by $author",
+                                            text = stringResource(R.string.cal_added_by, author),
                                             color = task.accent,
                                             fontSize = 9.5.sp,
                                             fontWeight = FontWeight.Bold,
@@ -770,7 +778,7 @@ fun CalendarTaskCard(
                                         .padding(horizontal = 7.dp, vertical = 2.dp),
                                 ) {
                                     Text(
-                                        text = "OVERDUE",
+                                        text = stringResource(R.string.cal_overdue),
                                         color = palette.flagRed,
                                         fontSize = 8.5.sp,
                                         fontWeight = FontWeight.Black,
@@ -789,6 +797,14 @@ fun CalendarTaskCard(
                                 .size(8.dp)
                                 .clip(CircleShape)
                                 .background(palette.flagRed)
+                        )
+                    }
+
+                    if (showCompactBreakdown) {
+                        Spacer(Modifier.width(4.dp))
+                        CompactBreakdownButton(
+                            accent = task.accent,
+                            onClick = onManageSubtasks,
                         )
                     }
 
@@ -832,8 +848,9 @@ fun CalendarTaskCard(
                 // task off the list.
                 // a finished task shows none of it: offering to break down work that's already done is the
                 // app failing to notice you did it. un-ticking brings it straight back, nothing is deleted.
-                // medication doses are never broken into steps either, 'take Ritalin' has no smaller parts
-                if (!task.isDone && !task.isMedication) {
+                // medication doses and medical bookings are never broken into steps either, 'take Ritalin'
+                // and 'appointment at the clinic' have no smaller parts
+                if (!task.isDone && !task.isMedication && !task.isReservation) {
                     if (task.subtasks.isNotEmpty()) {
                         Spacer(Modifier.height(12.dp))
                         BreakdownSummaryRow(
@@ -842,16 +859,6 @@ fun CalendarTaskCard(
                             doneCount = task.subtasks.count { it.completed },
                             totalCount = task.subtasks.size,
                             progress = subtaskProgress,
-                            onClick = onManageSubtasks,
-                        )
-                    } else if (canExpand) {
-                        // no plan yet, so this is the invitation. it has to look like a button, not a hint, or it
-                        // goes unnoticed the way the ring did
-                        Spacer(Modifier.height(12.dp))
-                        BreakdownCtaRow(
-                            palette = palette,
-                            accent = task.accent,
-                            totalMinutes = task.totalMinutes,
                             onClick = onManageSubtasks,
                         )
                     }
@@ -888,7 +895,7 @@ private fun DetailsChevron(
     ) {
         Icon(
             imageVector = Icons.Rounded.KeyboardArrowDown,
-            contentDescription = if (expanded) "Hide details" else "Show details",
+            contentDescription = if (expanded) stringResource(R.string.cal_hide_details) else stringResource(R.string.cal_show_details),
             tint = palette.muted.copy(alpha = 0.75f),
             modifier = Modifier
                 .size(18.dp)
@@ -957,62 +964,48 @@ private fun DetailRow(
     }
 }
 
-// the 'you can split this up' invitation, on any timed event with no plan yet. a solid
-// tinted button rather than a quiet hint: the old affordance, a 34dp ring at the card's
-// left edge, was being missed entirely
+// Timed events without a plan used to repeat a full-width CTA below every card. Ten events meant
+// ten extra panels and very little calendar. Keep the visible affordance small in the existing
+// title row, but retain a generous invisible touch target and an explicit accessibility role.
 @Composable
-private fun BreakdownCtaRow(
-    palette: CalendarPalette,
+private fun CompactBreakdownButton(
     accent: Color,
-    totalMinutes: Int,
     onClick: () -> Unit,
 ) {
-    Row(
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(accent.copy(alpha = 0.13f))
-            .border(1.dp, accent.copy(alpha = 0.30f), RoundedCornerShape(12.dp))
+            .size(width = 66.dp, height = 48.dp)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
+                role = Role.Button,
                 onClick = onClick,
-            )
-            .padding(horizontal = 12.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            ),
+        contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            imageVector = Icons.Outlined.AutoAwesome,
-            contentDescription = null,
-            tint = accent,
-            modifier = Modifier.size(15.dp),
-        )
-        Spacer(Modifier.width(9.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "Break this into steps",
-                color = accent,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-            )
-            if (totalMinutes > 0) {
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = "$totalMinutes min · easier one piece at a time",
-                    color = palette.muted,
-                    fontSize = 11.sp,
-                )
-            }
-        }
-        Spacer(Modifier.width(8.dp))
-        Icon(
-            imageVector = Icons.Rounded.KeyboardArrowDown,
-            contentDescription = null,
-            tint = accent,
+        Row(
             modifier = Modifier
-                .size(16.dp)
-                .rotate(-90f),
-        )
+                .clip(RoundedCornerShape(50))
+                .background(accent.copy(alpha = 0.13f))
+                .border(1.dp, accent.copy(alpha = 0.28f), RoundedCornerShape(50))
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.AutoAwesome,
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(12.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = stringResource(R.string.cal_divide),
+                color = accent,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -1051,7 +1044,7 @@ private fun BreakdownSummaryRow(
         Spacer(Modifier.width(8.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = if (complete) "Breakdown complete" else "$doneCount of $totalCount steps done",
+                text = if (complete) stringResource(R.string.cal_breakdown_complete) else stringResource(R.string.cal_steps_done, doneCount, totalCount),
                 color = palette.ink,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -1076,7 +1069,7 @@ private fun BreakdownSummaryRow(
         Spacer(Modifier.width(10.dp))
         Icon(
             imageVector = Icons.Rounded.KeyboardArrowDown,
-            contentDescription = "Open breakdown",
+            contentDescription = stringResource(R.string.cal_open_breakdown),
             tint = accent,
             // pointing right: this opens another screen, it doesn't expand in place
             modifier = Modifier
@@ -1179,7 +1172,7 @@ fun TaskStatusCircle(
         ) {
             Icon(
                 imageVector = Icons.Outlined.Check,
-                contentDescription = "Completed",
+                contentDescription = stringResource(R.string.onboarding_completed),
                 tint = Color.White,
                 modifier = Modifier.size(14.dp)
             )

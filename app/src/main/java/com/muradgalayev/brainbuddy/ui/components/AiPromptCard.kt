@@ -67,6 +67,7 @@ import com.muradgalayev.brainbuddy.ui.theme.myndoraAccents
 import androidx.core.content.ContextCompat
 import com.muradgalayev.brainbuddy.R
 import com.muradgalayev.brainbuddy.ui.utils.SpeechRecognitionHelper
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun AiPromptCard(
@@ -162,13 +163,13 @@ fun AiPromptCard(
                         Spacer(modifier = Modifier.size(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Myndora AI",
+                                text = stringResource(R.string.ai_myndora_ai),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                             Text(
-                                text = "Your personal assistant",
+                                text = stringResource(R.string.ai_personal_assistant),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color.White.copy(alpha = 0.7f)
                             )
@@ -184,7 +185,7 @@ fun AiPromptCard(
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.Close,
-                                    contentDescription = "Close",
+                                    contentDescription = stringResource(R.string.common_close),
                                     tint = Color.White,
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -207,7 +208,7 @@ fun AiPromptCard(
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = {
                             Text(
-                                "What can I help you with?",
+                                stringResource(R.string.ai_what_help),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                                 style = MaterialTheme.typography.bodyMedium
                             )
@@ -262,7 +263,7 @@ fun AiPromptCard(
                                     ) {
                                         Icon(
                                             imageVector = if (isListening) Icons.Rounded.Stop else Icons.Rounded.Mic,
-                                            contentDescription = if (isListening) "Stop listening" else "Voice input",
+                                            contentDescription = if (isListening) stringResource(R.string.ai_stop_listening) else stringResource(R.string.ai_voice_input),
                                             tint = if (isListening)
                                                 MaterialTheme.colorScheme.primary
                                             else
@@ -285,7 +286,7 @@ fun AiPromptCard(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_ai),
-                                        contentDescription = "Send",
+                                        contentDescription = stringResource(R.string.common_send),
                                         tint = Color.White,
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -318,7 +319,7 @@ fun AiPromptCard(
                             modifier = Modifier.fillMaxWidth(),
                             placeholder = {
                                 Text(
-                                    "What can I help you with?",
+                                    stringResource(R.string.ai_what_help),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
@@ -531,7 +532,7 @@ fun AiPromptCard(
                                         }
                                         Icon(
                                             imageVector = if (isListening) Icons.Rounded.Stop else Icons.Rounded.Mic,
-                                            contentDescription = if (isListening) "Stop listening" else "Voice input",
+                                            contentDescription = if (isListening) stringResource(R.string.ai_stop_listening) else stringResource(R.string.ai_voice_input),
                                             tint = if (isListening)
                                                 MaterialTheme.colorScheme.primary
                                             else
@@ -553,7 +554,7 @@ fun AiPromptCard(
 
                                     Icon(
                                         imageVector = Icons.Rounded.ArrowUpward,
-                                        contentDescription = "Send",
+                                        contentDescription = stringResource(R.string.common_send),
                                         tint = MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -561,7 +562,7 @@ fun AiPromptCard(
                             } else {
                                 Icon(
                                     imageVector = if (isListening) Icons.Rounded.Stop else Icons.Rounded.Mic,
-                                    contentDescription = if (isListening) "Stop listening" else "Voice input",
+                                    contentDescription = if (isListening) stringResource(R.string.ai_stop_listening) else stringResource(R.string.ai_voice_input),
                                     tint = micIconTint,
                                     modifier = Modifier.size(22.dp)
                                 )
@@ -586,7 +587,7 @@ fun AiPromptCard(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.ArrowUpward,
-                                contentDescription = "Send",
+                                contentDescription = stringResource(R.string.common_send),
                                 tint = Color.White,
                                 modifier = Modifier.size(22.dp)
                             )
@@ -611,7 +612,7 @@ fun AiPromptCard(
 
                     // suggestion chips
                     Text(
-                        text = "Suggestions",
+                        text = stringResource(R.string.ai_suggestions),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         fontWeight = FontWeight.Medium
@@ -620,8 +621,8 @@ fun AiPromptCard(
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        AiSuggestionChip("Summarize my day", aiGradient)
-                        AiSuggestionChip("Help me focus", aiGradient)
+                        AiSuggestionChip(stringResource(R.string.ai_suggest_summarize), aiGradient)
+                        AiSuggestionChip(stringResource(R.string.ai_suggest_focus), aiGradient)
                     }
                 }
             }

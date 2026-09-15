@@ -41,6 +41,23 @@ class AiNavigator @Inject constructor() {
         _pendingCalendarAdd.value = false
     }
 
+    // password/sign-in and language are sheets on the Settings screen rather than routes of their
+    // own, so 'take me there' is two steps: latch what to open, then navigate to Settings. latched
+    // for the same reason as the calendar's flag — Settings doesn't exist to be told until it has
+    // composed, so an event emitted now would land with nobody listening
+    private val _pendingSettingsSheet = MutableStateFlow<SettingsSheet?>(null)
+    val pendingSettingsSheet: StateFlow<SettingsSheet?> = _pendingSettingsSheet.asStateFlow()
+
+    fun requestSettingsSheet(sheet: SettingsSheet) {
+        _pendingSettingsSheet.value = sheet
+    }
+
+    fun consumeSettingsSheet() {
+        _pendingSettingsSheet.value = null
+    }
+
+    enum class SettingsSheet { PasswordSignIn, Language }
+
     // routes the assistant may send the user to, keyed by friendly aliases
     companion object {
         val ROUTE_ALIASES: Map<String, String> = mapOf(
@@ -71,6 +88,19 @@ class AiNavigator @Inject constructor() {
             "healthcare" to "care_nearby",
             "clinics" to "care_nearby",
             "pharmacy" to "care_nearby",
+            "plan" to "plan",
+            "myndora_plus" to "plan",
+            "plus" to "plan",
+            "subscription" to "plan",
+            "upgrade" to "plan",
+            "game" to "shape_flow",
+            "shape_flow" to "shape_flow",
+            "shapeflow" to "shape_flow",
+            // both open Settings, with a sheet latched open. see requestSettingsSheet
+            "password" to "settings",
+            "sign_in" to "settings",
+            "account_security" to "settings",
+            "language" to "settings",
         )
     }
 }

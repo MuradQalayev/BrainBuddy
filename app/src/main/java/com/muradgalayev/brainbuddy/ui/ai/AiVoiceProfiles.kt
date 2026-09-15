@@ -2,19 +2,20 @@ package com.muradgalayev.brainbuddy.ui.ai
 
 import android.speech.tts.Voice
 import java.util.Locale
+import com.muradgalayev.brainbuddy.R
 
 data class AiVoiceProfile(
     val name: String,
-    val description: String,
+    @androidx.annotation.StringRes val descriptionRes: Int,
     val pitch: Float,
     val rate: Float,
 )
 
 val MyndoraVoiceProfiles = listOf(
-    AiVoiceProfile("Noah", "Calm, grounded voice", pitch = 1.00f, rate = .97f),
-    AiVoiceProfile("Milo", "Warm, conversational voice", pitch = 1.00f, rate = 1.00f),
-    AiVoiceProfile("Luna", "Gentle, reassuring voice", pitch = 1.00f, rate = .98f),
-    AiVoiceProfile("Nova", "Bright, energetic voice", pitch = 1.00f, rate = 1.03f),
+    AiVoiceProfile("Noah", R.string.voice_calm, pitch = 1.00f, rate = .97f),
+    AiVoiceProfile("Milo", R.string.voice_warm, pitch = 1.00f, rate = 1.00f),
+    AiVoiceProfile("Luna", R.string.voice_gentle, pitch = 1.00f, rate = .98f),
+    AiVoiceProfile("Nova", R.string.voice_bright, pitch = 1.00f, rate = 1.03f),
 )
 
 fun curatedAiVoices(voices: Set<Voice>?, locale: Locale = Locale.getDefault()): List<Voice> =

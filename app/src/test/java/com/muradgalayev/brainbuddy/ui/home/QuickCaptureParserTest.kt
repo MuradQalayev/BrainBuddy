@@ -141,4 +141,43 @@ class QuickCaptureParserTest {
         assertEquals(LocalTime.of(0, 30), parseQuickCapture("Sleep 12:30am", now).time)
         assertEquals(LocalTime.of(12, 30), parseQuickCapture("Lunch 12:30pm", now).time)
     }
+
+    @Test
+    fun `Italian day and time`() {
+        val draft = parseQuickCapture("Chiamare la farmacia domani alle 15", now)
+        assertEquals("Chiamare la farmacia", draft.title)
+        assertEquals(today.plusDays(1), draft.date)
+        assertEquals(LocalTime.of(15, 0), draft.time)
+    }
+
+    @Test
+    fun `Italian relative offset`() {
+        val draft = parseQuickCapture("Riunione tra 30 min", now)
+        assertEquals("Riunione", draft.title)
+        assertEquals(LocalTime.of(10, 45), draft.time)
+    }
+
+    @Test
+    fun `Italian weekday with an accent, and without one`() {
+        // now is a Wednesday, so the coming Friday is two days out
+        assertEquals(today.plusDays(2), parseQuickCapture("Dentista venerdì", now).date)
+        assertEquals(today.plusDays(2), parseQuickCapture("Dentista venerdi", now).date)
+        assertEquals("Dentista", parseQuickCapture("Dentista venerdì", now).title)
+    }
+
+    @Test
+    fun `Italian part of day and dotted time`() {
+        val evening = parseQuickCapture("Cena domani sera", now)
+        assertEquals(today.plusDays(1), evening.date)
+        assertEquals(LocalTime.of(19, 0), evening.time)
+        assertEquals(LocalTime.of(15, 30), parseQuickCapture("Palestra alle 15.30", now).time)
+    }
+
+    @Test
+    fun `a dotted number without alle stays part of the title`() {
+        val draft = parseQuickCapture("Pagare 2.50 al bar", now)
+        assertEquals("Pagare 2.50 al bar", draft.title)
+        assertNull(draft.time)
+    }
+
 }

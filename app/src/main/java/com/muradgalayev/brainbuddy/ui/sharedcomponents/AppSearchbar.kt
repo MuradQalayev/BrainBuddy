@@ -30,13 +30,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun AppSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onClose: () -> Unit,
-    placeholderText: String = "Search..."
+    placeholderText: String = stringResource(R.string.common_search_hint)
 ) {
     val focusRequester = remember { FocusRequester() }
 
@@ -96,7 +98,7 @@ fun AppSearchBar(
         IconButton(onClick = onClose) {
             Icon(
                 imageVector = Icons.Outlined.Close,
-                contentDescription = "Close search",
+                contentDescription = stringResource(R.string.search_close),
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(20.dp)
             )

@@ -51,6 +51,8 @@ import com.muradgalayev.brainbuddy.ui.theme.myndoraAccents
 import kotlin.math.PI
 import kotlin.math.sin
 import kotlin.random.Random
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // the companion, full size. motivational and nothing else: no counts to act on, no list, no
 // button that changes anything, deliberately. it's the one surface in the app that asks for
@@ -80,7 +82,7 @@ fun TodayProgressBuddyDialog(
         label = "buddy_entrance",
     )
 
-    val message = remember(done, total) { buddyMessage(done, total) }
+    val message = buddyMessage(done, total)
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -113,7 +115,7 @@ fun TodayProgressBuddyDialog(
                     ) {
                         Icon(
                             Icons.Rounded.Close,
-                            contentDescription = "Close",
+                            contentDescription = stringResource(R.string.common_close),
                             tint = Color.White.copy(alpha = .8f),
                             modifier = Modifier.size(19.dp),
                         )
@@ -161,7 +163,7 @@ fun TodayProgressBuddyDialog(
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        if (total <= 0) "nothing scheduled" else "$done done today",
+                        if (total <= 0) stringResource(R.string.buddy_nothing_scheduled) else stringResource(R.string.buddy_done_today, done),
                         style = MaterialTheme.typography.labelMedium.tabular(),
                         color = Color.White.copy(alpha = .45f),
                         letterSpacing = 1.2.sp,
@@ -230,35 +232,34 @@ data class BuddyMessage(val headline: String, val line: String)
 // - the zero case is a welcome, and explicitly says the creature isn't waiting on you, because
 //   'it's waiting for you!' is the exact sentence that makes an app unopenable on a bad day;
 // - no 'keep it up', no streaks, no tomorrow. this is about today, and today is already fine
+@Composable
 fun buddyMessage(done: Int, total: Int): BuddyMessage = when {
     total <= 0 -> BuddyMessage(
-        "Out cold.",
-        "Nothing on today, so it's having a nap. Sleeping is most of what it's good at.",
+        stringResource(R.string.buddy_out_cold),
+        stringResource(R.string.buddy_out_cold_line),
     )
     done <= 0 -> BuddyMessage(
-        "Still asleep.",
-        "It's not waiting on you — it's just asleep. It stirs at the first thing you finish, " +
-            "and the smallest thing counts exactly the same as the biggest.",
+        stringResource(R.string.buddy_asleep),
+        stringResource(R.string.buddy_asleep_line),
     )
     done == 1 -> BuddyMessage(
-        "One eye open.",
-        "One thing did that. Starting is the whole hard part, and you're past it.",
+        stringResource(R.string.buddy_one_eye),
+        stringResource(R.string.buddy_one_eye_line),
     )
     done >= total && total == 1 -> BuddyMessage(
-        "Look at it go.",
-        "Everything today asked of you. That's the lot.",
+        stringResource(R.string.buddy_look),
+        stringResource(R.string.buddy_look_one_line),
     )
     done >= total -> BuddyMessage(
-        "Look at it go.",
-        "All $total of them. Sit with that for a second before you find the next thing.",
+        stringResource(R.string.buddy_look),
+        stringResource(R.string.buddy_look_all_line, total),
     )
     done * 2 >= total -> BuddyMessage(
-        "Wide awake.",
-        "$done in and it's bouncing. Whatever else today does, that part already happened.",
+        stringResource(R.string.buddy_wide_awake),
+        stringResource(R.string.buddy_wide_awake_line, done),
     )
     else -> BuddyMessage(
-        "Awake, thanks to you.",
-        "$done down. It stays awake for the rest of the day — nothing you do or don't do next " +
-            "puts it back to sleep.",
+        stringResource(R.string.buddy_awake),
+        stringResource(R.string.buddy_awake_line, done),
     )
 }

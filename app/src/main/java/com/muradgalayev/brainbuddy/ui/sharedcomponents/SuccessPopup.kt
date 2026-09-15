@@ -29,12 +29,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.delay
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun SuccessPopup(
     message: String,
     onDismiss: () -> Unit,
-    title: String = "Success"
+    title: String = stringResource(R.string.common_success)
 ) {
     val context = LocalContext.current
     LaunchedEffect(Unit) {

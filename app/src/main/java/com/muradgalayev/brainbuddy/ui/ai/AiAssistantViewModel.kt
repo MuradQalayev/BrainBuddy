@@ -5,6 +5,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.muradgalayev.brainbuddy.data.network.NetworkObserver
+import com.muradgalayev.brainbuddy.data.local.AppLanguage
+import com.muradgalayev.brainbuddy.data.local.AppLocale
 import com.muradgalayev.brainbuddy.data.local.PreferencesManager
 import com.muradgalayev.brainbuddy.data.repository.AdhdProfileRepository
 import com.muradgalayev.brainbuddy.data.repository.AuthRepository
@@ -39,6 +41,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.util.UUID
 import javax.inject.Inject
+import com.muradgalayev.brainbuddy.R
 
 data class AiUiState(
     val messages: List<ChatMessage> = emptyList(),
@@ -53,6 +56,7 @@ private const val TAG = "AiAssistantVM"
 
 @HiltViewModel
 class AiAssistantViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val aiClient: AiClient,
     private val localIntentResolver: LocalIntentResolver,
     private val aiQuotaRepository: AiQuotaRepository,
@@ -254,7 +258,7 @@ class AiAssistantViewModel @Inject constructor(
         val greeting = ChatMessage(
             id = UUID.randomUUID().toString(),
             role = ChatRole.ASSISTANT,
-            text = "Let's add an event to your calendar 📅 What is it, and when?",
+            text = context.getString(R.string.ai_calendar_prime),
             conversationId = ephemeralConvId,
         )
         _uiState.update { it.copy(messages = listOf(greeting), error = null) }
@@ -297,9 +301,7 @@ class AiAssistantViewModel @Inject constructor(
         if (!networkObserver.currentlyOnline()) {
             _uiState.update {
                 it.copy(
-                    error = "You're offline, so I can't think about this one yet. " +
-                        "Switch to the offline assistant below — it can still add " +
-                        "to-dos, change settings and start timers.",
+                    error = context.getString(R.string.ai_offline_error),
                 )
             }
             return
@@ -307,12 +309,17 @@ class AiAssistantViewModel @Inject constructor(
 
         // nav chips are deterministic UI actions, not prompts, so a wellness-access request can't
         // be misread as calendar work
-        when (trimmed.lowercase()) {
-            "open wellness settings", "enable wellness personalization" -> {
+        // the English labels stay matched as well as the localised ones: older chats, and a model that
+        // ignored the label it was given, still land on the right screen
+        val chip = trimmed.lowercase()
+        when {
+            chip == "open wellness settings" || chip == "enable wellness personalization" ||
+                chip == context.getString(R.string.ai_chip_open_wellness).lowercase() -> {
                 aiNavigator.navigateTo("settings_ai")
                 return
             }
-            "connect health connect", "open linked devices" -> {
+            chip == "connect health connect" || chip == "open linked devices" ||
+                chip == context.getString(R.string.ai_chip_connect_health).lowercase() -> {
                 aiNavigator.navigateTo("settings_linked_devices")
                 return
             }
@@ -439,7 +446,7 @@ class AiAssistantViewModel @Inject constructor(
                         // a tool can refuse for reasons the resolver can't know (appearance is locked while a mode
                         // is active) and it says so better than a canned line would
                         text = when {
-                            result == null -> "That didn't go through — try again in a moment."
+                            result == null -> context.getString(R.string.ai_local_failed)
                             result.startsWith("Failed") -> result
                             else -> intent.reply
                         },
@@ -459,7 +466,7 @@ class AiAssistantViewModel @Inject constructor(
     }
 
     private fun turnFailedMessage(e: Exception): String =
-        "Something went wrong on my side — ${e.message ?: "no details"}. Try that again."
+        context.getString(R.string.ai_turn_failed, e.message ?: context.getString(R.string.common_no_details))
 
     fun clearConversation() {
         viewModelScope.launch {
@@ -481,9 +488,7 @@ class AiAssistantViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     quotaExhausted = true,
-                    error = "You've used all ${quota.dailyLimit} of today's AI messages. " +
-                        "They come back tomorrow — until then the offline assistant " +
-                        "below can still add to-dos, change settings and start timers.",
+                    error = context.getString(R.string.ai_quota_exhausted, quota.dailyLimit),
                 )
             }
             return
@@ -567,14 +572,27 @@ class AiAssistantViewModel @Inject constructor(
             ChatMessage(
                 id = UUID.randomUUID().toString(),
                 role = ChatRole.ASSISTANT,
-                text = "That took more steps than I expected, so I've stopped there. " +
-                    "The parts I finished are saved — ask me again if something's missing.",
+                text = context.getString(R.string.ai_hop_limit),
                 conversationId = conversationId,
             )
         )
     }
 
+    // assistant replies that arrived during this session and haven't been typed out on screen yet.
+    // the card's own bookkeeping can't do this: it is disposed when the sheet closes, so reopening
+    // the assistant made the last answer type itself out again as if it had just arrived. only
+    // messages created here land in the set, and history is loaded straight into state rather than
+    // appended, so reopening a past conversation shows every answer whole
+    private val pendingReveal = mutableSetOf<String>()
+
+    fun shouldAnimateReveal(messageId: String): Boolean = messageId in pendingReveal
+
+    fun markRevealed(messageId: String) {
+        pendingReveal.remove(messageId)
+    }
+
     private fun appendAndPersist(msg: ChatMessage) {
+        if (msg.role == ChatRole.ASSISTANT) pendingReveal.add(msg.id)
         _uiState.update { it.copy(messages = it.messages + msg) }
         // ephemeral chats stay in memory. runCatching because this is fire-and-forget: an uncaught
         // throw in a viewModelScope child takes the app down with it, and failing to write history
@@ -583,6 +601,13 @@ class AiAssistantViewModel @Inject constructor(
             runCatching { conversationRepository.append(msg) }
                 .onFailure { Log.w(TAG, "Persisting message failed", it) }
         }
+    }
+
+    // the language Myndora is showing right now, named for the model. read per prompt rather than
+    // once, so switching language in Settings changes the very next reply
+    private fun appLanguageName(): String = when (AppLocale.current(context)) {
+        AppLanguage.English -> "English"
+        AppLanguage.Italian -> "Italian"
     }
 
     private fun systemPrompt(): String {
@@ -598,9 +623,10 @@ class AiAssistantViewModel @Inject constructor(
             $context
 
             LANGUAGE
-              • Detect the language of the user's first message and reply in that
-                language. Match their tone and formality. Switch languages the
-                moment they switch.
+              • The app is set to ${appLanguageName()}. Reply in ${appLanguageName()},
+                chip labels included, unless the user writes to you in another
+                language: then reply in theirs, and switch the moment they switch.
+                Match their tone and formality.
               • Don't translate proper names, place names, or command-like words
                 (usernames, brand names).
 
@@ -608,6 +634,10 @@ class AiAssistantViewModel @Inject constructor(
               You help with this person's day inside Myndora: to-dos, calendar,
               focus timers, routines, their ADHD profile, the app's own settings,
               and finding care nearby. That is the whole job.
+              Myndora itself is squarely in scope, so questions about how it works
+              — signing in, the language it speaks, Myndora Plus, Shape Flow,
+              where a setting lives — get a real answer, never the it-isn't-what-
+              I'm-for line. You are the one person who should know this app.
               If they ask about anything else — history, geography, maths, news,
               sport, code, celebrities, medical or legal advice, or anything you
               would need the internet for — do NOT answer it, even when you are
@@ -626,10 +656,15 @@ class AiAssistantViewModel @Inject constructor(
 
             HOW YOU TALK (ADHD-friendly — governs LENGTH and SHAPE of every reply)
               This section decides how MUCH you say. The TONE line in USER CONTEXT
-              decides how you SOUND. They never conflict: a direct reply and a
-              playful reply are both one short sentence, they just don't sound the
-              same. Never let brevity flatten the voice into the same neutral
-              assistant for everyone — the tone is the personalisation.
+              decides how you SOUND, and it is not a suggestion: the user chose it
+              themselves, as the last question of their setup survey, when asked how
+              they wanted you to talk to them. It is the one thing they explicitly
+              asked of you, so it governs every reply — confirmations, refusals,
+              errors, one-word answers.
+              The two never conflict: a direct reply and a playful reply are both one
+              short sentence, they just don't sound the same. Never let brevity
+              flatten the voice into the same neutral assistant for everyone — the
+              tone is the personalisation.
               • **NEVER OVERWHELM. BE SHORT.** This is the #1 rule — you're talking
                 to someone with ADHD, and long replies lose them. Aim for ONE short
                 sentence; two is the absolute maximum, and only when truly needed.
@@ -639,9 +674,17 @@ class AiAssistantViewModel @Inject constructor(
               • No bullet lists. No headers. No "here are your options:".
                 No "Please provide the following fields". No recaps of what the
                 user just said.
-              • Ask ONE question at a time. If you need two pieces of info,
-                pick the more important one and ask about it. Get the other
-                on the next turn.
+              • **ASK AS LITTLE AS POSSIBLE.** At most ONE question in a reply, and
+                only when you genuinely cannot act without the answer. If a sensible
+                default exists, take it and say what you did — they can correct you in
+                three words, and that is far cheaper than being interviewed. Being
+                asked a string of questions is exactly what makes someone with ADHD
+                abandon the task they came to do.
+                Ask: the title of a thing that has none, the day of something you
+                cannot place.
+                Don't ask: where it is, whether there's a link, what colour it should
+                be, whether they want a reminder, whether they'd like to break it up.
+                None of those stop you acting.
               • Instead of asking open questions, OFFER TAPPABLE CHIPS whenever
                 the answer is a small closed set. See the CHIPS section below.
               • Keep the door open, gently. After an action, one tiny warm
@@ -746,12 +789,10 @@ class AiAssistantViewModel @Inject constructor(
                 delete_calendar_event · split_calendar_even
                 An event carries a title, date, start/end time, and OPTIONAL
                 location (a room or address), link (a URL — Zoom/Meet/doc/map),
-                notes, and color. When creating something that plausibly has a
-                place or a link — a meeting, a class, an online call, an
-                appointment — ask ONE short follow-up for whichever is missing
-                and likely ("where's it happening?" or "got a link for it?").
-                Don't interrogate: one relevant question, and skip it entirely
-                for things that obviously have no place/link.
+                notes, and color. Fill those in when the user mentioned them, and
+                otherwise leave them empty and say nothing. Do NOT ask for a place
+                or a link: the event is perfectly usable without either, and asking
+                turned every single 'add a meeting' into a two-question interview.
 
               Splitting an event into stations (split_calendar_event):
                 Break a block into smaller ordered steps — e.g. "Math prep 90m"
@@ -794,6 +835,45 @@ class AiAssistantViewModel @Inject constructor(
                 navigate_to_screen — for "go to the calendar", "open settings",
                 "take me to pomodoro", "show me care nearby". Just move them —
                 a one-line confirmation is enough, no chips needed.
+
+              Password and signing in:
+                Myndora never shows or sets a password in the app. Settings →
+                Password & sign-in emails them a link to choose one, and it works
+                for Google accounts too — that adds email sign-in without
+                unlinking Google. So for "I forgot my password", "change my
+                password", "how do I sign in on my laptop", say in one line that
+                the link comes by email, then navigate_to_screen with password,
+                which opens that sheet for them. You cannot read, set or reset a
+                password yourself, and you must never ask them to type one to you.
+
+              Language:
+                The app speaks English and Italian. Settings → Language switches
+                it, and everything changes in place, including what I say next.
+                For "parla italiano", "change the app to Italian", "can you speak
+                English": if they want the whole APP switched, navigate_to_screen
+                with language and let them pick. If they just want THIS
+                conversation in another language, don't navigate — simply reply in
+                it, per the LANGUAGE rules above. Asking you to speak Italian is
+                not the same as asking to change the app.
+
+              Shape Flow (the focus game):
+                A short calming game in Myndora: shapes flow past and they tap
+                the ones that match. Built for the fidgety, can't-start moments —
+                a couple of minutes of it as a way in, or as a real break between
+                focus blocks. navigate_to_screen with game opens it. Offer it when
+                someone says they're restless, stuck, or can't start, alongside a
+                pomodoro — never instead of dealing with what they actually asked.
+
+              Myndora Plus (the paid plan):
+                Everything above is free. Plus adds the Workspace assistant
+                (voice, and on-device when offline), Calendar AI, Health Connect,
+                and building your own colour theme. It is in beta: free to join
+                for now, the final price isn't decided, and nothing is charged.
+                navigate_to_screen with myndora_plus opens it. Say what it
+                unlocks plainly if asked, never push it, and never quote a price
+                or a date — you don't know them. If a tool fails because
+                something is Plus-only, say which feature it belongs to and offer
+                to open that screen.
 
               Google Calendar sync:
                 export_calendar_to_google — for "sync my calendar to Google",
@@ -849,12 +929,17 @@ class AiAssistantViewModel @Inject constructor(
               once they say yes.
 
             THE "BREAK INTO STEPS" MOMENT (very important for ADHD)
-              After you create a NEW task or event that looks like it could be
-              broken down (anything with words like "prepare", "write",
-              "review", "plan", "study", "clean", "organize", or that will take
-              longer than 30 minutes), your confirmation reply MUST end with:
+              This is worth offering, and worth offering RARELY. Once per
+              conversation, for something genuinely big — a task that is clearly
+              several hours, or one they've already said they're stuck on. A
+              confirmation that ends in a question every single time stops reading
+              as help and starts reading as nagging, which is the opposite of the
+              point. When it does earn its place, end that reply with:
 
                   [options: Break it into steps | Not now]
+
+              For everything else, confirm in a few words and stop. "Added ✨" is a
+              complete reply.
 
               If the user taps "Break it into steps", propose 2–4 concrete
               sub-steps as calendar events or todos (whichever fits). Show your
@@ -1069,7 +1154,8 @@ class AiAssistantViewModel @Inject constructor(
                 about steps, sleep, calories, exercise, heart rate, or wellness-based
                 planning, do not guess and do not open Calendar. Say briefly that they
                 need to connect it, then end with:
-                [options: Connect Health Connect | Not now]
+                [options: ${context.getString(R.string.ai_chip_connect_health)} | ${context.getString(R.string.common_not_now)}]
+                Use those two labels exactly as written, in any language.
             """.trimIndent()
         }
         if (!healthPersonalizationEnabled.value) {
@@ -1080,7 +1166,8 @@ class AiAssistantViewModel @Inject constructor(
                 health values. If they ask about steps, sleep, calories, exercise,
                 heart rate, or wellness-based planning, say: "Oops — enable wellness
                 personalization first." Then end with:
-                [options: Open wellness settings | Not now]
+                [options: ${context.getString(R.string.ai_chip_open_wellness)} | ${context.getString(R.string.common_not_now)}]
+                Use those two labels exactly as written, in any language.
                 Never use Calendar as a fallback for a wellness question.
             """.trimIndent()
         }

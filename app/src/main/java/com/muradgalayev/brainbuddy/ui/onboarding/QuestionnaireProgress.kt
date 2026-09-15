@@ -1,5 +1,7 @@
 package com.muradgalayev.brainbuddy.ui.onboarding
 
+import com.muradgalayev.brainbuddy.domain.model.AdhdProfile
+
 import com.muradgalayev.brainbuddy.domain.model.SurveyVersion
 
 /** The single source of truth for page completion and reminder progress. */
@@ -50,3 +52,44 @@ fun questionnaireCompletion(
         /* 26 */ state.aiTone != null,
     )
 }
+
+// a saved profile as survey answers. anything that counts what's answered goes through this and
+// questionnaireCompletion, so Settings and the survey itself can't disagree about what's left
+fun AdhdProfile.toSurveyAnswers(
+    firstName: String = "",
+    lastName: String = "",
+    username: String = "",
+): OnboardingUiState = OnboardingUiState(
+    firstName = firstName,
+    lastName = lastName,
+    username = username,
+    ageRange = ageRange,
+    diagnosisStatus = diagnosisStatus,
+    primarySymptoms = primarySymptoms.toSet(),
+    topGoals = topGoals,
+    presentation = presentation,
+    coOccurring = coOccurring,
+    chronotype = chronotype,
+    sleepScheduleOrigin = sleepScheduleOrigin,
+    interruptionRecall = interruptionRecall,
+    captureNeed = captureNeed,
+    planChangeImpact = planChangeImpact,
+    taskReturnEffort = taskReturnEffort,
+    impulseAreas = impulseAreas,
+    nudgeTone = nudgeTone,
+    checkInCeiling = checkInCeiling,
+    missedTaskResponse = missedTaskResponse,
+    bodyDoublingInterest = bodyDoublingInterest,
+    workEnvironment = workEnvironment,
+    pastStrategies = pastStrategies,
+    productiveTime = productiveTime,
+    focusDurationMinutes = focusDurationMinutes ?: 25,
+    sleepBedtime = sleepBedtime,
+    sleepWakeTime = sleepWakeTime,
+    medicationStatus = medicationStatus,
+    medications = medications,
+    copingStrategies = copingStrategies.toSet(),
+    painPoint = painPoint,
+    aiTone = aiTonePreference,
+    cityId = cityId,
+)

@@ -83,11 +83,11 @@ class EventReminderReceiver : BroadcastReceiver() {
 
         val notification = NotificationCompat.Builder(context, NotificationChannels.EVENT_REMINDERS)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(ReminderCopy.titleFor(kind))
-            .setContentText(ReminderCopy.bodyFor(kind, title, timeLabel))
+            .setContentTitle(ReminderCopy.titleFor(context, kind))
+            .setContentText(ReminderCopy.bodyFor(context, kind, title, timeLabel))
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText(ReminderCopy.bodyFor(kind, title, timeLabel))
+                    .bigText(ReminderCopy.bodyFor(context, kind, title, timeLabel))
             )
             .setContentIntent(tapIntent)
             .setAutoCancel(true)

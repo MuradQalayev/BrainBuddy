@@ -1,3 +1,2356 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Myndora</string>
+    <string name="app_name" translatable="false">Myndora</string>
+
+    <!-- common -->
+    <string name="common_cancel">Cancel</string>
+    <string name="common_close">Close</string>
+    <string name="common_save">Save</string>
+    <string name="common_back">Back</string>
+    <string name="common_continue">Continue</string>
+    <string name="common_done">Done</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_ok">OK</string>
+    <string name="common_retry">Retry</string>
+    <string name="common_try_again">Try again</string>
+    <string name="common_selected">Selected</string>
+    <string name="common_edit">Edit</string>
+    <string name="common_add">Add</string>
+    <string name="common_remove">Remove</string>
+    <string name="common_skip">Skip</string>
+    <string name="common_next">Next</string>
+    <string name="common_yes">Yes</string>
+    <string name="common_no">No</string>
+    <string name="common_dismiss">Dismiss</string>
+    <string name="common_undo">Undo</string>
+    <string name="common_today">Today</string>
+    <string name="common_tomorrow">Tomorrow</string>
+    <string name="common_yesterday">Yesterday</string>
+    <string name="common_on">On</string>
+    <string name="common_off">Off</string>
+    <string name="common_light">Light</string>
+    <string name="common_dark">Dark</string>
+    <string name="common_auto">Auto</string>
+    <string name="common_small">Small</string>
+    <string name="common_medium">Medium</string>
+    <string name="common_large">Large</string>
+    <string name="common_email">Email</string>
+    <string name="common_password">Password</string>
+    <string name="common_confirm">Confirm</string>
+    <string name="common_clear">Clear</string>
+    <string name="common_open">Open</string>
+    <string name="common_settings">Settings</string>
+    <string name="common_more_options">More options</string>
+    <string name="common_got_it">Got it</string>
+    <string name="common_not_now">Not now</string>
+    <string name="common_start">Start</string>
+    <string name="common_stop">Stop</string>
+    <string name="common_pause">Pause</string>
+    <string name="common_resume">Resume</string>
+    <string name="common_search">Search</string>
+    <string name="common_loading">Loading…</string>
+    <string name="common_share">Share</string>
+    <string name="common_copy">Copy</string>
+    <string name="common_send">Send</string>
+    <string name="common_reset">Reset</string>
+    <string name="common_none">None</string>
+    <string name="common_all">All</string>
+    <string name="common_minutes_short">%1$s min</string>
+
+    <!-- ui/settings/components/LanguagePicker.kt -->
+    <string name="language_title">Language</string>
+    <string name="language_dialog_body">Myndora switches straight away, including reminders and your assistant\'s replies.</string>
+    <string name="language_setup_blurb">Pick the language you\'d like to use Myndora in. You can change it later in Settings.</string>
+    <string name="language_settings_subtitle">App language · %1$s</string>
+
+    <!-- ui/auth/AuthScreen.kt -->
+    <string name="auth_back_to_sign_in">Back to sign in</string>
+    <string name="auth_show_field">Show %1$s</string>
+    <string name="auth_hide_field">Hide %1$s</string>
+    <string name="auth_continue_to_myndora">Continue to Myndora</string>
+    <string name="auth_still_signed_in">Your account remains signed in on this device</string>
+    <string name="auth_password_changed_body">Your new password is ready. You can now continue securely into Myndora.</string>
+    <string name="auth_password_changed">Password changed</string>
+    <string name="auth_badge_all_secure">ALL SECURE</string>
+    <string name="auth_update_password">Update password</string>
+    <string name="auth_passwords_mismatch">Those passwords don\'t match yet.</string>
+    <string name="auth_rule_match">Both passwords match</string>
+    <string name="auth_rule_min_length">At least 6 characters</string>
+    <string name="auth_password_strength">Password strength</string>
+    <string name="auth_confirm_password">Confirm password</string>
+    <string name="auth_new_password">New password</string>
+    <string name="auth_new_password_body">Your reset link is verified. Choose something memorable and unique to Myndora.</string>
+    <string name="auth_create_new_password">Create a new password</string>
+    <string name="auth_badge_secure_reset">SECURE RESET</string>
+    <string name="auth_strength_excellent">Excellent</string>
+    <string name="auth_strength_strong">Strong</string>
+    <string name="auth_strength_good">Good</string>
+    <string name="auth_strength_starting">Getting started</string>
+    <string name="auth_send_link">Send link</string>
+    <string name="auth_reset_body">Enter the email you signed up with. We\'ll send you a link to set a new password.</string>
+    <string name="auth_reset_password">Reset password</string>
+    <string name="auth_continue_google">Continue with Google</string>
+    <string name="auth_sign_in">Sign In</string>
+    <string name="auth_sign_up">Sign Up</string>
+    <string name="auth_have_account">Already have an account?\u0020</string>
+    <string name="auth_no_account">Don\'t have an account?\u0020</string>
+    <string name="auth_forgot_password">Forgot password?</string>
+    <string name="auth_show_password">Show password</string>
+    <string name="auth_hide_password">Hide password</string>
+    <string name="auth_phone_number">Phone number</string>
+    <string name="auth_last_name">Last name</string>
+    <string name="auth_first_name">First name</string>
+    <string name="auth_create_account">Create your account</string>
+    <string name="auth_welcome_back">Welcome back</string>
+
+    <!-- ui/auth/AuthViewModel.kt -->
+    <string name="auth_account_created">Account created. Check your email to confirm, then sign in.</string>
+    <string name="common_no_internet">No internet connection</string>
+    <string name="auth_error_password_length">Password must be at least 6 characters</string>
+    <string name="auth_error_enter_name">Please enter your name</string>
+    <string name="auth_error_fill_all">Please fill in all fields</string>
+    <string name="auth_reset_link_sent">Reset link sent to %1$s. Check your email to continue.</string>
+    <string name="auth_error_invalid_email">Please enter a valid email</string>
+
+    <!-- data/auth/AuthErrorMessage.kt -->
+    <string name="auth_error_weak_password">Password is too weak</string>
+    <string name="auth_error_invalid_email_address">Please enter a valid email address</string>
+    <string name="auth_error_redirect_not_allowed">The password-reset callback is not allowed by the server configuration.</string>
+    <string name="auth_error_reset_send_failed">The email service couldn\'t send the reset message. Please try again later.</string>
+    <string name="auth_error_email_not_authorized">Email delivery is not configured for this address yet.</string>
+    <string name="auth_error_phone_taken">That phone number is already connected to another Myndora account.</string>
+    <string name="auth_error_code_wrong">That verification code is not correct.</string>
+    <string name="auth_error_code_expired">That verification code expired. Request a new one.</string>
+    <string name="auth_error_sms_not_configured">Phone verification is not configured yet. Enable an SMS provider in Supabase.</string>
+    <string name="auth_error_sms_rate">Too many verification codes were requested. Please wait before trying again.</string>
+    <string name="auth_error_email_rate">Too many emails were requested. Please wait a while and try again.</string>
+    <string name="auth_error_already_registered">This email is already registered</string>
+    <string name="auth_error_invalid_credentials">Invalid email or password</string>
+    <string name="auth_error_confirm_email">Please confirm your email before signing in.</string>
+    <string name="auth_error_unreachable">Can\'t reach the server. Check your internet connection.</string>
+    <string name="auth_error_generic">Something went wrong. Please try again.</string>
+
+    <!-- ui/auth/AuthScreen.kt -->
+    <string name="auth_or">\u0020\u0020or\u0020\u0020</string>
+
+    <!-- ui/onboarding/AppearanceSetupScreen.kt -->
+    <string name="setup_text_size_blurb">This page resizes with it, so what you see is what you get.</string>
+    <string name="setup_text_size">Text size</string>
+    <string name="setup_font_dyslexic_blurb">Weighted bottoms hold each letter the right way up.</string>
+    <string name="setup_font_atkinson_blurb">Letters that usually collide — I, l, 1, O, 0 — are drawn apart.</string>
+    <string name="setup_font_arial_blurb">Familiar and neutral.</string>
+    <string name="setup_typeface_blurb">Each is shown in its own lettering — pick the one that\'s easiest to read, not the one that looks nicest.</string>
+    <string name="setup_typeface">Typeface</string>
+    <string name="setup_light_or_dark_blurb">Auto follows your phone\'s own setting.</string>
+    <string name="setup_light_or_dark">Light or dark</string>
+    <string name="setup_appearance_intro">Set how Myndora looks and reads before anything else. The whole app changes as you choose, and none of it is permanent — it all lives in Settings afterwards.</string>
+    <string name="setup_make_it_yours">Make it yours</string>
+
+    <!-- ui/onboarding/OnboardingChoiceScreen.kt -->
+    <string name="onboarding_do_later">I\'ll do this later</string>
+    <string name="onboarding_deep_dive_blurb">Sleep, focus patterns, coping tools, tone preference. The more we know, the better the support.</string>
+    <string name="onboarding_deep_dive_meta">12 questions · ~3 minutes</string>
+    <string name="onboarding_deep_dive">Deep Dive</string>
+    <string name="onboarding_quick_setup_blurb">Just the basics. Enough for the assistant to be useful from day one.</string>
+    <string name="onboarding_quick_setup_meta">5 questions · ~30 seconds</string>
+    <string name="onboarding_quick_setup">Quick Setup</string>
+    <string name="onboarding_choice_intro">Myndora works best when it knows how your ADHD shows up. Pick how much you want to share — you can edit anything later.</string>
+    <string name="onboarding_get_to_know_you">Let\'s get to know you</string>
+
+    <!-- ui/onboarding/QuickSetupScreen.kt -->
+    <string name="onboarding_saved_offline">Saved on this device — it\'ll upload when you\'re back online</string>
+    <string name="onboarding_ready">Your Myndora experience is ready.</string>
+    <string name="onboarding_nice_work">Nice work!</string>
+    <string name="onboarding_completed">Completed</string>
+    <string name="onboarding_make_it_yours_caps">MAKE IT YOURS</string>
+    <string name="onboarding_improve_sub">Pick up to three — we\'ll shape Myndora around them.</string>
+    <string name="onboarding_improve">What do you want to get better at?</string>
+    <string name="onboarding_pick_all">Pick all that apply.</string>
+    <string name="onboarding_hardest">What feels hardest?</string>
+    <string name="onboarding_diagnosis_sub">This helps tailor advice to you.</string>
+    <string name="onboarding_diagnosis">Diagnosis</string>
+    <string name="onboarding_age_range_sub">Choose the range that fits you.</string>
+    <string name="onboarding_age_range">Your age range</string>
+    <string name="onboarding_where_live_sub">We use this to show relevant care in your area.</string>
+    <string name="onboarding_where_live">Where do you live?</string>
+    <string name="onboarding_surname">Surname</string>
+    <string name="onboarding_personal_info_sub">Tell us what we should call you.</string>
+    <string name="onboarding_personal_info">Personal info</string>
+    <string name="onboarding_finish_setup">Finish setup</string>
+    <string name="common_save_changes">Save changes</string>
+
+    <!-- ui/onboarding/ChecklistComponents.kt -->
+    <string name="checklist_progress">%1$s of %2$s done</string>
+    <string name="checklist_complete_below">Complete your checklist below.</string>
+    <string name="checklist_lets_set_up">Let\'s set up</string>
+
+    <!-- domain/model/IntakeAnswers.kt -->
+    <string name="intake_past_nothing">Nothing formal yet</string>
+    <string name="intake_body_doubling">Body doubling</string>
+    <string name="intake_past_medication">Medication only, no other tools</string>
+    <string name="intake_past_therapy">Therapy or coaching</string>
+    <string name="intake_past_other_apps">Other ADHD-focused apps</string>
+    <string name="intake_past_planners">Planners or planning apps</string>
+    <string name="intake_env_public">Public spaces (cafés, libraries…)</string>
+    <string name="intake_env_varies">It varies a lot</string>
+    <string name="intake_env_shared">A shared or noisy space</string>
+    <string name="intake_env_quiet">A quiet, dedicated space</string>
+    <string name="intake_body_no">No, I prefer working solo</string>
+    <string name="intake_body_maybe">Maybe, curious</string>
+    <string name="intake_body_yes">Yes, definitely</string>
+    <string name="intake_missed_remotivate">Actively try to re-motivate me</string>
+    <string name="intake_missed_gently">Note it gently, no judgment</string>
+    <string name="intake_missed_dont_mention">Don\'t mention it, just move on</string>
+    <string name="intake_ceiling_frequent">Frequent check-ins help me stay on track</string>
+    <string name="intake_ceiling_moderate">A moderate amount, as needed</string>
+    <string name="intake_ceiling_rare">Rarely — a couple of times a day at most</string>
+    <string name="intake_nudge_case">Let me choose case by case</string>
+    <string name="intake_nudge_firm">Firm, almost like a deadline</string>
+    <string name="intake_nudge_direct">Direct and brief</string>
+    <string name="intake_nudge_gentle">Gentle and encouraging</string>
+    <string name="intake_impulse_none">None of these stand out</string>
+    <string name="intake_impulse_blurting">Blurting out thoughts</string>
+    <string name="intake_impulse_phone">Checking phone / notifications</string>
+    <string name="intake_impulse_eating">Impulsive eating / snacking</string>
+    <string name="intake_impulse_spending">Impulsive spending</string>
+    <string name="intake_impulse_interrupting">Interrupting others</string>
+    <string name="intake_return_abandon">I usually forget or abandon it</string>
+    <string name="intake_return_lot">With a lot of effort</string>
+    <string name="intake_return_some">With some effort</string>
+    <string name="intake_return_easily">Easily</string>
+    <string name="intake_plan_derails">I often can\'t get back on track the same day</string>
+    <string name="intake_plan_reset">Very disruptive, I need time to reset</string>
+    <string name="intake_plan_adjust">Mildly frustrating, I adjust quickly</string>
+    <string name="intake_plan_barely">Barely bothers me</string>
+    <string name="intake_capture_rarely">Rarely / no</string>
+    <string name="intake_sometimes">Sometimes</string>
+    <string name="intake_often">Often</string>
+    <string name="intake_capture_always">Yes, always</string>
+    <string name="intake_rarely">Rarely</string>
+    <string name="intake_never">Never</string>
+    <string name="intake_sleep_both">A bit of both</string>
+    <string name="intake_sleep_forced">It\'s mostly forced by circumstances</string>
+    <string name="intake_sleep_chosen">It\'s what I\'d choose naturally</string>
+    <string name="intake_chrono_varies">Varies a lot week to week</string>
+    <string name="intake_chrono_def_night">Definitely a night owl</string>
+    <string name="intake_chrono_some_night">Somewhat a night owl</string>
+    <string name="intake_chrono_some_morning">Somewhat a morning person</string>
+    <string name="intake_chrono_def_morning">Definitely a morning person</string>
+    <string name="intake_prefer_not_to_say">Prefer not to say</string>
+    <string name="intake_none_of_these">None of these</string>
+    <string name="intake_cond_learning">Learning disability</string>
+    <string name="intake_cond_sensory">Sensory sensitivities</string>
+    <string name="intake_cond_autism">Autism</string>
+    <string name="intake_cond_depression">Depression</string>
+    <string name="intake_cond_anxiety">Anxiety</string>
+    <string name="intake_not_sure_prefer_not">Not sure / prefer not to say</string>
+    <string name="intake_presentation_combined">Combined</string>
+    <string name="intake_presentation_hyperactive">Hyperactive-impulsive</string>
+    <string name="intake_presentation_inattentive">Inattentive</string>
+
+    <!-- domain/model/AdhdProfile.kt -->
+    <string name="intake_tone_professional">Professional</string>
+    <string name="intake_tone_playful">Playful</string>
+    <string name="intake_tone_direct">Direct</string>
+    <string name="intake_tone_gentle">Gentle</string>
+    <string name="intake_coping_none">None right now</string>
+    <string name="intake_coping_music">Music / soundscapes</string>
+    <string name="intake_coping_alarms">Alarms / reminders</string>
+    <string name="intake_coping_lists">To-do lists</string>
+    <string name="intake_coping_pomodoro">Pomodoro</string>
+    <string name="intake_time_varies">Varies</string>
+    <string name="intake_time_night">Night</string>
+    <string name="intake_time_evening">Evening</string>
+    <string name="intake_time_afternoon">Afternoon</string>
+    <string name="intake_time_morning">Morning</string>
+    <string name="intake_goal_overwhelmed">Feeling less overwhelmed generally</string>
+    <string name="intake_goal_sleep">Sleeping better</string>
+    <string name="intake_goal_impulsive">Being less impulsive</string>
+    <string name="intake_goal_stress">Staying calm under stress</string>
+    <string name="intake_goal_focus">Focusing better</string>
+    <string name="intake_goal_time">Managing my time</string>
+    <string name="intake_goal_remember">Remembering things</string>
+    <string name="intake_goal_finish">Finishing what I start</string>
+    <string name="intake_goal_start">Starting tasks</string>
+    <string name="intake_sym_executive">Executive dysfunction</string>
+    <string name="intake_sym_emotional">Emotional dysregulation</string>
+    <string name="intake_sym_time_blindness">Time-blindness</string>
+    <string name="intake_sym_impulsivity">Impulsivity</string>
+    <string name="intake_sym_hyperactivity">Hyperactivity</string>
+    <string name="intake_sym_inattention">Inattention</string>
+    <string name="intake_diag_exploring">Still exploring</string>
+    <string name="intake_diag_general">No — I\'m here for general focus/organisation support</string>
+    <string name="intake_diag_professional">A professional mentioned it but I haven\'t pursued it</string>
+    <string name="intake_diag_suspect">I strongly suspect it but haven\'t been diagnosed</string>
+    <string name="intake_diag_yes">Yes, formally diagnosed</string>
+
+    <!-- ui/onboarding/SurveyComponents.kt -->
+    <string name="username_placeholder">e.g. focus_owl</string>
+    <string name="username_label">Username</string>
+    <string name="username_invalid">Use 3–20 letters, numbers or underscores</string>
+    <string name="username_taken">Already taken</string>
+    <string name="username_available">Available</string>
+    <string name="common_checking">Checking…</string>
+    <string name="username_hint">3–20 characters · letters, numbers, _</string>
+    <string name="survey_cap_count">%1$s of %2$s chosen</string>
+    <string name="survey_cap_reached">That\'s your %1$s — tap one to swap it out</string>
+
+    <!-- ui/onboarding/DeepDiveScreen.kt -->
+    <string name="deep_choose_wake">Choose wake-up time</string>
+    <string name="deep_choose_bedtime">Choose bedtime</string>
+    <string name="deep_choose_voice_sub">How should Myndora speak with you?</string>
+    <string name="deep_choose_voice">Choose my voice</string>
+    <string name="deep_pain_point_placeholder">For example: I can\'t get started in the morning</string>
+    <string name="deep_pain_point_sub">Optional — describe what is difficult in your own words.</string>
+    <string name="deep_pain_point">Your biggest pain point</string>
+    <string name="deep_already_helps_sub">Choose anything that is part of your routine.</string>
+    <string name="deep_already_helps">What already helps?</string>
+    <string name="deep_tried_sub">So we don\'t suggest things that didn\'t work.</string>
+    <string name="deep_tried">What have you already tried?</string>
+    <string name="deep_where_done_sub">Your usual spot, not your ideal one.</string>
+    <string name="deep_where_done">Where do you get things done?</string>
+    <string name="deep_alongside_sub">Some people focus better with company, even virtually.</string>
+    <string name="deep_alongside">Working alongside someone?</string>
+    <string name="deep_miss_something_sub">What would actually help in that moment?</string>
+    <string name="deep_miss_something">When you miss something</string>
+    <string name="deep_too_much_sub">We\'ll treat this as a ceiling, never a target.</string>
+    <string name="deep_too_much">How much is too much?</string>
+    <string name="deep_change_any_time">You can change this at any time.</string>
+    <string name="deep_reminder_sound">How should reminders sound?</string>
+    <string name="deep_hold_back_sub">Choose anything that sounds familiar.</string>
+    <string name="deep_hold_back">Hardest to hold back?</string>
+    <string name="deep_back_to_task_sub">After you\'ve been pulled away from it.</string>
+    <string name="deep_back_to_task">Getting back to a task</string>
+    <string name="deep_plans_change_sub">How does that land for you?</string>
+    <string name="deep_plans_change">When plans change unexpectedly</string>
+    <string name="deep_write_down_sub">Or will you likely forget them?</string>
+    <string name="deep_write_down">Do you have to write things down?</string>
+    <string name="deep_interrupted_sub">How often do you lose track of what you were doing?</string>
+    <string name="deep_interrupted">Interrupted mid-task?</string>
+    <string name="deep_medication_sub">This stays private and helps reminders fit your routine.</string>
+    <string name="deep_medication">Medication</string>
+    <string name="deep_schedule_choice_sub">Or is it shaped by work, family or other obligations?</string>
+    <string name="deep_schedule_choice">Is that schedule your choice?</string>
+    <string name="deep_wake_up">Wake-up</string>
+    <string name="deep_bedtime">Bedtime</string>
+    <string name="deep_sleep_rhythm_sub">Optional — a rough time is completely fine.</string>
+    <string name="deep_sleep_rhythm">Your sleep rhythm</string>
+    <string name="deep_focus_stretch_sub">How long can you usually focus before needing a reset?</string>
+    <string name="deep_focus_stretch">Your focus stretch</string>
+    <string name="deep_most_yourself_sub">Most alert, clearest-headed.</string>
+    <string name="deep_most_yourself">When do you feel most like yourself?</string>
+    <string name="deep_best_time_sub">When does focus usually come most naturally?</string>
+    <string name="deep_best_time">Your best time</string>
+    <string name="deep_pick_three">Pick up to three.</string>
+    <string name="deep_hardest_sub">Choose everything that sounds familiar.</string>
+    <string name="deep_anything_else_sub">Optional. This changes what we suggest, it isn\'t a diagnosis.</string>
+    <string name="deep_anything_else">Does anything else apply?</string>
+    <string name="deep_optional_skip">Optional — skip if you\'d rather not say.</string>
+    <string name="deep_which_presentation">Which presentation?</string>
+    <string name="deep_diagnosis_sub">This helps us personalize guidance without assumptions.</string>
+    <string name="deep_finish_profile">Finish my profile</string>
+    <string name="deep_save_profile">Save profile</string>
+    <string name="deep_grow_profile">Grow your profile</string>
+
+    <!-- ui/onboarding/SurveyErrorPanel.kt -->
+    <string name="survey_detail_deep_dive">the Deep Dive questions</string>
+    <string name="survey_save_failed_body">Your answers are still here. Try again, or skip and come back to it — nothing you\'ve typed will be lost.</string>
+    <string name="survey_save_failed_title">Couldn\'t save just now</string>
+    <string name="survey_choose_another">Choose another</string>
+    <string name="survey_username_taken_body">Pick another one and we\'ll carry on from here.</string>
+    <string name="survey_username_taken_title">That username is taken</string>
+    <string name="survey_back_to_questions">Back to the questions</string>
+    <string name="survey_missing_body">Swipe back through the questions — the dots at the top show which ones still need you.</string>
+    <string name="survey_missing_body_detail">Have a look at %1$s and you\'re done.</string>
+    <string name="survey_missing_title">A couple of answers are missing</string>
+    <string name="survey_skip_finish_later">Skip for now — I\'ll finish this later</string>
+
+    <!-- ui/onboarding/SwipeQuestionnaire.kt -->
+    <string name="survey_tree_percent_cd">Your tree is %1$s percent colored</string>
+    <string name="survey_continue_profile">Continue profile\u0020\u0020→</string>
+    <string name="survey_tree_full">Fully grown — beautiful work!</string>
+    <string name="survey_tree_canopy">Your canopy is blooming · %1$s%%</string>
+    <string name="survey_tree_roots">Roots are growing · %1$s%%</string>
+    <string name="survey_tree_empty">Answer a question to bring it to life</string>
+    <string name="survey_tree_invite">I’d love to know you better · %1$s%%</string>
+    <string name="survey_focus_tree">Your focus tree</string>
+    <string name="survey_tree_thriving_body">Myndora knows you better now and can shape support around the way you focus, rest, and grow.</string>
+    <string name="survey_tree_thriving">Your tree is thriving</string>
+    <string name="survey_profile_complete">✓\u0020\u0020PROFILE COMPLETE</string>
+    <string name="survey_keep_going">Keep going</string>
+    <string name="survey_skip_for_now">Skip for now</string>
+    <string name="survey_finish_later_body">Your answers will be saved, and you can pick the survey back up any time from Settings. Myndora works without it — the assistant just won\'t be personalised to you yet.</string>
+    <string name="survey_finish_later_title">Finish this later?</string>
+    <string name="survey_question_of">Question %1$s of %2$s</string>
+
+    <!-- ui/onboarding/MedicationListSection.kt -->
+    <string name="med_add">Add a medication</string>
+    <string name="med_add_another">Add another</string>
+    <string name="med_when_take">When do you take it?</string>
+    <string name="med_exact_time">Exact time (optional)</string>
+    <string name="med_when">When?</string>
+    <string name="med_as_needed">As needed</string>
+    <string name="med_every_day">Every day</string>
+    <string name="med_dose">Dose</string>
+    <string name="med_name">Name</string>
+    <string name="med_not_scheduled">Not scheduled</string>
+
+    <!-- ui/onboarding/UseCurrentLocationButton.kt -->
+    <string name="loc_finding">Finding your location…</string>
+    <string name="common_open_settings">Open settings</string>
+    <string name="loc_turn_on">Turn on</string>
+    <string name="loc_services_off">Location is turned off in your phone\'s settings.</string>
+    <string name="loc_denied">Location access denied. Allow it from app settings or pick your city manually.</string>
+    <string name="loc_no_match">We detected %1$s, but it\'s not in our list — pick the closest one.</string>
+    <string name="loc_got_it_via">Got it: %1$s (matched from %2$s)</string>
+    <string name="loc_got_it">Got it: %1$s</string>
+    <string name="loc_use_current">Use my current location</string>
+
+    <!-- ui/onboarding/OnboardingViewModel.kt -->
+    <string name="survey_detail_name">your name</string>
+    <string name="loc_no_fix">Couldn\'t get a location fix. Try again in a moment.</string>
+    <string name="loc_geocoder_unavailable">Address lookup isn\'t available on this device — pick your city manually.</string>
+
+    <!-- domain/model/Medication.kt -->
+    <string name="med_unit_mg">mg</string>
+    <string name="med_unit_mcg">mcg</string>
+    <string name="med_unit_g">g</string>
+    <string name="med_unit_tablets">tablets</string>
+    <string name="med_unit_capsules">capsules</string>
+    <string name="med_unit_pieces">pieces</string>
+    <string name="med_unit_ml">ml</string>
+    <string name="med_unit_drops">drops</string>
+    <string name="med_unit_placeholder">unit</string>
+    <string name="med_times_per_day">%1$s/day</string>
+    <string name="age_under_18">Under 18</string>
+
+    <!-- ui/settings/SettingsViewModel.kt -->
+    <string name="settings_photo_failed">Couldn\'t upload photo: %1$s</string>
+    <string name="settings_photo_updated">Photo updated</string>
+    <string name="settings_save_failed">Couldn\'t save: %1$s</string>
+    <string name="settings_username_taken">That username is already taken</string>
+    <string name="settings_profile_updated">Profile updated</string>
+    <string name="settings_saved_offline">Saved on this device · will sync when you\'re online</string>
+    <string name="settings_username_checking">Still checking username, try again in a moment</string>
+    <string name="settings_name_empty">Name cannot be empty</string>
+    <string name="settings_password_email_failed">Couldn\'t send the password email. Please try again.</string>
+    <string name="settings_no_email">This account does not have an email address</string>
+    <string name="settings_google_disconnected">Google Calendar disconnected</string>
+    <string name="cal_export_need_google">Connect a Google account to enable Calendar export</string>
+    <string name="cal_export_nothing">Nothing to export</string>
+    <string name="cal_export_failed">%1$s failed</string>
+    <string name="cal_export_already">%1$s already there</string>
+    <string name="cal_export_added">%1$s added</string>
+    <string name="settings_calendar_connect_cancelled">Calendar connection cancelled</string>
+    <string name="settings_google_connect_failed">Could not connect Google account: %1$s</string>
+    <string name="settings_export_failed">Couldn\'t export: %1$s</string>
+    <string name="settings_export_saved_to">Saved to %1$s</string>
+
+    <!-- common -->
+    <string name="common_unknown_error">unknown error</string>
+
+    <!-- ui/together/TogetherViewModel.kt -->
+    <string name="together_err_db_update">Myndora\'s database needs updating — re-run the latest SQL migration in Supabase. (%1$s)</string>
+    <string name="together_err_offline">You\'re offline. Try again once you\'re connected.</string>
+    <string name="together_err_pgcrypto">The server can\'t hash the answer yet — pgcrypto isn\'t on the search path. Re-run the latest SQL migration in Supabase.</string>
+    <string name="together_err_not_setup">Myndora Together isn\'t set up on the server yet. Run the SQL migration in Supabase, then try again.</string>
+    <string name="together_withdraw_failed">Couldn\'t withdraw that request</string>
+    <string name="together_request_withdrawn">Request withdrawn</string>
+    <string name="together_decline_failed">Couldn\'t decline that request</string>
+    <string name="together_request_declined">Request declined</string>
+    <string name="together_check_failed">Couldn\'t check that answer</string>
+    <string name="together_locked">Locked after too many tries. Ask them to send a new request.</string>
+    <string name="together_too_many_wrong">Too many wrong answers. Ask them to send a new request.</string>
+    <string name="together_connected">You\'re connected</string>
+    <string name="together_accept_failed">Couldn\'t accept that invite</string>
+    <string name="together_connected_with">You\'re connected with %1$s</string>
+    <string name="together_invite_open_failed">Couldn\'t open that invite</string>
+    <string name="together_revoke_failed">Couldn\'t revoke those links</string>
+    <string name="together_invites_off">Invite links turned off</string>
+    <string name="together_invite_create_failed">Couldn\'t create an invite link</string>
+    <string name="together_contacts_failed">Couldn\'t match your contacts right now.</string>
+    <string name="together_code_verify_failed">Couldn\'t verify that code. Please try again.</string>
+    <string name="together_phone_not_confirmed">Supabase did not confirm that phone number. Request a new code.</string>
+    <string name="together_demo_code">For the development preview, enter %1$s.</string>
+    <string name="together_enter_code">Enter the 6-digit SMS code.</string>
+    <string name="together_code_send_failed">Couldn\'t send a verification code. Please try again.</string>
+    <string name="together_phone_format">Enter the full phone number with country code, for example +39 333 123 4567.</string>
+    <string name="together_wrong_one">That\'s not it — 1 try left</string>
+    <string name="together_wrong_many">That\'s not it — %1$s tries left</string>
+
+    <!-- domain/model/Together.kt -->
+    <string name="together_scope_focus_desc">They can invite you to focus at the same time, and see that you\'re in a session and how long is left — never what you\'re working on.</string>
+    <string name="together_scope_focus">Focus together</string>
+    <string name="together_scope_wellness_desc">They can see your step, sleep and heart-rate summary. Read-only.</string>
+    <string name="together_scope_wellness">Wellness summary</string>
+    <string name="together_scope_todos_desc">They can add tasks to your list. They only ever see the ones they added.</string>
+    <string name="together_scope_todos">To-dos</string>
+    <string name="together_scope_free_desc">They see which hours you\'re already busy — the times only, never what\'s in them. Used to suggest when to put things.</string>
+    <string name="together_scope_free">Free times</string>
+    <string name="together_scope_calendar_desc">They can add events to your calendar. You\'ll see them; they only ever see the ones they added.</string>
+    <string name="together_scope_calendar">Calendar</string>
+    <string name="together_rel_other">Someone else</string>
+    <string name="together_rel_partner">Partner</string>
+    <string name="together_rel_family">Family</string>
+    <string name="together_rel_friend">Friend</string>
+
+    <!-- ui/together/ConnectionProfileViewModel.kt -->
+    <string name="together_remove_task_failed">Couldn\'t remove that task</string>
+    <string name="together_removed_list">Removed from their list</string>
+    <string name="together_remove_event_failed">Couldn\'t remove that event</string>
+    <string name="together_removed_calendar">Removed from their calendar</string>
+    <string name="together_add_list_failed">Couldn\'t add that. They may have turned task sharing off.</string>
+    <string name="together_added_list">Added to their list</string>
+    <string name="together_add_calendar_failed">Couldn\'t add that. They may have turned calendar sharing off.</string>
+    <string name="together_added_calendar">Added to their calendar</string>
+    <string name="together_remove_conn_failed">Couldn\'t remove that connection</string>
+    <string name="together_permission_failed">Couldn\'t change that permission</string>
+    <string name="together_scope_off">%1$s sharing turned off</string>
+    <string name="together_scope_shared">%1$s shared</string>
+
+    <!-- ui/together/TogetherScreen.kt -->
+    <string name="together_withdraw">Withdraw</string>
+    <string name="together_waiting_answer">Waiting for them to answer</string>
+    <string name="together_out_of_tries">They ran out of tries — withdraw and send a new one</string>
+    <string name="together_short_focus">Focus</string>
+    <string name="together_short_wellness">Wellness</string>
+    <string name="together_short_todos">To-dos</string>
+    <string name="together_short_free">Free times</string>
+    <string name="together_short_calendar">Calendar</string>
+    <string name="together_both_share">You share %1$s · They share %2$s</string>
+    <string name="together_they_share">They share %1$s</string>
+    <string name="together_you_share">You share %1$s</string>
+    <string name="together_nothing_shared">Nothing shared yet</string>
+    <string name="together_decline">Decline</string>
+    <string name="together_accept">Accept</string>
+    <string name="together_answer_hint">Only they know the answer — that\'s how Myndora checks it\'s really them.</string>
+    <string name="together_your_answer">Your answer</string>
+    <string name="together_their_question">THEIR QUESTION</string>
+    <string name="together_locked_body">Locked after too many wrong answers. Ask them to send a new request.</string>
+    <string name="together_no_requests_body">Requests you send and receive show up here.</string>
+    <string name="together_no_requests">No requests</string>
+    <string name="together_invite_contact">Send an invite</string>
+    <string name="together_nobody_body">Send someone you know a private invite link, over any app you like. Then you both choose what to share.</string>
+    <string name="together_nobody_yet">Nobody here yet</string>
+    <string name="together_stat_pending">Pending</string>
+    <string name="together_stat_connected">Connected</string>
+    <string name="together_connect_hint">Connect with a partner, family or friend</string>
+    <string name="together_small_world">Your small world</string>
+    <string name="together_your_people">Your people</string>
+    <string name="together_connect">Connect</string>
+    <string name="together_invite_body">They\'d like to connect as %1$s. Accepting only links your accounts — nothing is shared until you each choose what to share.</string>
+    <string name="together_invite_unusable">This invite can\'t be used</string>
+    <string name="together_invited_you">%1$s invited you</string>
+    <string name="together_opening_invite">Opening invite…</string>
+    <string name="together_sent_by_you">Sent by you</string>
+    <string name="together_waiting_for_you">Waiting for you</string>
+    <string name="together_add_someone">Add someone</string>
+    <string name="together_title">Myndora Together</string>
+    <string name="together_tab_requests">Requests</string>
+    <string name="together_tab_people">People</string>
+    <string name="together_waiting_one">1 person is waiting on you</string>
+    <string name="together_waiting_many">%1$s people are waiting on you</string>
+    <string name="together_wants_connect">wants to connect as %1$s</string>
+    <string name="together_enter_code_from">Enter the code %1$s gave you</string>
+
+    <!-- ui/together/AddConnectionScreen.kt -->
+    <string name="together_sms_body">Let\'s connect privately on Myndora. This one-time invite expires in 24 hours: %1$s</string>
+    <string name="together_matching_body">Names and raw phone numbers stay on your device. Myndora sends normalized phone hashes for a rate-limited match and does not store your address book.</string>
+    <string name="together_how_matching">How matching protects your contacts</string>
+    <string name="together_invite">Invite</string>
+    <string name="together_create_passcode_first">Create the private passcode above to invite someone.</string>
+    <string name="together_sample_note">This is how confirmed contacts will look. These entries are local examples, not real users.</string>
+    <string name="together_none_discoverable">None of your contacts have a discoverable, verified Myndora phone yet.</string>
+    <string name="together_find_contacts">Find Myndora contacts</string>
+    <string name="together_privacy_body">With your permission, Myndora reads phone numbers on this device, converts them to hashes, and sends only those hashes to check for verified accounts. Contact names and raw numbers are not uploaded.</string>
+    <string name="together_contacts_needed">Contacts access is needed to build this private matched list.</string>
+    <string name="together_matching">Matching contacts…</string>
+    <string name="common_refresh">Refresh</string>
+    <string name="together_verified_in_contacts">Only verified accounts already in your contacts</string>
+    <string name="together_sample_contacts">Sample contacts · nothing was uploaded</string>
+    <string name="together_people_on_myndora">People on Myndora</string>
+    <string name="together_turn_off_link">Turn this link off</string>
+    <string name="together_create_invite">Create invite link</string>
+    <string name="together_how_know">How do you know them?</string>
+    <string name="together_single_use">Single use · expires in 24 hours</string>
+    <string name="together_send_invite">Send an invite</string>
+    <string name="together_verify_phone">Verify phone</string>
+    <string name="together_six_digit">6-digit code</string>
+    <string name="together_dev_preview">Development preview: enter 123456. No SMS was sent and Supabase is unchanged.</string>
+    <string name="together_preview_no_sms">Preview without SMS</string>
+    <string name="together_send_sms_code">Send SMS code</string>
+    <string name="together_send_new_code">Send a new code</string>
+    <string name="together_phone_with_code">Phone with country code</string>
+    <string name="together_sms_verified_only">Only an SMS-verified number can make an account visible to phone contacts.</string>
+    <string name="together_works_for_all">Works for email and Google sign-in accounts</string>
+    <string name="together_demo_only">%1$s · local demo only</string>
+    <string name="together_verify_phone_first">Verify your phone first</string>
+    <string name="together_phone_verified">Phone verified</string>
+    <string name="together_confirmation_preview">Confirmation preview</string>
+    <string name="together_no_sms_app">No SMS app is available on this device.</string>
+
+    <!-- ui/together/ConnectionProfileScreen.kt -->
+    <string name="common_end_time">End time</string>
+    <string name="common_start_time">Start time</string>
+    <string name="common_ends">Ends</string>
+    <string name="common_starts">Starts</string>
+    <string name="common_in_a_week">In a week</string>
+    <string name="common_when">When</string>
+    <string name="together_note_optional">Note (optional)</string>
+    <string name="together_what_is_it">What is it?</string>
+    <string name="together_wellness_disclaimer">A summary only — Myndora never shares raw health records, and this isn\'t medical advice.</string>
+    <string name="wellness_calories_today">Calories today</string>
+    <string name="wellness_resting_hr">Resting heart rate</string>
+    <string name="wellness_exercise_7d">Exercise, last 7 days</string>
+    <string name="wellness_last_sleep">Last sleep</string>
+    <string name="wellness_steps_7d">Steps, last 7 days</string>
+    <string name="together_wellness_no_data">Shared, but there\'s no data yet — it fills in once they sync Health Connect.</string>
+    <string name="together_wellness_of">%1$s\'s wellness</string>
+    <string name="together_no_tasks_added">You haven\'t added any tasks yet.</string>
+    <string name="together_add_task">Add a task</string>
+    <string name="together_their_todos_body">You can add tasks for %1$s. You only see the ones you added.</string>
+    <string name="together_their_todos">Their to-dos</string>
+    <string name="together_nothing_added">You haven\'t added anything yet.</string>
+    <string name="together_add_event">Add an event</string>
+    <string name="together_their_calendar_body">You can add events for %1$s. This list is only what you added — their own events stay private.</string>
+    <string name="together_their_calendar">Their calendar</string>
+    <string name="together_busy_hours">Working around the hours %1$s is already busy. Myndora never shows you what those are.</string>
+    <string name="together_keep">Keep</string>
+    <string name="together_remove_body">You\'ll both lose access to anything you shared. Events and tasks you already added to their calendar or list stay where they are.</string>
+    <string name="together_remove_person">Remove %1$s?</string>
+    <string name="together_remove_connection">Remove connection</string>
+    <string name="together_nothing_yet_their_side">Nothing yet. They choose what to share from their side.</string>
+    <string name="together_what_they_share">What %1$s shares with you</string>
+    <string name="together_what_you_share_body">You decide, one thing at a time. They\'ll only ever see what they added themselves — never the rest of your calendar or list.</string>
+    <string name="together_what_you_share">What you share with %1$s</string>
+    <string name="together_conn_unavailable">This connection is no longer available.</string>
+    <string name="together_connection">Connection</string>
+    <string name="together_add_to_calendar_of">Add to %1$s\'s calendar</string>
+    <string name="together_add_to_their_calendar">Add to their calendar</string>
+    <string name="together_add_to_list_of">Add to %1$s\'s list</string>
+    <string name="together_add_to_their_list">Add to their list</string>
+    <string name="together_share_counts">You share %1$s · They share %2$s</string>
+
+    <!-- ui/together/ShareOutcome.kt -->
+    <string name="list_and">%1$s and %2$s</string>
+    <string name="share_rescued_calendar">Couldn\'t add for %1$s — saved to your calendar instead so you don\'t lose it</string>
+    <string name="share_rescued_list">Couldn\'t add for %1$s — saved to your list instead so you don\'t lose it</string>
+    <string name="share_added_for_you_and">Added for you and %1$s</string>
+    <string name="share_added_to_calendar_of">Added to %1$s\'s calendar</string>
+    <string name="share_added_to_list_of">Added to %1$s\'s list</string>
+    <string name="share_saved_calendar_off">Saved, but couldn\'t add for %1$s — they may have turned calendar sharing off</string>
+    <string name="share_saved_tasks_off">Saved, but couldn\'t add for %1$s — they may have turned task sharing off</string>
+    <string name="share_partial">Added for %1$s; couldn\'t add for %2$s</string>
+
+    <!-- ui/together/NoConnectionsNotice.kt -->
+    <string name="together_connect_first_event">Connect with someone first, then you can send this event straight to them.</string>
+    <string name="together_connect_first_task">Connect with someone first, then you can send this task straight to them.</string>
+    <string name="together_nobody_connected">Nobody connected yet</string>
+
+    <!-- data/repository/TogetherRepository.kt -->
+    <string name="together_invite_invalid">This invite link is not valid</string>
+
+    <!-- ui/ai/AiAssistantViewModel.kt -->
+    <string name="ai_hop_limit">That took more steps than I expected, so I\'ve stopped there. The parts I finished are saved — ask me again if something\'s missing.</string>
+    <string name="ai_quota_exhausted">You\'ve used all %1$s of today\'s AI messages. They come back tomorrow — until then the offline assistant below can still add to-dos, change settings and start timers.</string>
+    <string name="ai_turn_failed">Something went wrong on my side — %1$s. Try that again.</string>
+    <string name="ai_local_failed">That didn\'t go through — try again in a moment.</string>
+    <string name="ai_offline_error">You\'re offline, so I can\'t think about this one yet. Switch to the offline assistant below — it can still add to-dos, change settings and start timers.</string>
+    <string name="ai_calendar_prime">Let\'s add an event to your calendar 📅 What is it, and when?</string>
+
+    <!-- common -->
+    <string name="common_no_details">no details</string>
+
+    <!-- ui/ai/AiAssistantViewModel.kt -->
+    <string name="ai_chip_open_wellness">Open wellness settings</string>
+    <string name="ai_chip_connect_health">Connect Health Connect</string>
+
+    <!-- ui/ai/AiPromptCard.kt -->
+    <string name="ai_speech_failed">Voice input didn\'t work — try again.</string>
+    <string name="ai_speech_broken">Voice input isn\'t working on this device.</string>
+    <string name="ai_speech_busy">Still finishing the last one.</string>
+    <string name="ai_speech_network">Voice input needs a connection right now.</string>
+    <string name="ai_mic_needed">Myndora needs microphone access to hear you.</string>
+    <string name="ai_speech_no_match">Didn\'t catch that — try again.</string>
+    <string name="ai_voice_tap_to_talk">Tap to talk</string>
+    <string name="ai_read_aloud">Read answer aloud</string>
+    <string name="ai_stop_reading">Stop reading answer</string>
+    <string name="time_days_ago">%1$sd ago</string>
+    <string name="time_hours_ago">%1$sh ago</string>
+    <string name="time_minutes_ago">%1$sm ago</string>
+    <string name="time_just_now">Just now</string>
+    <string name="ai_delete_chat">Delete chat</string>
+    <string name="ai_active">Active</string>
+    <string name="ai_no_chats_body">Your conversations with Myndora will show up here.</string>
+    <string name="ai_no_chats">No chats yet</string>
+    <string name="ai_chat_history">Chat history</string>
+    <string name="ai_switch_offline">Switch to the offline assistant to keep going</string>
+    <string name="ai_more_tomorrow">More tomorrow — the offline assistant still works</string>
+    <string name="ai_offline">You\'re offline</string>
+    <string name="ai_out_of_messages">That\'s today\'s AI messages</string>
+    <string name="ai_suggest_focus">Help me focus</string>
+    <string name="ai_suggest_summarize">Summarize my day</string>
+    <string name="ai_suggestions">Suggestions</string>
+    <string name="ai_voice_input">Voice input</string>
+    <string name="ai_stop_listening">Stop listening</string>
+    <string name="ai_voice_unavailable">Voice input isn\'t available on this device.</string>
+    <string name="ai_what_help">What can I help you with?</string>
+    <string name="ai_new_chat">New chat</string>
+    <string name="ai_start_voice">Start live voice conversation</string>
+    <string name="ai_one_message">1 message</string>
+    <string name="ai_message_count">%1$s messages</string>
+
+    <!-- ui/components/AiPromptCard.kt -->
+    <string name="ai_personal_assistant">Your personal assistant</string>
+    <string name="ai_myndora_ai">Myndora AI</string>
+
+    <!-- ui/ai/AiVoiceProfiles.kt -->
+    <string name="voice_bright">Bright, energetic voice</string>
+    <string name="voice_gentle">Gentle, reassuring voice</string>
+    <string name="voice_warm">Warm, conversational voice</string>
+    <string name="voice_calm">Calm, grounded voice</string>
+
+    <!-- domain/ai/offline/OfflineActionCatalog.kt -->
+    <string name="care_support_group">Support group</string>
+    <string name="care_specialist">Specialist / dentist</string>
+    <string name="care_hospital">Hospital</string>
+    <string name="care_pharmacy">Pharmacy</string>
+    <string name="offline_what_need">What do you need?</string>
+    <string name="offline_care_sub">From what\'s already saved on this device</string>
+    <string name="offline_care">Look up care nearby</string>
+    <string name="common_length">Length</string>
+    <string name="offline_start_focus_sub">Runs entirely on the device</string>
+    <string name="offline_start_focus">Start a focus timer</string>
+    <string name="offline_hint_mornings">e.g. Can\'t start anything in the mornings</string>
+    <string name="offline_in_the_way">What\'s getting in the way?</string>
+    <string name="offline_note_hard_sub">I\'ll use it to personalise once we reconnect</string>
+    <string name="offline_note_hard">Note what\'s hard right now</string>
+    <string name="common_tone">Tone</string>
+    <string name="offline_tone_sub">Applies once you\'re back online too</string>
+    <string name="offline_tone">Change how I talk to you</string>
+    <string name="offline_peak_time">Peak time</string>
+    <string name="offline_best_time_sub">When your focus is actually there</string>
+    <string name="offline_best_time">Change my best time of day</string>
+    <string name="offline_focus_block">Focus block</string>
+    <string name="offline_focus_length_sub">How long a block feels doable right now</string>
+    <string name="offline_focus_length">Set my focus length</string>
+    <string name="common_theme">Theme</string>
+    <string name="offline_switch_theme_sub">Light, dark, or follow the system</string>
+    <string name="offline_switch_theme">Switch theme</string>
+    <string name="common_spacing">Spacing</string>
+    <string name="offline_change_spacing_sub">More room between lines and letters</string>
+    <string name="offline_change_spacing">Change text spacing</string>
+    <string name="offline_change_size_sub">Smaller or bigger everywhere</string>
+    <string name="offline_change_size">Change text size</string>
+    <string name="offline_change_font_sub">Including OpenDyslexic</string>
+    <string name="offline_change_font">Change the font</string>
+    <string name="color_yellow">Yellow</string>
+    <string name="color_red">Red</string>
+    <string name="color_blue">Blue</string>
+    <string name="common_colour">Colour</string>
+    <string name="offline_starts_at">Starts at</string>
+    <string name="offline_hint_dentist">e.g. Dentist</string>
+    <string name="offline_add_event_sub">Goes straight into your day, syncs later</string>
+    <string name="offline_add_event">Add a calendar event</string>
+    <string name="priority_whenever">Whenever</string>
+    <string name="priority_important">Important</string>
+    <string name="priority_normal">Normal</string>
+    <string name="common_priority">Priority</string>
+    <string name="offline_time_optional">Time (optional)</string>
+    <string name="offline_hint_pharmacy">e.g. Call the pharmacy</string>
+    <string name="offline_add_todo_sub">Saves on this device, syncs when you\'re back</string>
+    <string name="offline_add_todo">Add a to-do</string>
+
+    <!-- domain/ai/offline/OfflineAction.kt -->
+    <string name="offline_group_care">Care</string>
+    <string name="offline_group_focus">Focus</string>
+    <string name="offline_group_profile">My profile</string>
+    <string name="offline_group_appearance">Look &amp; feel</string>
+    <string name="offline_group_capture">Capture</string>
+
+    <!-- domain/ai/offline/OfflineActionRunner.kt -->
+    <string name="offline_failed_generic">Something went wrong running that.</string>
+    <string name="offline_unavailable">That action isn\'t available on this build.</string>
+    <string name="offline_still_need">Still need: %1$s.</string>
+
+    <!-- ui/ai/offline/OfflineAssistantPanel.kt -->
+    <string name="offline_do_else">Do something else</string>
+    <string name="offline_saved_here">Saved here — syncs itself later</string>
+    <string name="offline_do_it">Do it</string>
+    <string name="offline_suggested">Suggested</string>
+    <string name="offline_on_device">On device · syncs when you reconnect</string>
+    <string name="offline_back_online">Back online — close for the full assistant</string>
+    <string name="offline_assistant">Offline assistant</string>
+    <string name="offline_back_to_actions">Back to actions</string>
+
+    <!-- domain/ai/offline/OfflineActionCatalog.kt -->
+    <string name="spacing_normal">Normal</string>
+    <string name="spacing_relaxed">Relaxed</string>
+    <string name="spacing_loose">Loose</string>
+    <string name="theme_system">System</string>
+    <string name="offline_done_todo">Added to your to-dos.</string>
+    <string name="offline_done_event">Added to your calendar.</string>
+    <string name="offline_done_font">Font changed.</string>
+    <string name="offline_done_size">Text size changed.</string>
+    <string name="offline_done_spacing">Text spacing changed.</string>
+    <string name="offline_done_theme">Theme changed.</string>
+    <string name="offline_done_focus_length">Focus length saved.</string>
+    <string name="offline_done_best_time">Best time of day saved.</string>
+    <string name="offline_done_tone">Got it — I\'ll talk to you that way from now on.</string>
+    <string name="offline_done_note">Noted. Thanks for telling me.</string>
+    <string name="offline_done_focus">Focus timer started.</string>
+
+    <!-- ui/settings/SettingsSubScreens.kt -->
+    <string name="settings_location_note">You can change this from ADHD Profile</string>
+    <string name="settings_location">Location</string>
+    <string name="common_not_set">Not set</string>
+    <string name="settings_email_note">Used to sign in — can\'t be changed here</string>
+    <string name="settings_phone_placeholder">e.g. +1 555 123 4567</string>
+    <string name="settings_phone_optional">Phone (optional)</string>
+    <string name="settings_change_photo">Change photo</string>
+    <string name="settings_profile_picture">Profile picture</string>
+    <string name="settings_identity">Your Myndora identity</string>
+    <string name="settings_edit_profile">Edit profile</string>
+    <string name="sync_desc_6h">Keep changes closely aligned</string>
+    <string name="sync_desc_twice">Refresh around morning and evening</string>
+    <string name="sync_desc_daily">Keep tomorrow’s plans up to date</string>
+    <string name="sync_desc_weekly">A quiet refresh once each week</string>
+    <string name="sync_desc_manual">Only when you choose Sync now</string>
+    <string name="sync_mark_manual">TAP</string>
+    <string name="settings_sync_question">How closely should your calendars move together?</string>
+    <string name="settings_expand_sync">Expand sync options</string>
+    <string name="settings_collapse_sync">Collapse sync options</string>
+    <string name="settings_sync_rhythm">Your sync rhythm</string>
+    <string name="settings_link_calendar">Link Google Calendar to carry Myndora plans wherever you go.</string>
+    <string name="settings_calendar_ready">Myndora and Google Calendar are ready to sync.</string>
+    <string name="settings_bring_plans">Bring your plans together</string>
+    <string name="settings_calendars_connected">Calendars connected</string>
+    <string name="settings_personalize_optional">Optional • use summaries for focus and break suggestions</string>
+    <string name="settings_personalize_on">On • wellness summaries can shape suggestions</string>
+    <string name="settings_personalize_ai">Personalize Myndora AI</string>
+    <string name="settings_7_days">7 DAYS</string>
+    <string name="settings_todays_steps">TODAY\'S STEPS</string>
+    <string name="settings_needs_watch">· needs a watch</string>
+    <string name="settings_show_data_types">Show the data types</string>
+    <string name="settings_hide_data_types">Hide the data types</string>
+    <string name="settings_what_allowed">What you\'ve allowed</string>
+    <string name="settings_install_health">Install or update Health Connect</string>
+    <string name="settings_health_permissions_note">You choose each permission. Myndora requests read access only and does not upload these records.</string>
+    <string name="settings_disconnect">Disconnect</string>
+    <string name="settings_disconnecting">Disconnecting…</string>
+    <string name="settings_allow_more_health">Allow additional health insights</string>
+    <string name="settings_live">Live</string>
+    <string name="settings_health_optional">Optional steps and heart-rate context</string>
+    <string name="settings_health_not_supported">Not supported on this device</string>
+    <string name="settings_health_install">Install or update to connect</string>
+    <string name="settings_health_readonly">Read-only wellness insights are connected</string>
+    <string name="settings_allow_personalization">Allow personalization</string>
+    <string name="settings_personalize_gently_body">Myndora can use compact wellness summaries to adjust focus, workload, timing, and break suggestions. Raw Health Connect records are not sent, and this is never used for diagnosis. You can change this anytime in Myndora AI settings.</string>
+    <string name="settings_personalize_gently">Let Myndora personalize gently?</string>
+    <string name="settings_health_share">Share selected wellness data privately.</string>
+    <string name="settings_health_ready">Your wellness insights are ready for Myndora.</string>
+    <string name="settings_health_connected">Health data connected</string>
+    <string name="settings_linked_devices">Linked devices</string>
+    <string name="settings_health_unsupported">Health Connect is not supported on this device</string>
+    <string name="settings_health_updated">Health access updated</string>
+    <string name="settings_linked_accounts">Linked accounts</string>
+    <string name="settings_read_aloud_caps">READ ALOUD</string>
+    <string name="settings_read_aloud_preview_cd">Preview showing the read-answer-aloud button</string>
+    <string name="settings_see_in_action_desc">Watch how to find and use read aloud</string>
+    <string name="settings_see_in_action">See it in action</string>
+    <string name="settings_wellness_dialog_body">Myndora will include recent summaries of your selected Health Connect data in AI requests to personalize focus, timing, workload, and break suggestions. Raw records are not sent. This is wellness guidance, not medical advice. You can turn it off anytime.</string>
+    <string name="settings_wellness_dialog_title">Use wellness data with AI?</string>
+    <string name="settings_ai_local_note">These settings are stored only on this device. Your onboarding survey can update the spoken-response preference later.</string>
+    <string name="settings_feature_preview_desc">A quick visual guide to Smart Search read aloud.</string>
+    <string name="settings_feature_preview">Feature preview</string>
+    <string name="settings_wellness_off">Off • health data is not included in AI requests</string>
+    <string name="settings_wellness_on">On • recent wellness summaries can personalize AI</string>
+    <string name="settings_wellness_connect_first">Connect Health Connect to make this available</string>
+    <string name="settings_wellness_paused">Allowed • paused until Health Connect is reconnected</string>
+    <string name="settings_wellness_personalization">Wellness personalization</string>
+    <string name="settings_privacy_desc">You decide whether wellness data can shape AI suggestions.</string>
+    <string name="settings_privacy">Personalization &amp; privacy</string>
+    <string name="settings_system_voice">Your device’s system voice will be used.</string>
+    <string name="settings_preparing_voices">Preparing voice previews…</string>
+    <string name="settings_voice_sample">Hi, I\'m Myndora. How can I help?</string>
+    <string name="settings_choose_voice">Choose a voice</string>
+    <string name="settings_chat_read_off">Chat stays silent unless you tap its speaker button</string>
+    <string name="settings_chat_read_on">New Myndora chat answers play automatically</string>
+    <string name="settings_chat_read_aloud">Smart Search read aloud</string>
+    <string name="settings_spoken_off">Live assistant answers silently with text only</string>
+    <string name="settings_spoken_on">Live assistant answers with text and voice</string>
+    <string name="settings_spoken_responses">Spoken responses</string>
+    <string name="settings_voice_sound_desc">Choose when Myndora speaks and how it sounds.</string>
+    <string name="settings_voice_sound">Voice &amp; sound</string>
+    <string name="settings_ai_hero_desc">Choose when Myndora speaks and how its answers sound.</string>
+    <string name="settings_ai_hero">Your assistant, your voice</string>
+    <string name="settings_notif_hero_desc">Choose only the moments when a gentle reminder genuinely helps.</string>
+    <string name="settings_notif_hero">Stay informed, not overwhelmed</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_reduce_motion_note">Anything that drifts, pulses or breathes on its own stops. Screens still change when you tap — they just change straight away.</string>
+    <string name="settings_reduce_motion_off">Things slide, grow and settle as they change</string>
+    <string name="settings_reduce_motion_on">Things appear instead of moving</string>
+    <string name="settings_reduce_motion">Reduce motion</string>
+    <string name="motion_tip_title">Is the app moving too much?</string>
+    <string name="motion_tip_body_spot">This bolt breathes, and other parts of the app drift and pulse on their own. Reduce motion stops all of it at once — everything still works exactly the same, it just holds still.</string>
+    <string name="motion_tip_body_bar">The bar down here springs and glows as you move around, and other parts of the app drift and pulse on their own. Reduce motion stops all of it at once — everything still works exactly the same, it just holds still.</string>
+    <string name="motion_tip_turn_on">Hold it still</string>
+    <string name="motion_tip_keep">I like it</string>
+    <string name="motion_tip_confirmed">Motion off. Settings \u203a Customization brings it back.</string>
+    <string name="settings_open_accessibility">Open accessibility settings</string>
+    <string name="settings_speak_tap_note">This covers Myndora\'s own screens. To have every app read aloud, turn on Select to Speak in Android\'s accessibility settings.</string>
+    <string name="settings_speak_tap_off">Tapping around Myndora stays silent</string>
+    <string name="settings_speak_tap_on">Buttons, tabs and cards say their name as you tap them</string>
+    <string name="settings_speak_tap">Speak what I tap</string>
+    <string name="settings_make_yours_desc">Shape the colors, type and shortcuts around how you think.</string>
+    <string name="settings_make_yours">Make Myndora yours</string>
+    <string name="settings_customization">Customization</string>
+    <string name="settings_back_to_settings">Back to settings</string>
+    <string name="settings_customization_locked">Customization isn\'t available in this mode. Turn it off or edit the mode first so its look and layout stay predictable.</string>
+    <string name="settings_mode_active">%1$s mode is active</string>
+    <string name="settings_last_sync">Last sync: %1$s</string>
+    <string name="settings_sync_never">not yet — background sync hasn\'t run</string>
+    <string name="sync_just_now">just now</string>
+    <string name="sync_minute_ago">1 minute ago</string>
+    <string name="sync_minutes_ago">%1$s minutes ago</string>
+    <string name="sync_hour_ago">1 hour ago</string>
+    <string name="sync_hours_ago">%1$s hours ago</string>
+    <string name="sync_day_ago">1 day ago</string>
+    <string name="sync_days_ago">%1$s days ago</string>
+
+    <!-- data/sync/CalendarSyncScheduler.kt -->
+    <string name="sync_6h">Every 6 hours</string>
+    <string name="sync_twice">Twice a day</string>
+    <string name="sync_daily">Once a day</string>
+    <string name="sync_weekly">Once a week</string>
+    <string name="sync_manual">Manual only</string>
+
+    <!-- data/sync/CalendarSyncWorker.kt -->
+    <string name="sync_reconnect_google">Needs you to reconnect Google</string>
+    <string name="sync_up_to_date">Up to date</string>
+    <string name="sync_pushed">Pushed %1$s event(s)</string>
+    <string name="sync_skipped_google">Skipped — Google not connected</string>
+
+    <!-- data/health/HealthConnectManager.kt -->
+    <string name="health_disconnect_failed">Couldn’t disconnect Health Connect</string>
+    <string name="health_check_failed">Couldn’t check Health Connect access</string>
+    <string name="health_calories">Calories</string>
+    <string name="health_exercise">Exercise</string>
+    <string name="health_sleep">Sleep</string>
+    <string name="health_heart_rate">Heart rate</string>
+    <string name="health_steps">Steps</string>
+
+    <!-- ui/settings/SettingsScreen.kt -->
+    <string name="settings_sign_out">Sign out</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_finish_now">Finish now</string>
+    <string name="settings_not_finished">Not finished</string>
+    <string name="settings_complete">Complete</string>
+    <string name="settings_adhd_profile_sub">Personalizes how your assistant helps you.</string>
+    <string name="settings_adhd_profile">ADHD Profile</string>
+    <string name="settings_sync_todos">Sync todos to Calendar</string>
+    <string name="settings_exporting">Exporting…</string>
+    <string name="settings_connected_account">Connected account</string>
+    <string name="settings_linked">Linked</string>
+    <string name="settings_disconnect_google">Disconnect Google account</string>
+    <string name="settings_connect_google_sub">Connect to push your events to Google Calendar</string>
+    <string name="settings_connect_google_calendar">Connect Google Calendar</string>
+    <string name="settings_google_calendar">Google Calendar</string>
+    <string name="settings_google_photo">Google account photo</string>
+    <string name="common_expand">Expand</string>
+    <string name="common_collapse">Collapse</string>
+    <string name="settings_unavailable_mode">Unavailable while a mode is active</string>
+    <string name="settings_edit_profile_title">Edit Profile</string>
+    <string name="settings_not_signed_in">Not signed in</string>
+    <string name="settings_welcome">Welcome</string>
+    <string name="settings_download_profile_sub">A PDF with your details and the last week of activity.</string>
+    <string name="settings_download_profile">Download my profile</string>
+    <string name="settings_preparing_pdf">Preparing your PDF…</string>
+    <string name="settings_profile_continue">Continue to unlock more personal guidance.</string>
+    <string name="settings_profile_progress">%1$s of %2$s steps complete · %3$s left</string>
+    <string name="settings_profile_shaping">Your profile is taking shape</string>
+    <string name="settings_send_email">Send email</string>
+    <string name="settings_reset_email_body">We\'ll email %1$s. Open the secure link to choose a password. You can still continue with Google afterward.</string>
+    <string name="settings_no_email_found">We couldn\'t find an email address for this account.</string>
+    <string name="settings_create_reset_password">Create or reset password</string>
+    <string name="settings_profile_cd">Profile</string>
+    <string name="settings_about">About</string>
+    <string name="settings_health_connect_sub">Share steps and heart rate securely</string>
+    <string name="settings_health_connected_sub">Connected • steps and heart rate</string>
+    <string name="settings_health_connect">Health Connect</string>
+    <string name="settings_not_connected">Not connected</string>
+    <string name="settings_together_add">Add someone you trust</string>
+    <string name="settings_people">People</string>
+    <string name="settings_ai_sub">Voice, wellness personalization &amp; preferences</string>
+    <string name="settings_ai_boost">1 boost available • unlock wellness-aware support</string>
+    <string name="settings_notifications_sub">Reminders, daily summary &amp; nudges</string>
+    <string name="settings_customization_snackbar">Customization isn\'t available while %1$s mode is active. Turn it off or edit that mode first.</string>
+    <string name="settings_customization_sub">Theme, font &amp; display</string>
+    <string name="settings_locked_while">Locked while %1$s mode is active</string>
+    <string name="settings_mode_running_manual">%1$s active • switched on manually</string>
+    <string name="settings_mode_running_sched">%1$s active • %2$s</string>
+    <string name="settings_modes_sub">Create calm, focused setups that switch together</string>
+    <string name="settings_modes">Modes</string>
+    <string name="settings_general">General</string>
+    <string name="settings_password_signin_sub">Create or reset your password</string>
+    <string name="settings_password_signin">Password &amp; sign-in</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_about_you">About You</string>
+    <string name="settings_password_link_sent">Password link sent to %1$s</string>
+    <string name="settings_together_waiting_one">1 request waiting for you</string>
+    <string name="settings_together_waiting_many">%1$s requests waiting for you</string>
+
+    <!-- ui/settings/components/NotificationsSection.kt -->
+    <string name="notif_first_nudge">First nudge at</string>
+    <string name="notif_twice">Twice</string>
+    <string name="notif_focus_nudges_sub">Prompt me to start a Pomodoro session</string>
+    <string name="notif_focus_nudges">Focus nudges</string>
+    <string name="notif_expand">Expand %1$s</string>
+    <string name="notif_collapse">Collapse %1$s</string>
+    <string name="notif_break_tell_me">Tell me when a focus session or break ends</string>
+    <string name="notif_break_reminders">Break reminders</string>
+    <string name="notif_focus_pomodoro_sub">Helpful prompts while you work and recharge</string>
+    <string name="notif_focus_pomodoro">Focus &amp; Pomodoro</string>
+    <string name="notif_morning_rundown_sub">A gentle recap of your day, each morning</string>
+    <string name="notif_morning_rundown">Morning rundown</string>
+    <string name="notif_daily_rhythm_sub">A calm overview when your day begins</string>
+    <string name="notif_daily_rhythm">Daily rhythm</string>
+    <string name="notif_calendar_reminders_sub">Stay ahead of events without the noise</string>
+    <string name="notif_calendar_reminders">Calendar reminders</string>
+    <string name="notif_todo_reminders_sub">Choose when Myndora should nudge you</string>
+    <string name="notif_todo_reminders">To-do reminders</string>
+    <string name="notif_break_reminders_sub">Alert me when a focus session or break ends</string>
+    <string name="notif_daily_summary">Daily summary</string>
+    <string name="notif_active_count">%1$s active — reminders, summary &amp; focus</string>
+    <string name="notif_kind_start_sub">A nudge right as it begins</string>
+    <string name="notif_kind_30min_sub">Time to wrap up and head over</string>
+    <string name="notif_kind_day_before_sub">A heads-up the day ahead</string>
+    <string name="notif_kind_start">At start time</string>
+    <string name="notif_kind_30min">30 minutes before</string>
+    <string name="notif_kind_day_before">Day before</string>
+
+    <!-- ui/settings/components/AppearanceRow.kt -->
+    <string name="settings_text_spacing_desc">Adds room between lines and letters. This page updates as you choose, so you can read the difference here.</string>
+    <string name="settings_text_spacing">Text Spacing</string>
+    <string name="settings_font_size">Font Size</string>
+    <string name="settings_font_dyslexic">Dyslexic</string>
+    <string name="settings_font">Font</string>
+    <string name="settings_appearance">Appearance</string>
+
+    <!-- ui/settings/components/QuickAccessSection.kt -->
+    <string name="settings_tap_to_add_nav">Tap to add to navigation</string>
+    <string name="settings_shown_in_nav">Shown in navigation bar</string>
+    <string name="settings_quick_access_count">%1$s items shown in navigation bar</string>
+    <string name="settings_quick_access">Quick Access</string>
+
+    <!-- ui/settings/components/ThemePicker.kt -->
+    <string name="theme_intensity">Intensity</string>
+    <string name="theme_second_color">Second color</string>
+    <string name="theme_main_color">Main color</string>
+    <string name="theme_your_colors_desc">Pick two hues. Brightness is adjusted automatically so text stays readable on both light and dark.</string>
+    <string name="theme_your_colors">Your colors</string>
+    <string name="theme_yours_build">Build a palette from two colors you pick.</string>
+    <string name="theme_yours_adjust">Tap to adjust your colors.</string>
+    <string name="theme_yours">Yours</string>
+    <string name="theme_color_theme_desc">Ordered from calmest to boldest. Pick whichever suits today — it changes color only, never where anything is.</string>
+    <string name="theme_color_theme">Color theme</string>
+
+    <!-- ui/settings/components/ThemePreviewCard.kt -->
+    <string name="preview_read_chapter">Read one chapter</string>
+    <string name="preview_tasks">Tasks</string>
+    <string name="preview_three_things">3 things today</string>
+    <string name="preview_good_morning">Good morning</string>
+
+    <!-- ui/theme/AppTheme.kt -->
+    <string name="theme_yours_blurb">Built from the two colors you picked.</string>
+    <string name="theme_bloom_blurb">Boldest and brightest. For when nothing is holding your attention.</string>
+    <string name="theme_bloom">Bloom</string>
+    <string name="theme_ember_blurb">Warm and activating. Myndora\'s own colours.</string>
+    <string name="theme_ember">Ember</string>
+    <string name="theme_tide_blurb">Cool and low-arousal. Good for long stretches of focused work.</string>
+    <string name="theme_tide">Tide</string>
+    <string name="theme_calm_blurb">Quietest option. For days when everything is already too much.</string>
+    <string name="theme_calm">Calm</string>
+
+    <!-- ui/theme/CustomTheme.kt -->
+    <string name="vivid_vivid">Vivid</string>
+    <string name="vivid_balanced">Balanced</string>
+    <string name="vivid_soft">Soft</string>
+
+    <!-- ui/accessibility/AccessibilityQuickAccess.kt -->
+    <string name="a11y_line_spacing">Line spacing</string>
+    <string name="a11y_brightness">Brightness</string>
+    <string name="a11y_locked">Appearance changes aren\'t available in this mode. Turn it off or edit the mode first.</string>
+    <string name="a11y_title">Accessibility</string>
+    <string name="a11y_settings">Accessibility settings</string>
+
+    <!-- ui/home/HomeAgenda.kt -->
+    <string name="agenda_anytime_today">Anytime today</string>
+    <string name="agenda_wrapping_up">Wrapping up</string>
+    <string name="agenda_left">%1$s left</string>
+    <string name="agenda_starting_now">Starting now</string>
+    <string name="agenda_in">in %1$s</string>
+    <string name="agenda_now">Now</string>
+    <string name="agenda_late">%1$s late</string>
+    <string name="agenda_anytime">Anytime</string>
+    <string name="duration_hours">%1$s h</string>
+    <string name="duration_hours_minutes">%1$s h %2$s</string>
+    <string name="ribbon_empty">Day ribbon. Nothing scheduled today.</string>
+    <string name="ribbon_items">Day ribbon. %1$s.</string>
+    <string name="ribbon_items_more">Day ribbon. %1$s. And %2$s more.</string>
+    <string name="ribbon_now_cd">Now %1$s. Show what\'s on now.</string>
+
+    <!-- ui/home/HomeTodayCard.kt -->
+    <string name="weather_current">Current weather</string>
+    <string name="weather_thunderstorm">Thunderstorm</string>
+    <string name="weather_snow">Snow</string>
+    <string name="weather_rain">Rain</string>
+    <string name="weather_foggy">Foggy</string>
+    <string name="weather_overcast">Overcast</string>
+    <string name="weather_partly_cloudy">Partly cloudy</string>
+    <string name="weather_clear">Clear sky</string>
+    <string name="weather_high_low">H %1$s\u0020\u0020L %2$s</string>
+    <string name="home_all_clear">All clear — everything\'s done</string>
+    <string name="home_nothing_today">Nothing on today</string>
+    <string name="home_today_caps">TODAY</string>
+    <string name="weather_set_location">Set your location for weather</string>
+
+    <!-- domain/model/AppMode.kt -->
+    <string name="ringer_normal">Normal</string>
+    <string name="ringer_vibrate">Vibrate</string>
+    <string name="ringer_silent">Silent</string>
+    <string name="mode_work">Work</string>
+    <string name="mode_weekend">Weekend</string>
+    <string name="home_mode_cd">Mode: %1$s</string>
+    <string name="home_mode_caps">MODE</string>
+    <string name="home_mode_until">Until %1$s</string>
+    <string name="home_mode_all_day">All day</string>
+    <string name="home_mode_manual">Until you change it</string>
+    <string name="home_modes_intro">A mode sets up your phone and Myndora for part of your day. %1$s, for example, puts your phone on vibrate.</string>
+    <string name="home_modes_set_up">Set up</string>
+
+    <!-- ui/home/HomeModeTile.kt -->
+    <string name="mode_dnd">Do Not Disturb</string>
+    <string name="home_manage_modes">Manage modes</string>
+    <string name="mode_settings_cd">%1$s settings</string>
+    <string name="home_create_mode">Create a mode</string>
+    <string name="home_no_mode">No mode</string>
+
+    <!-- ui/home/HomeCustomize.kt -->
+    <string name="home_customise">Customise home</string>
+    <string name="home_layout_locked">Home layout locked</string>
+    <string name="home_drag_reorder">Drag to reorder</string>
+    <string name="home_full_width">Make full width</string>
+    <string name="home_half_width">Make half width</string>
+    <string name="home_tap_to_add">Tap to add</string>
+    <string name="home_remove_widget">Remove from home</string>
+
+    <!-- ui/home/HomeFocusTile.kt -->
+    <string name="home_open_timer">Open timer</string>
+    <string name="home_pick_block">Pick a block</string>
+    <string name="home_session_running">Session running</string>
+    <string name="home_focus_caps">FOCUS</string>
+
+    <!-- ui/home/HomeNextUpCard.kt -->
+    <string name="home_start_focus">Start focus</string>
+    <string name="home_nothing_next_body">The rest of today is yours. Quick add if something lands.</string>
+    <string name="home_nothing_next">Nothing next</string>
+    <string name="home_snooze_30">Snooze 30 minutes</string>
+    <string name="home_mark_done">Mark done</string>
+    <string name="home_next_up_caps">NEXT UP</string>
+    <string name="home_happening_now">HAPPENING NOW</string>
+
+    <!-- ui/home/HomeScreen.kt -->
+    <string name="common_no_data">No data</string>
+    <string name="home_empty_body">Tap Customise home to put something back.</string>
+    <string name="home_empty">Your home is empty</string>
+    <string name="home_edit_hint_slot">\u0020· tap a dashed slot to put one back</string>
+    <string name="home_edit_hint">Tap a tile to take it off · drag the handle to reorder · ⤢ to resize</string>
+    <string name="home_profile_photo">Your profile photo</string>
+    <string name="home_title">Home</string>
+    <string name="home_customize_locked">Home customization isn\'t available while %1$s mode is active. Edit the mode\'s Home screen from Modes instead.</string>
+
+    <!-- common -->
+    <string name="count_of">%1$s of %2$s</string>
+
+    <!-- ui/home/HomeWidgets.kt -->
+    <string name="widget_ask_blurb">The assistant prompt box</string>
+    <string name="widget_ask">Ask Myndora</string>
+    <string name="widget_tree_blurb">How far through your profile you are</string>
+    <string name="survey_focus_tree_short">Focus tree</string>
+    <string name="widget_progress_blurb">What you\'ve finished, and a companion that wakes up with you</string>
+    <string name="widget_progress">Today\'s progress</string>
+    <string name="widget_focus_blurb">Start a 5, 15 or 25 minute block in one tap</string>
+    <string name="home_focus_widget">Focus</string>
+    <string name="widget_health_blurb">Steps, sleep and medication rings</string>
+    <string name="widget_health">Health</string>
+    <string name="widget_quick_add_blurb">Catch a task or event in a couple of seconds</string>
+    <string name="widget_quick_add">Quick add</string>
+    <string name="widget_next_up_blurb">The one thing that\'s next, with a button to start it</string>
+    <string name="widget_next_up">Next up</string>
+    <string name="widget_mode_blurb">How much gets through to you right now</string>
+    <string name="widget_mode">Mode</string>
+    <string name="widget_today_blurb">The date, the weather, and your day as a timeline</string>
+
+    <!-- ui/home/QuickCaptureCard.kt -->
+    <string name="qc_event">Event</string>
+    <string name="qc_task">Task</string>
+    <string name="qc_add_event">Add event</string>
+    <string name="qc_add_task">Add task</string>
+    <string name="qc_picked_up">· picked up from your text</string>
+    <string name="qc_placeholder_event">Standup in 30 min</string>
+    <string name="qc_placeholder_task">Call pharmacy tomorrow at 3pm</string>
+    <string name="qc_catch_it">Catch it before it\'s gone</string>
+
+    <!-- ui/home/QuickCaptureViewModel.kt -->
+    <string name="qc_tap_dismiss">Tap to dismiss</string>
+    <string name="qc_couldnt_save">Couldn\'t save</string>
+    <string name="qc_event_added">Event added</string>
+    <string name="qc_task_added">Task added</string>
+    <string name="qc_tonight">Tonight</string>
+    <string name="qc_in_an_hour">In 1 h</string>
+
+    <!-- ui/home/HomeWinsTile.kt -->
+    <string name="wins_done_out_of">done, out of %1$s</string>
+    <string name="wins_all_done">Everything on today. Done.</string>
+    <string name="wins_nothing_yet">Nothing yet — one counts</string>
+    <string name="wins_say_hi">Tap to say hi</string>
+    <string name="wins_caps">TODAY\'S PROGRESS</string>
+
+    <!-- ui/home/TodayProgressBuddy.kt -->
+    <string name="buddy_awake_line">%1$s down. It stays awake for the rest of the day — nothing you do or don\'t do next puts it back to sleep.</string>
+    <string name="buddy_awake">Awake, thanks to you.</string>
+    <string name="buddy_wide_awake_line">%1$s in and it\'s bouncing. Whatever else today does, that part already happened.</string>
+    <string name="buddy_wide_awake">Wide awake.</string>
+    <string name="buddy_look_all_line">All %1$s of them. Sit with that for a second before you find the next thing.</string>
+    <string name="buddy_look">Look at it go.</string>
+    <string name="buddy_look_one_line">Everything today asked of you. That\'s the lot.</string>
+    <string name="buddy_one_eye_line">One thing did that. Starting is the whole hard part, and you\'re past it.</string>
+    <string name="buddy_one_eye">One eye open.</string>
+    <string name="buddy_asleep_line">It\'s not waiting on you — it\'s just asleep. It stirs at the first thing you finish, and the smallest thing counts exactly the same as the biggest.</string>
+    <string name="buddy_asleep">Still asleep.</string>
+    <string name="buddy_out_cold_line">Nothing on today, so it\'s having a nap. Sleeping is most of what it\'s good at.</string>
+    <string name="buddy_out_cold">Out cold.</string>
+    <string name="buddy_done_today">%1$s done today</string>
+    <string name="buddy_nothing_scheduled">nothing scheduled</string>
+
+    <!-- ui/home/HomeGreeting.kt -->
+    <string name="greet_rest_soon">Rest soon, {name}</string>
+    <string name="greet_world_asleep">The world\'s asleep, {name}</string>
+    <string name="greet_midnight_oil">Burning the midnight oil, {name}</string>
+    <string name="greet_still_up">Still up, {name}?</string>
+    <string name="greet_night_owl">Night owl, {name}</string>
+    <string name="greet_night">Night, {name}</string>
+    <string name="greet_almost_bedtime">Almost bedtime, {name}</string>
+    <string name="greet_time_to_rest">Time to rest, {name}</string>
+    <string name="greet_late_one">Late one, {name}</string>
+    <string name="greet_good_night">Good night, {name}</string>
+    <string name="greet_easy_does_it">Hey {name}, easy does it</string>
+    <string name="greet_long_day">Long day, {name}?</string>
+    <string name="greet_winding_down">Winding down, {name}</string>
+    <string name="greet_evening">Evening, {name}</string>
+    <string name="greet_good_evening">Good evening, {name}</string>
+    <string name="greet_keep_steady">Hey {name}, keep it steady</string>
+    <string name="greet_still_going">Still going, {name}</string>
+    <string name="greet_halfway">Halfway there, {name}</string>
+    <string name="greet_afternoon">Afternoon, {name}</string>
+    <string name="greet_good_afternoon">Good afternoon, {name}</string>
+    <string name="greet_rise_shine">Rise and shine, {name}</string>
+    <string name="greet_lets_begin">Hey {name}, let\'s begin</string>
+    <string name="greet_fresh_page">Fresh page, {name}</string>
+    <string name="greet_morning">Morning, {name}</string>
+    <string name="greet_good_morning">Good morning, {name}</string>
+    <string name="greet_quiet_hours">The quiet hours, {name}</string>
+    <string name="greet_morning_slow">Morning, {name} — take it slow</string>
+    <string name="greet_up_with_sun">Up with the sun, {name}</string>
+    <string name="greet_early_start">Early start, {name}</string>
+
+    <!-- ui/modes/ModeVisuals.kt -->
+    <string name="mode_every_day">Every day</string>
+    <string name="mode_accent_neutral">Neutral</string>
+    <string name="mode_accent_warm">Warm</string>
+    <string name="mode_accent_theme">Theme colour</string>
+    <string name="mode_icon_social">Social</string>
+    <string name="mode_icon_exercise">Exercise</string>
+    <string name="mode_icon_study">Study</string>
+    <string name="mode_icon_rest">Rest</string>
+    <string name="mode_icon_quiet">Quiet</string>
+    <string name="mode_icon_general">General</string>
+
+    <!-- ui/modes/ModeEditScreen.kt -->
+    <string name="mode_overnight">Runs overnight into the next morning.</string>
+    <string name="mode_auto_end">Automatic schedule end</string>
+    <string name="mode_auto_start">Automatic schedule start</string>
+    <string name="mode_from_to">From %1$s to %2$s</string>
+    <string name="mode_off_by_hand">Off — switch this mode by hand</string>
+    <string name="mode_pick_day">Pick at least one day</string>
+    <string name="mode_turn_on_auto">Turn on automatically</string>
+    <string name="mode_usable_end">Usable hours end</string>
+    <string name="mode_usable_start">Usable hours start</string>
+    <string name="mode_usable_hours_desc">Bounds the times Myndora suggests for new events.</string>
+    <string name="mode_usable_hours">Usable hours</string>
+    <string name="mode_duration_cd">%1$s duration</string>
+    <string name="mode_dont_change">Don\'t change</string>
+    <string name="mode_ringer_desc">Silent is no sound and no vibration.</string>
+    <string name="mode_ringer">Ringer</string>
+    <string name="mode_med_reminders">Medication reminders</string>
+    <string name="mode_changes">%1$s changes</string>
+    <string name="mode_one_change">1 change</string>
+    <string name="mode_no_changes">No changes</string>
+    <string name="common_collapsed">Collapsed</string>
+    <string name="common_expanded">Expanded</string>
+    <string name="mode_icon">Icon</string>
+    <string name="mode_name_placeholder">Deep work, errands, evening…</string>
+    <string name="common_deleting">Deleting…</string>
+    <string name="mode_delete_body">Your settings are untouched — only the mode goes away.</string>
+    <string name="mode_delete_confirm">Delete %1$s?</string>
+    <string name="mode_save">Save mode</string>
+    <string name="common_saving">Saving…</string>
+    <string name="mode_no_changes_yet">This mode doesn\'t change anything yet.</string>
+    <string name="mode_choose_days">Choose days</string>
+    <string name="mode_schedule">Schedule</string>
+    <string name="mode_break_length">Break length</string>
+    <string name="mode_focus_length">Focus session length</string>
+    <string name="mode_silence_focus_desc">Turn on Do Not Disturb when a Pomodoro starts.</string>
+    <string name="mode_silence_focus">Silence during focus sessions</string>
+    <string name="mode_focus_planning">Focus &amp; planning</string>
+    <string name="mode_home_tiles_desc">Choose the tiles shown on Home in this mode.</string>
+    <string name="mode_home_tiles">Home screen tiles</string>
+    <string name="mode_reduce_motion_desc">Stop the app\'s idle movement while this mode is on.</string>
+    <string name="mode_simplified_workspace_desc">Show fewer cards and less on screen at once.</string>
+    <string name="mode_simplified_workspace">Simplified workspace</string>
+    <string name="mode_app_appearance">App appearance</string>
+    <string name="mode_med_hidden_warning">Medication reminders won\'t be shown in this mode</string>
+    <string name="mode_myndora_notifications_desc">Choose which reminders are allowed in this mode.</string>
+    <string name="mode_myndora_notifications">Myndora notifications</string>
+    <string name="mode_dnd_desc">Holds notifications on the phone itself, not just Myndora\'s.</string>
+    <string name="mode_sound_notifications">Sound &amp; notifications</string>
+    <string name="mode_open_section">Open a section to choose what this mode changes.</string>
+    <string name="mode_back_to_modes">Back to modes</string>
+    <string name="mode_unavailable">Mode unavailable</string>
+    <string name="mode_delete">Delete mode</string>
+    <string name="mode_edit">Edit mode</string>
+    <string name="mode_new">New mode</string>
+    <string name="mode_this_mode">this mode</string>
+
+    <!-- ui/modes/ModesScreen.kt -->
+    <string name="modes_starts_when">Starts when you choose it</string>
+    <string name="modes_schedule_off">Schedule off</string>
+    <string name="modes_auto_schedule">Automatic schedule</string>
+    <string name="modes_scheduled">Scheduled</string>
+    <string name="modes_manual">Manual</string>
+    <string name="modes_customize_cd">Customize %1$s mode</string>
+    <string name="modes_running">Running</string>
+    <string name="modes_not_active">Not active</string>
+    <string name="modes_running_auto">Running automatically</string>
+    <string name="modes_selected_active">Selected and active</string>
+    <string name="modes_mode_cd">%1$s mode. %2$s. %3$s.</string>
+    <string name="common_not_selected">Not selected</string>
+    <string name="modes_no_mode_cd">No mode. Pause schedules and use personal settings without mode overrides.</string>
+    <string name="modes_no_mode_desc">Pause schedules and keep personal settings</string>
+    <string name="modes_auto_none_cd">Automatic modes. No schedules are configured yet.</string>
+    <string name="modes_auto_cd">Automatic modes. Follow saved mode schedules.</string>
+    <string name="modes_ready_schedule">Ready when you add a schedule</string>
+    <string name="modes_follow_schedules">Follow the schedules saved in your modes</string>
+    <string name="modes_automatic">Automatic</string>
+    <string name="modes_off">Modes are off. Your personal settings are in use.</string>
+    <string name="modes_auto_idle">Automatic is on. Your settings stay in place until a schedule starts.</string>
+    <string name="modes_active_now">Active now · %1$s</string>
+    <string name="modes_between_schedules">Between schedules</string>
+    <string name="modes_n_saved">%1$s modes saved. Tap to switch, or open one to customize it.</string>
+    <string name="modes_one_saved">1 mode saved. Tap to switch, or open one to customize it.</string>
+    <string name="modes_your_modes">Your modes</string>
+    <string name="modes_choose_active_sub">Switch your app experience with one tap.</string>
+    <string name="modes_choose_active">Choose what\'s active</string>
+
+    <!-- ui/modes/ModesViewModel.kt -->
+    <string name="modes_err_delete">Couldn\'t delete this mode. Try again.</string>
+    <string name="modes_err_builtin">Built-in modes can\'t be deleted — edit it instead</string>
+    <string name="modes_err_save">Couldn\'t save this mode. Try again.</string>
+    <string name="modes_err_sign_in">Sign in again to save this mode</string>
+    <string name="modes_err_name">Give the mode a name</string>
+    <string name="modes_err_unavailable">This mode is no longer available. It may have been deleted on another device.</string>
+
+    <!-- ui/modes/ModeControls.kt -->
+    <string name="mode_choose">Choose</string>
+
+    <!-- ui/calendar/CalendarViewModel.kt -->
+    <string name="cal_avail_one">Working around the hours %1$s is busy — Myndora never shows you what those are.</string>
+    <string name="cal_avail_two">Working around the hours %1$s and %2$s are busy — Myndora never shows you what those are.</string>
+    <string name="cal_avail_many">Working around the hours %1$s people are busy — Myndora never shows you what those are.</string>
+    <string name="cal_a_connection">a connection</string>
+    <string name="cal_need_google_sync">Connect a Google account to enable Calendar sync</string>
+    <string name="cal_nothing_to_sync">Nothing to sync</string>
+    <string name="cal_your_connection">your connection</string>
+
+    <!-- ui/calendar/CalendarDialogs.kt -->
+    <string name="cal_they_see">They\'ll see this event on their calendar. They still can\'t see anything else of yours.</string>
+    <string name="cal_only_they">Only they will get this event</string>
+    <string name="cal_on_your_day">It\'ll be on your day as well</string>
+    <string name="cal_add_mine_too">Add to my calendar too</string>
+    <string name="cal_pick_person">Pick at least one person.</string>
+    <string name="cal_for_someone">For someone</string>
+    <string name="cal_for_myself">For myself</string>
+    <string name="cal_select_end">Select end time</string>
+    <string name="cal_select_start">Select start time</string>
+    <string name="cal_add_for_calendars">Add for %1$s calendars</string>
+    <string name="cal_add_for_both">Add for us both</string>
+    <string name="cal_add_for_people">Add for %1$s people</string>
+    <string name="cal_add_for">Add for %1$s</string>
+    <string name="cal_also_add_to">Also add to</string>
+    <string name="cal_color">Color</string>
+    <string name="cal_end_after_start">End time must be after start time</string>
+    <string name="cal_pick_times">Pick a start and end time</string>
+    <string name="cal_end">End</string>
+    <string name="cal_time">Time</string>
+    <string name="cal_link_optional">Link (optional)</string>
+    <string name="cal_location_hint">e.g. Office, Zoom, Park…</string>
+    <string name="cal_location_optional">Location (optional)</string>
+    <string name="cal_description_hint">e.g. Weekly sync with the team</string>
+    <string name="cal_description_optional">Description (optional)</string>
+    <string name="cal_event_name_hint">e.g. Team standup</string>
+    <string name="cal_event_name">Event name</string>
+    <string name="cal_who_for">Who is this for?</string>
+    <string name="cal_new_event">New event</string>
+    <string name="cal_event_for_someone">Event for someone</string>
+    <string name="cal_edit_event">Edit event</string>
+
+    <!-- ui/calendar/CalendarHeader.kt -->
+    <string name="common_previous">Previous</string>
+    <string name="cal_switch_month">Switch to month view</string>
+    <string name="cal_switch_week">Switch to week view</string>
+    <string name="cal_week">Week</string>
+    <string name="cal_month">Month</string>
+
+    <!-- ui/calendar/CalendarTasks.kt -->
+    <string name="cal_open_breakdown">Open breakdown</string>
+    <string name="cal_steps_done">%1$s of %2$s steps done</string>
+    <string name="cal_breakdown_complete">Breakdown complete</string>
+    <string name="cal_break_steps_sub">%1$s min · easier one piece at a time</string>
+    <string name="cal_break_steps">Break this into steps</string>
+    <string name="cal_divide">Divide</string>
+    <string name="cal_show_details">Show details</string>
+    <string name="cal_hide_details">Hide details</string>
+    <string name="cal_overdue">OVERDUE</string>
+    <string name="cal_added_by">Added by %1$s</string>
+    <string name="cal_delete_confirm">Are you sure you want to delete \"%1$s\"? This can\'t be undone.</string>
+    <string name="cal_delete_event_q">Delete event?</string>
+    <string name="cal_delete_event">Delete event</string>
+    <string name="cal_tap_plus">Tap + to add a task</string>
+    <string name="cal_no_tasks_day">No tasks for this day</string>
+    <string name="cal_n_done">%1$s done</string>
+    <string name="cal_one_done">1 done</string>
+    <string name="cal_still_to_come">Still to come</string>
+    <string name="cal_slipped_many">%1$s things slipped past</string>
+    <string name="cal_slipped_one">1 thing slipped past</string>
+
+    <!-- ui/calendar/TimeSuggestionChips.kt -->
+    <string name="suggest_range_cd">%1$s to %2$s.\u0020</string>
+    <string name="suggest_time_many">Suggested times</string>
+    <string name="suggest_time_one">Suggested time</string>
+
+    <!-- ui/calendar/TaskBreakdownScreen.kt -->
+    <string name="bd_save_plan">Save plan</string>
+    <string name="bd_plan_saved">Plan saved</string>
+    <string name="bd_clear_plan">Clear plan</string>
+    <string name="bd_add_station">Add station</string>
+    <string name="bd_autosave">Your plan saves itself as you edit.</string>
+    <string name="bd_start_focus">Start focus session</string>
+    <string name="bd_break">Break</string>
+    <string name="bd_5_more">5 minutes more</string>
+    <string name="bd_5_less">5 minutes less</string>
+    <string name="bd_move_down">Move down</string>
+    <string name="bd_move_up">Move up</string>
+    <string name="bd_remove_station">Remove station</string>
+    <string name="bd_name_step">Name this step…</string>
+    <string name="bd_mark_not_done">Mark not done</string>
+    <string name="bd_preset_pomodoro">25m + 5m breaks</string>
+    <string name="bd_preset_quarters">4 × %1$sm</string>
+    <string name="bd_preset_thirds">3 × %1$sm</string>
+    <string name="bd_preset_halves">2 × %1$sm</string>
+    <string name="bd_add_manual">Add a station manually</string>
+    <string name="bd_quarters">In quarters</string>
+    <string name="bd_thirds">In thirds</string>
+    <string name="bd_halves">In half</string>
+    <string name="bd_add_stations">Add stations you can tick off one at a time.</string>
+    <string name="bd_split_minutes">Split these %1$s minutes into smaller stations you can tick off.</string>
+    <string name="bd_break_it">Break it into steps</string>
+    <string name="bd_unplanned">%1$s min unplanned</string>
+    <string name="bd_over">%1$s min over the event</string>
+    <string name="bd_plan_complete">Plan complete</string>
+    <string name="bd_progress">%1$s of %2$s done · %3$s/%4$s min</string>
+    <string name="bd_unsaved">Unsaved edits</string>
+    <string name="bd_saved">Saved</string>
+    <string name="bd_title">Breakdown</string>
+    <string name="bd_event_gone">This event no longer exists.</string>
+
+    <!-- ui/calendar/TaskBreakdownViewModel.kt -->
+    <string name="bd_focus_n">Focus %1$s</string>
+    <string name="bd_part">Part %1$s</string>
+    <string name="bd_new_step">New step</string>
+
+    <!-- ui/todo/TodoViewModel.kt -->
+    <string name="todo_insights_today">Today\'s task insights</string>
+    <string name="todo_insights_for">Task insights for %1$s</string>
+    <string name="todo_added">Your task has been added</string>
+    <string name="todo_filter_high">High priority</string>
+    <string name="todo_filter_overdue">Overdue</string>
+    <string name="todo_filter_upcoming">Upcoming</string>
+    <string name="todo_cat_sport">Sport</string>
+    <string name="todo_cat_personal">Personal</string>
+    <string name="todo_cat_education">Education</string>
+
+    <!-- ui/todo/TaskDetailScreen.kt -->
+    <string name="todo_update">Update Task</string>
+    <string name="todo_status">Status</string>
+    <string name="todo_end_time">End Time</string>
+    <string name="todo_start_time">Start Time</string>
+    <string name="todo_date">Date</string>
+    <string name="todo_date_time">Date &amp; Time</string>
+    <string name="todo_description">Description</string>
+    <string name="todo_title">Title</string>
+    <string name="todo_task_details">Task Details</string>
+
+    <!-- ui/todo/TodoDialogs.kt -->
+    <string name="todo_they_see">They\'ll see this task on their list. They still can\'t see anything else of yours.</string>
+    <string name="todo_only_they">Only they will get this task</string>
+    <string name="todo_on_your_list">It\'ll be on your list as well</string>
+    <string name="todo_add_mine_too">Add to my list too</string>
+    <string name="todo_description_hint">e.g. Morning stretch routine</string>
+    <string name="todo_hide_options">Hide extra options</string>
+    <string name="todo_category">Category</string>
+    <string name="todo_pick_date">Pick date</string>
+    <string name="todo_task_name_hint">e.g. Yoga practice</string>
+    <string name="todo_task_name">Task name</string>
+    <string name="todo_delete_task">Delete task</string>
+    <string name="todo_edit_task">Edit Task</string>
+    <string name="todo_add_for_lists">Add for %1$s lists</string>
+    <string name="todo_add_task_btn">Add Task</string>
+    <string name="todo_new_task">New Task</string>
+    <string name="todo_task_for_someone">Task for someone</string>
+
+    <!-- ui/todo/TodoScreen.kt -->
+    <string name="todo_try_search">Try a different search term</string>
+    <string name="todo_no_found">No tasks found</string>
+    <string name="todo_empty_today_sub">Tap + to add your first task</string>
+    <string name="todo_empty_completed_sub">Completed tasks will appear here</string>
+    <string name="todo_empty_high_sub">Flag a task to prioritize it</string>
+    <string name="todo_empty_overdue_sub">No unfinished tasks are past due</string>
+    <string name="todo_empty_upcoming_sub">Future tasks will appear here</string>
+    <string name="todo_empty_today">No tasks for today</string>
+    <string name="todo_empty_completed">No completed tasks</string>
+    <string name="todo_empty_high">No high-priority tasks</string>
+    <string name="todo_empty_overdue">You’re all caught up</string>
+    <string name="todo_empty_upcoming">Nothing upcoming</string>
+    <string name="todo_show_tasks">Show tasks</string>
+    <string name="todo_category_caps">CATEGORY</string>
+    <string name="todo_view_caps">VIEW</string>
+    <string name="todo_filter_sub">Choose a view and category</string>
+    <string name="todo_filter_title">Filter tasks</string>
+    <string name="todo_completed_tasks">Completed tasks</string>
+    <string name="todo_high_tasks">High-priority tasks</string>
+    <string name="todo_overdue_tasks">Overdue tasks</string>
+    <string name="todo_upcoming_tasks">Upcoming tasks</string>
+    <string name="todo_filters">Filters</string>
+    <string name="todo_filters_count">Filters · %1$s</string>
+    <string name="todo_choose_date">Choose a date</string>
+    <string name="todo_search_hint">Search tasks...</string>
+    <string name="todo_delete_body">Are you sure you want to delete this task?</string>
+    <string name="todo_delete_q">Delete Task?</string>
+
+    <!-- ui/todo/TodoSwipe.kt -->
+    <string name="todo_edit_task_cd">Edit task</string>
+
+    <!-- ui/todo/TodoTaskCard.kt -->
+    <string name="todo_flag">Flag as important</string>
+    <string name="todo_remove_flag">Remove flag</string>
+    <string name="todo_high_priority_caps">HIGH PRIORITY</string>
+
+    <!-- ui/pomodoro/PomodoroUiState.kt -->
+    <string name="focus_empty_title_today">Nothing focused today yet</string>
+    <string name="focus_fmt_m">%1$sm</string>
+    <string name="focus_fmt_h">%1$sh</string>
+    <string name="focus_fmt_hm">%1$sh %2$sm</string>
+    <string name="focus_cmp_first">Great start — first focused day in a while!</string>
+    <string name="focus_cmp_more">%1$s more than yesterday — keep it up!</string>
+    <string name="focus_cmp_less">%1$s less than yesterday — push for it</string>
+
+    <!-- data/local/PomodoroTimerManager.kt -->
+    <string name="focus_one_session_done">1 session completed</string>
+    <string name="focus_sessions_done">%1$s sessions completed</string>
+    <string name="sound_rain">Rain</string>
+    <string name="sound_forest">Forest</string>
+    <string name="sound_ocean">Ocean Waves</string>
+    <string name="sound_fireplace">Fireplace</string>
+    <string name="sound_white_noise">White Noise</string>
+    <string name="sound_cafe">Cafe</string>
+    <string name="sound_birds">Birds</string>
+    <string name="sound_wind">Wind</string>
+    <string name="sound_ambient">Ambient sound</string>
+
+    <!-- ui/pomodoro/components/AmbientSoundPill.kt -->
+    <string name="sound_choose">Choose sound</string>
+
+    <!-- ui/pomodoro/dialogs/AmbientSoundSheet.kt -->
+    <string name="sound_open_spotify">Open in Spotify</string>
+    <string name="sound_spotify">Spotify playlist</string>
+
+    <!-- ui/pomodoro/CreateFocusRoomSheet.kt -->
+    <string name="focus_not_enabled">Hasn\'t turned on Focus together yet</string>
+    <string name="focus_n_minutes">%1$s minutes</string>
+    <string name="focus_create_room">Create the room</string>
+    <string name="focus_creating">Creating…</string>
+    <string name="focus_add_someone_first">Add someone in Together first, then they can turn on Focus together for you.</string>
+    <string name="focus_with_who">With who</string>
+    <string name="focus_how_long">How long</string>
+    <string name="focus_both_tap">You\'ll both tap start before the clock begins</string>
+
+    <!-- ui/pomodoro/FocusRoomScreen.kt -->
+    <string name="focus_waiting_others">Waiting for %1$s others</string>
+    <string name="focus_waiting_for">Waiting for %1$s</string>
+    <string name="focus_starting">Starting…</string>
+    <string name="focus_not_now_leave">Not now, leave</string>
+    <string name="focus_leave">Leave the session</string>
+    <string name="focus_youre_ready">You\'re ready</string>
+    <string name="focus_im_ready">I\'m ready</string>
+    <string name="focus_tap_ready">Tap ready when you\'re at your desk</string>
+    <string name="focus_focusing_together">Focusing together</string>
+    <string name="focus_break_together">Break together ☕</string>
+    <string name="focus_ready_count">%1$s of %2$s ready</string>
+    <string name="focus_room">Focus room</string>
+    <string name="focus_back_stay_cd">Back — you stay in the room</string>
+    <string name="focus_back_staying">Back, staying in the room</string>
+
+    <!-- ui/pomodoro/FocusTogetherCard.kt -->
+    <string name="focus_add_to_work">Add someone in Together to work alongside them</string>
+    <string name="focus_focusing_with">Focusing with\u0020</string>
+    <string name="focus_break_with">On a break with\u0020</string>
+    <string name="focus_open_room">Open the focus room</string>
+    <string name="focus_join">Join</string>
+    <string name="focus_starts_join">%1$s min · starts when you join</string>
+    <string name="focus_wants_with_you">%1$s wants to focus with you</string>
+    <string name="focus_starts_everyone">%1$s min · starts when everyone\'s in</string>
+    <string name="focus_waiting_start">Waiting for %1$s to tap start</string>
+
+    <!-- ui/pomodoro/PomodoroScreen.kt -->
+    <string name="common_not_now_title">Not Now</string>
+    <string name="common_open_settings_title">Open Settings</string>
+    <string name="focus_permission_body">To silence notifications during focus sessions, Myndora needs Do Not Disturb access. This lets the app temporarily mute notifications while your timer is running and restore them when it ends.</string>
+    <string name="focus_permission_title">Focus Mode Permission</string>
+    <string name="focus_session_completed">Session completed</string>
+    <string name="focus_paused">Paused</string>
+    <string name="focus_drag_ring">Drag the ring to adjust</string>
+    <string name="focus_tap_duration">Tap to set duration</string>
+    <string name="focus_drag_adjust">Drag to adjust</string>
+    <string name="focus_release_finish">Release to finish</string>
+    <string name="focus_break_caps">BREAK</string>
+    <string name="focus_session_caps">FOCUS SESSION</string>
+    <string name="focus_mode_disabled">Focus mode disabled</string>
+    <string name="focus_mode_enabled">Focus mode enabled</string>
+    <string name="focus_mode_manages">%1$s mode manages focus silence</string>
+    <string name="focus_mode_disabled_cd">Focus Mode Disabled</string>
+    <string name="focus_mode_enabled_cd">Focus Mode Enabled</string>
+    <string name="focus_silence_by_mode_cd">Focus silence managed by %1$s mode</string>
+    <string name="focus_timer_title">Focus Timer</string>
+    <string name="focus_together_short">Together</string>
+    <string name="focus_dnd_prompt_title">Silence your phone?</string>
+    <string name="focus_dnd_prompt_body">Do Not Disturb keeps notifications away until this focus session ends. You can also switch it on any time with the icon at the top.</string>
+    <string name="focus_dnd_prompt_on">Turn on</string>
+    <string name="language_choose_cd">Choose language, now %1$s</string>
+
+    <!-- ui/pomodoro/FocusTogetherViewModel.kt -->
+    <string name="focus_send_failed">Couldn\'t send that — %1$s.</string>
+
+    <!-- ui/pomodoro/SharedSessionPanel.kt -->
+    <string name="focus_controls_room">Controls live in the room so you both stay in step</string>
+    <string name="focus_break_together_plain">On a break together</string>
+
+    <!-- ui/pomodoro/components/BottomControls.kt -->
+    <string name="focus_restart">Restart</string>
+
+    <!-- ui/pomodoro/components/CalendarPlanStrip.kt -->
+    <string name="plan_start_item">Start %1$s</string>
+    <string name="plan_current">\u0020· current</string>
+    <string name="plan_show_all">Show all steps</string>
+    <string name="plan_hide_all">Hide all steps</string>
+    <string name="plan_all_steps">All %1$s steps</string>
+    <string name="plan_hide_steps">Hide steps</string>
+    <string name="plan_finish_first">Finish or stop the current session to jump to another step.</string>
+    <string name="plan_step_of">Step %1$s of %2$s · %3$s</string>
+    <string name="plan_stop_following">Stop following plan</string>
+    <string name="plan_open_breakdown">Open full breakdown</string>
+    <string name="plan_calendar">Calendar plan</string>
+
+    <!-- ui/pomodoro/components/DailyFocusCard.kt -->
+
+    <!-- ui/pomodoro/components/HistorySummarySwitcher.kt -->
+    <string name="focus_history_cd">History</string>
+    <string name="focus_zero_today">0m today</string>
+    <string name="focus_minutes_today">%1$sm today</string>
+
+    <!-- ui/pomodoro/dialogs/DurationPickerSheet.kt -->
+    <string name="focus_set_min">Set %1$s min</string>
+    <string name="focus_session_length">Session length</string>
+
+    <!-- ui/pomodoro/dialogs/PomodoroHistoryDialog.kt -->
+    <string name="focus_no_sessions_body">Complete a focus session and it will appear here.</string>
+    <string name="focus_no_sessions">No sessions yet</string>
+    <string name="focus_focused">Focused</string>
+    <string name="focus_history_title">Focus History</string>
+
+    <!-- ui/pomodoro/dialogs/PomodoroHistorySheet.kt -->
+    <string name="focus_no_sessions_body2">Finish a focus session and it will show up here.</string>
+    <string name="focus_streak">%1$s day streak</string>
+    <string name="focus_recent_sessions">Recent sessions</string>
+    <string name="focus_active_days">active days</string>
+    <string name="focus_best_day">best day</string>
+    <string name="focus_this_week">this week</string>
+    <string name="focus_last_7">Last 7 days</string>
+    <string name="focus_history_sheet_title">Focus history</string>
+
+    <!-- ui/pomodoro/utils/PomodoroTimeFormatter.kt -->
+    <string name="focus_unknown_time">Unknown time</string>
+
+    <!-- ui/activity/WorkspaceContent.kt -->
+    <string name="ws_healthcare_near">Healthcare near you</string>
+    <string name="ws_find_care">Find Care</string>
+    <string name="ws_care_nearby">Care nearby</string>
+    <string name="ws_nobody_yet">Nobody yet</string>
+    <string name="ws_feature_todo">To-Do</string>
+    <string name="ws_save_goals">Save goals</string>
+    <string name="ws_energy">Energy</string>
+    <string name="ws_goals_limits">Choose limits that feel motivating, not demanding.</string>
+    <string name="ws_your_goals">Your activity goals</string>
+    <string name="ws_medications">Medications</string>
+    <string name="ws_body_signals">Body signals</string>
+    <string name="ws_activity">Activity</string>
+    <string name="ws_for_you">FOR YOU</string>
+    <string name="ws_dismiss_suggestion">Dismiss suggestion</string>
+    <string name="ws_hold_reorder">Hold to reorder %1$s</string>
+    <string name="ws_n_pinned">%1$s pinned</string>
+    <string name="ws_hold_card">Hold a card, then place it exactly where you want.</string>
+    <string name="ws_pinned_cards">Pinned cards</string>
+    <string name="ws_edit_summary">Edit Summary</string>
+    <string name="ws_goals_body">Pick goals that support your day—not goals that add pressure.</string>
+    <string name="ws_build_rings">Build your rings</string>
+    <string name="ws_activity_goals">Activity goals</string>
+    <string name="ws_tap_log">Tap to view and log doses</string>
+    <string name="ws_todays_doses">Today\'s doses</string>
+    <string name="ws_no_timing">No timing selected</string>
+    <string name="ws_times_a_day">%1$s times a day</string>
+    <string name="ws_no_sleep_recorded">No sleep recorded</string>
+    <string name="ws_hours_total">%1$s hours total</string>
+    <string name="ws_select_day">Select a day</string>
+    <string name="ws_8h_goal">8h goal</string>
+    <string name="ws_movement_sub">Quick reset · Low pressure</string>
+    <string name="ws_movement">ADHD-friendly movement break</string>
+    <string name="ws_walk_sub">10 min · Guided walk</string>
+    <string name="ws_walk">A gentle walking reset</string>
+    <string name="ws_suggestions_sub">Small ideas based on your wellness space</string>
+    <string name="ws_suggestions">Suggestions for you</string>
+    <string name="ws_no_readings">No readings today — showing the weekly average</string>
+    <string name="ws_week_avg">WEEK AVG</string>
+    <string name="ws_resting">RESTING</string>
+    <string name="ws_avg_today">AVG TODAY</string>
+    <string name="ws_latest_sleep">Latest sleep session</string>
+    <string name="ws_no_sleep">No sleep reading yet</string>
+    <string name="ws_sleep_hours">%1$s hours</string>
+    <string name="ws_connect_health_sub">Tap to connect steps, sleep, activity and heart rate.</string>
+    <string name="ws_connect_health">Connect your health data</string>
+    <string name="ws_glance">Today, at a glance</string>
+    <string name="ws_pinned">Pinned</string>
+    <string name="ws_profile_photo">Profile photo</string>
+    <string name="ws_connected">Connected</string>
+    <string name="ws_tiny_reset_sub">A playful pause before your next thing</string>
+    <string name="ws_tiny_reset">Take a tiny reset</string>
+    <string name="ws_supported_sub">Wellness and care, close by</string>
+    <string name="ws_supported">Keep yourself supported</string>
+    <string name="ws_calendar_open">Your calendar is open</string>
+    <string name="ws_tasks_left">%1$s tasks left</string>
+    <string name="ws_one_thing">One thing is enough</string>
+    <string name="ws_next_move">Choose your next move</string>
+    <string name="ws_title">Workspace</string>
+    <string name="ws_one_reading">From 1 reading today</string>
+    <string name="ws_n_readings">From %1$s readings today</string>
+    <string name="ws_one_request">1 request waiting</string>
+    <string name="ws_n_requests">%1$s requests waiting</string>
+    <string name="ws_one_medication">1 medication</string>
+    <string name="ws_n_medications">%1$s medications</string>
+    <string name="ws_connected_meds">Connected · %1$s</string>
+    <string name="goal_suffix_steps">steps</string>
+    <string name="goal_suffix_minutes">minutes</string>
+
+    <!-- ui/activity/WorkspaceViewModel.kt -->
+    <string name="ws_no_tasks_completed">No tasks completed yet</string>
+    <string name="ws_completed_one">You completed 1 task</string>
+    <string name="ws_completed_n">You completed %1$s tasks</string>
+    <string name="ws_pomo_focus_paused">Focus paused</string>
+    <string name="ws_pomo_focus_complete">Focus complete</string>
+    <string name="ws_pomo_focus_ready">Focus ready</string>
+    <string name="ws_pomo_break_paused">Break paused</string>
+    <string name="ws_pomo_break_complete">Break complete</string>
+    <string name="ws_pomo_break_ready">Break ready</string>
+    <string name="ws_day_time">%1$s · %2$s</string>
+    <string name="ws_happening_now">Happening now</string>
+    <string name="ws_no_focus_sessions">No focus sessions yet</string>
+    <string name="ws_min_more">%1$s min more than yesterday</string>
+    <string name="ws_min_less">%1$s min less than yesterday</string>
+    <string name="ws_same_as_yesterday">Same as yesterday</string>
+    <string name="ws_focused_today">%1$s focused today</string>
+    <string name="ws_hero_fresh">A fresh start is ready</string>
+    <string name="ws_hero_fresh_sub">Try one gentle 25-minute session. Starting small still counts.</string>
+    <string name="ws_hero_yesterday">Yesterday you did %1$s. Don\'t break the streak!</string>
+    <string name="ws_hero_same">Matching yesterday\'s pace — steady wins.</string>
+    <string name="ws_task_count_one">1 task</string>
+    <string name="ws_task_count_n">%1$s tasks</string>
+    <string name="ws_banner_fresh">A fresh start</string>
+    <string name="ws_banner_fresh_sub">Plan a task and try a quick focus session to get going.</string>
+    <string name="ws_banner_great">Great work today</string>
+    <string name="ws_banner_both">You\'ve completed %1$s and stayed focused for %2$s.</string>
+    <string name="ws_banner_tasks_only">You\'ve completed %1$s — no focus time logged yet.</string>
+    <string name="ws_banner_focus_only">No tasks completed yet, but you stayed focused for %1$s.</string>
+
+    <!-- ui/activity/WorkspaceHero.kt -->
+    <string name="hero_focused">focused</string>
+    <string name="health_steps_count">%1$s steps</string>
+    <string name="health_sleep_hours">%1$sh sleep</string>
+    <string name="meds_today_date">Today, %1$s</string>
+
+    <!-- ui/activity/MedicationsScreen.kt -->
+    <string name="meds_any_time">Any time</string>
+
+    <!-- ui/activity/WorkspaceHero.kt -->
+    <string name="hero_see_list">See list</string>
+    <string name="hero_back_focus">Back to focus</string>
+    <string name="hero_short_block">A short focus block is an easy way to start.</string>
+    <string name="hero_nothing_scheduled">Nothing scheduled</string>
+    <string name="hero_dot_todo">· To-do</string>
+    <string name="hero_dot_calendar">· Calendar</string>
+    <string name="hero_up_next">UP NEXT</string>
+    <string name="hero_right_now">RIGHT NOW</string>
+    <string name="hero_steady_week">Steady week</string>
+    <string name="hero_focus_adding">Focus time is adding up</string>
+    <string name="hero_quiet_week">A quiet week so far</string>
+    <string name="hero_moving">You\'re moving</string>
+    <string name="greet_fresh_page_plain">Fresh page</string>
+    <string name="hero_all_clear">All clear. Nice.</string>
+    <string name="hero_nothing_list">Nothing on the list yet</string>
+    <string name="hero_tasks_done">tasks done</string>
+    <string name="hero_last_7">LAST 7 DAYS</string>
+
+    <!-- ui/activity/HealthScreen.kt -->
+    <string name="health_no_readings">No readings yet today</string>
+    <string name="health_connect_line">Connect steps, sleep and activity</string>
+    <string name="health_taken_of">%1$s of %2$s taken today</string>
+    <string name="health_all_taken">All %1$s taken today</string>
+    <string name="health_nothing_today">Nothing scheduled today</string>
+    <string name="health_add_meds">Add what you take and when</string>
+
+    <!-- ui/activity/MedicationsScreen.kt -->
+    <string name="meds_add_yours_body">Set the dose and how many times you take it each day.</string>
+    <string name="meds_add_yours">Add your medications</string>
+    <string name="meds_log_dose">Log dose</string>
+    <string name="meds_undo_dose">Undo dose</string>
+    <string name="meds_future_cannot">Future dose cannot be logged</string>
+    <string name="common_todo_short">To-do</string>
+    <string name="meds_also_show">Also show doses in</string>
+    <string name="meds_your_meds">Your medications</string>
+    <string name="meds_tap_undo">Tap a check to undo</string>
+    <string name="meds_logged">Logged</string>
+    <string name="meds_all_done_body">You logged every scheduled dose.</string>
+    <string name="meds_all_done">All done for today</string>
+    <string name="meds_taken_of">%1$s of %2$s taken</string>
+    <string name="meds_dose_log">Dose log</string>
+    <string name="meds_upcoming">Upcoming doses</string>
+    <string name="meds_todays_log">Today\'s log</string>
+
+    <!-- ui/activity/MedicationEditScreen.kt -->
+    <string name="med_delete_body">It disappears from today\'s list and from your profile. Doses you already logged stay.</string>
+    <string name="med_delete_confirm">Delete %1$s?</string>
+    <string name="med_add_btn">Add medication</string>
+    <string name="med_save_failed">Couldn\'t save. Check your connection and try again.</string>
+    <string name="med_days">Days</string>
+    <string name="med_only_needed_sub">No reminders, and it won\'t be counted as a missed dose</string>
+    <string name="med_only_needed">Only when needed</string>
+    <string name="med_no_dose">no dose set</string>
+    <string name="med_name_hint">Ritalin, Vyvanse, melatonin…</string>
+    <string name="med_delete">Delete medication</string>
+    <string name="med_new">New medication</string>
+    <string name="med_this_medication">this medication</string>
+
+    <!-- ui/activity/WorkspaceScreen.kt -->
+    <string name="ws_open_voice">Open Myndora voice assistant</string>
+
+    <!-- ui/navigation/Screen.kt -->
+    <string name="nav_more">More</string>
+    <string name="nav_appointments">Appointments</string>
+    <string name="nav_book_appointment">Book appointment</string>
+    <string name="nav_choose_setup">Choose Setup</string>
+    <string name="nav_splash">Splash</string>
+    <string name="nav_login">Login</string>
+    <string name="nav_activity_goals">Activity Goals</string>
+    <string name="nav_task_detail">Task Detail</string>
+    <string name="nav_shape_flow">Shape Flow</string>
+    <string name="nav_todo">Todo</string>
+
+    <!-- ui/navigation/BottomNavBar.kt -->
+    <string name="nav_ai_locked">AI Assistant (finish the survey to unlock)</string>
+    <string name="nav_ai_assistant">AI Assistant</string>
+
+    <!-- ui/components/MyndoraLoader.kt -->
+    <string name="common_loading_plain">Loading</string>
+
+    <!-- ui/components/ProfileHeaderCard.kt -->
+    <string name="profile_get_started">Get started</string>
+
+    <!-- ui/sharedcomponents/AppSearchbar.kt -->
+    <string name="search_close">Close search</string>
+    <string name="common_search_hint">Search...</string>
+
+    <!-- ui/sharedcomponents/MyndoraNotice.kt -->
+    <string name="notice_heads_up">Heads up</string>
+    <string name="notice_error">Something went wrong</string>
+    <string name="notice_all_done">All done</string>
+
+    <!-- ui/sharedcomponents/SuccessPopup.kt -->
+    <string name="common_success">Success</string>
+
+    <!-- ui/sharedcomponents/TimePickerDialog.kt -->
+    <string name="tp_use_time">Use this time</string>
+    <string name="tp_plus_15">Add 15 minutes</string>
+    <string name="tp_minus_15">Minus 15 minutes</string>
+    <string name="tp_hint">Slide through your day or use a quick time</string>
+
+    <!-- ui/stories/StoryHint.kt -->
+    <string name="story_pull_down">Pull down</string>
+    <string name="story_many">%1$s stories</string>
+    <string name="story_one">1 story</string>
+
+    <!-- ui/stories/StoryViewer.kt -->
+    <string name="story_cd">Story</string>
+    <string name="story_open_link">Open link</string>
+
+    <!-- ui/games/ShapeFlowScreen.kt -->
+    <string name="shape_glowing">%1$s, glowing</string>
+    <string name="shape_one_tap">1 tap — keep exploring</string>
+    <string name="shape_n_taps">%1$s taps — keep exploring</string>
+    <string name="shape_card_meta">1–3 MIN\u0020\u0020•\u0020\u0020MEMORY + FIDGET</string>
+    <string name="shape_card_sub">Tap to unwind or follow the pattern.</string>
+    <string name="shape_mindful_play">MINDFUL PLAY</string>
+    <string name="shape_game_cd">Shape Flow game</string>
+    <string name="shape_tap_feels_good">Tap what feels good and stay as long as you like.</string>
+    <string name="shape_no_score">NO SCORE. NO PRESSURE.</string>
+    <string name="shape_next_round">Next round…</string>
+    <string name="shape_watch_pattern">Watch the pattern</string>
+    <string name="shape_restart">Restart game</string>
+    <string name="shape_start_memory">Start memory game</string>
+    <string name="shape_quick">Quick</string>
+    <string name="shape_little_challenge">A little challenge</string>
+    <string name="shape_easy_follow">Easy to follow</string>
+    <string name="shape_pace">PACE</string>
+    <string name="shape_nice">Nice</string>
+    <string name="shape_your_turn">Your turn</string>
+    <string name="shape_watch">Watch</string>
+    <string name="shape_ready">Ready</string>
+    <string name="shape_free_play">Free play</string>
+    <string name="shape_best">BEST</string>
+    <string name="shape_taps_caps">TAPS</string>
+    <string name="shape_round">ROUND</string>
+    <string name="shape_fidget">Fidget</string>
+    <string name="shape_memory">Memory</string>
+    <string name="shape_turn_haptics_on">Turn haptics on</string>
+    <string name="shape_turn_haptics_off">Turn haptics off</string>
+    <string name="shape_tiny_reset">A tiny reset for busy minds</string>
+    <string name="shape_haptics_off">Sound-free\u0020\u0020•\u0020\u0020Haptics off</string>
+    <string name="shape_haptics_on">Sound-free\u0020\u0020•\u0020\u0020Haptics on</string>
+    <string name="shape_almost">Almost! Take a breath and try the pattern again.</string>
+    <string name="shape_beautiful">Beautiful — adding one more shape.</string>
+    <string name="shape_your_turn_of">Your turn\u0020\u0020•\u0020\u0020%1$s of %2$s</string>
+    <string name="shape_watch_carefully">Watch carefully…</string>
+    <string name="shape_watch_glow">Watch the glow, then repeat the pattern.</string>
+    <string name="shape_tap_any">Tap any shape. Each one has its own little rhythm.</string>
+    <string name="shape_orange_diamond">Orange diamond</string>
+    <string name="shape_rose_squircle">Rose squircle</string>
+    <string name="shape_green_triangle">Green triangle</string>
+    <string name="shape_golden_trapezoid">Golden trapezoid</string>
+    <string name="shape_blue_square">Blue square</string>
+    <string name="shape_purple_circle">Purple circle</string>
+
+    <!-- ui/care/CareNearbyScreen.kt -->
+    <string name="care_all_categories">All categories</string>
+    <string name="care_filters_active">Filters, %1$s active</string>
+    <string name="care_mapped">%1$s mapped nearby</string>
+    <string name="care_tap_explore">Tap to explore</string>
+    <string name="care_map">Care map</string>
+    <string name="care_site">Site</string>
+    <string name="care_map_short">Map</string>
+    <string name="care_call">Call</string>
+    <string name="care_clear_filters">Clear filters</string>
+    <string name="care_nothing_city">Nothing to show in this city yet</string>
+    <string name="care_no_match">Nothing matches those filters</string>
+    <string name="care_no_cities_body">Add rows to the cities &amp; places tables in Supabase, or check that Row-Level Security allows reading them.</string>
+    <string name="care_no_cities">No cities to show</string>
+    <string name="care_book">Book</string>
+    <string name="care_close_map">Close map</string>
+    <string name="care_use_location">Use my location</string>
+    <string name="care_location_found">Location found</string>
+    <string name="care_tap_explore_map">Tap to explore the full map</string>
+    <string name="care_see_around">See care around you</string>
+    <string name="care_your_meds">Your meds: %1$s</string>
+    <string name="care_show_all">Show all</string>
+    <string name="care_clear_filter">Clear filter</string>
+    <string name="care_chat_many">Showing %1$s results from your chat</string>
+    <string name="care_chat_one">Showing the match from your chat</string>
+    <string name="care_offline">Offline: browsing saved care results. Connect to the internet to refresh or book.</string>
+    <string name="care_refresh">Refresh care results</string>
+    <string name="care_city_note">Healthcare results use the city saved during registration.</string>
+    <string name="care_choose_city">Choose your city in ADHD Profile</string>
+    <string name="care_need_internet">An internet connection is required to make a booking</string>
+
+    <!-- ui/care/CareNearbyViewModel.kt -->
+    <string name="care_load_places_failed">Couldn\'t load places</string>
+    <string name="care_load_cities_failed">Couldn\'t load cities</string>
+
+    <!-- ui/reservation/ReservationViewModel.kt -->
+    <string name="res_save_failed">Couldn\'t save appointment</string>
+    <string name="res_request_description">Reservation request — confirm directly with %1$s.\u0020</string>
+    <string name="res_appointment_at">Appointment at %1$s</string>
+    <string name="res_connect_internet">Connect to the internet to make a booking</string>
+    <string name="res_no_places">No medical places are available in %1$s</string>
+    <string name="res_choose_city_first">Choose your city in ADHD Profile first</string>
+
+    <!-- ui/reservation/ReservationScreen.kt -->
+    <string name="res_step_complete">Step complete</string>
+    <string name="res_profile_city">Your profile city</string>
+    <string name="res_book_an">Book an appointment</string>
+    <string name="res_history">Reservation history</string>
+    <string name="res_added_calendar">Your appointment was added to the calendar.</string>
+    <string name="res_confirmed">Reservation confirmed</string>
+    <string name="res_need_internet">Internet required to book</string>
+    <string name="res_reserve">Reserve appointment</string>
+    <string name="res_30_min">30-minute appointment</string>
+    <string name="res_choose_time">Choose a time</string>
+    <string name="res_two_weeks">Choose within the next two weeks</string>
+    <string name="res_pick_day">Pick a day</string>
+    <string name="res_near">Healthcare near %1$s</string>
+    <string name="res_choose_place">Choose a place</string>
+
+    <!-- ui/reservation/ReservationHistoryScreen.kt -->
+    <string name="res_past">Past</string>
+    <string name="res_planned">Planned</string>
+    <string name="res_no_appointments_body">Appointments you add will appear here.</string>
+    <string name="res_no_appointments">No appointments yet</string>
+    <string name="res_your_appointments">Your appointments</string>
+
+    <!-- ui/reservation/ReservationScreen.kt -->
+    <string name="res_you">you</string>
+
+    <!-- domain/model/Place.kt -->
+    <string name="place_other">Other</string>
+    <string name="place_centro">Centro di ascolto</string>
+    <string name="place_asl">ASL</string>
+    <string name="place_specialist">Specialist</string>
+
+    <!-- data/notifications/ReminderCopy.kt -->
+    <string name="reminder_title_day_before">Tomorrow\'s plan</string>
+    <string name="reminder_title_30">Starting soon</string>
+    <string name="reminder_title_start">On your schedule now</string>
+    <string name="reminder_day_before_1">Tomorrow at %2$s: %1$s. Anything to prep tonight?</string>
+    <string name="reminder_day_before_2">Heads up — %1$s lands tomorrow at %2$s.</string>
+    <string name="reminder_day_before_3">On the radar: %1$s, tomorrow at %2$s.</string>
+    <string name="reminder_day_before_4">Future you has %1$s tomorrow (%2$s). Want to set out a reminder?</string>
+    <string name="reminder_30_1">30 min until %1$s. Wrap what you\'re doing and breathe.</string>
+    <string name="reminder_30_2">Coming up at %2$s: %1$s. Quick stretch and head over.</string>
+    <string name="reminder_30_3">Half an hour out: %1$s. You\'ve got this.</string>
+    <string name="reminder_30_4">%1$s starts in 30 — water, bathroom, and you\'re set.</string>
+    <string name="reminder_start_1">Starting now: %1$s. One step at a time.</string>
+    <string name="reminder_start_2">It\'s go time — %1$s.</string>
+    <string name="reminder_start_3">%1$s is up now. Just begin — perfect can wait.</string>
+    <string name="nudge_title_1">Ready for a focus sprint?</string>
+    <string name="nudge_body_1">One 25-minute Pomodoro. Pick a task and press start.</string>
+    <string name="nudge_title_2">Got 25 minutes?</string>
+    <string name="nudge_body_2">A single focus session now beats a perfect one later. Let\'s go.</string>
+    <string name="nudge_title_3">Time to lock in</string>
+    <string name="nudge_body_3">Start a Pomodoro — momentum comes after you begin, not before.</string>
+    <string name="nudge_title_4">Little push</string>
+    <string name="nudge_body_4">Set a timer, silence the noise, and give one thing your full attention.</string>
+    <string name="break_start_title">Nice work — break time</string>
+    <string name="break_start_body">Step away, stretch, hydrate. You earned it.</string>
+    <string name="break_over_title">Break\'s over</string>
+    <string name="break_over_body">Ready to line up another focus session? Just begin.</string>
+    <string name="morning_title">Good morning</string>
+    <string name="morning_empty">No events on your calendar today — go gentle on yourself.</string>
+    <string name="morning_list_more">%1$s, %2$s, and %3$s more</string>
+    <string name="morning_today">Today: %1$s. Pick the one that matters most.</string>
+
+    <!-- data/notifications/NotificationChannels.kt -->
+    <string name="channel_breaks_desc">Alerts when a focus session or break finishes.</string>
+    <string name="channel_breaks">Pomodoro breaks</string>
+    <string name="channel_profile_desc">Occasional reminders to continue an unfinished Myndora profile.</string>
+    <string name="channel_profile">Profile check-ins</string>
+    <string name="channel_nudges_desc">Gentle prompts to start a Pomodoro focus session.</string>
+    <string name="channel_summary_desc">A gentle morning rundown of your day.</string>
+    <string name="channel_reminders_desc">Heads-up nudges before your events and tasks.</string>
+    <string name="channel_reminders">Reminders</string>
+
+    <!-- data/notifications/QuestionnaireReminderReceiver.kt -->
+    <string name="qr_ready_title">Your profile is ready to finish</string>
+    <string name="qr_ready_body">All %1$s steps are saved. Open Myndora and finish your profile when you’re ready.</string>
+    <string name="qr_start_title">A small start still counts</string>
+    <string name="qr_start_body">Begin your Myndora profile a few questions at a time.</string>
+    <string name="qr_one_title">You’re one answer away</string>
+    <string name="qr_one_body">%1$s answers are safely saved. Continue with the final question.</string>
+    <string name="qr_nearly_title">Your profile is nearly ready</string>
+    <string name="qr_nearly_body">%1$s of %2$s answers are saved. Only %3$s left.</string>
+    <string name="qr_minutes_title">Continue when you have %1$s min</string>
+    <string name="qr_minutes_body">%1$s of %2$s answers are safely saved. Pick up at the next one.</string>
+    <string name="qr_remind_3_days">Remind me in 3 days</string>
+    <string name="focus_invite_body">%1$s min · starts when you both tap start</string>
+    <string name="common_someone">Someone</string>
+
+    <!-- data/local/PomodoroTimerService.kt -->
+    <string name="timer_channel_desc">Shows the active Pomodoro timer progress</string>
+    <string name="timer_channel">Pomodoro Timer</string>
+    <string name="timer_title">Myndora Timer</string>
+    <string name="timer_ready">%1$s — Ready</string>
+    <string name="timer_completed">%1$s — Completed!</string>
+    <string name="timer_paused">%1$s — Paused (%2$s)</string>
+    <string name="timer_focus_session">Focus Session</string>
+
+    <!-- data/local/FocusModeManager.kt -->
+    <string name="focus_condition_on">Focus session in progress</string>
+    <string name="focus_condition_off">Focus session ended</string>
+
+    <!-- data/export/ProfilePdfExporter.kt -->
+    <string name="pdf_preferred_tone">Preferred tone</string>
+    <string name="pdf_hardest_part">Hardest part</string>
+    <string name="pdf_what_helps">What helps</string>
+    <string name="pdf_med_status">Medication status</string>
+    <string name="pdf_already_tried">Already tried</string>
+    <string name="pdf_work_setting">Usual work setting</string>
+    <string name="pdf_when_missed">When something is missed</string>
+    <string name="pdf_checkin_limit">Check-in limit</string>
+    <string name="pdf_reminder_tone">Preferred reminder tone</string>
+    <string name="pdf_hardest_regulate">Hardest to regulate</string>
+    <string name="pdf_returning">Returning to a task</string>
+    <string name="pdf_plans_change">When plans change</string>
+    <string name="pdf_write_down">Needs to write things down</string>
+    <string name="pdf_loses_track">Loses track when interrupted</string>
+    <string name="pdf_also_applies">Also applies</string>
+    <string name="pdf_presentation">Presentation</string>
+    <string name="pdf_sleep_schedule">Sleep schedule</string>
+    <string name="pdf_chronotype">Chronotype</string>
+    <string name="pdf_usual_sleep">Usual sleep</string>
+    <string name="pdf_n_minutes">%1$s minutes</string>
+    <string name="pdf_most_productive">Most productive</string>
+    <string name="pdf_struggles">Main struggles</string>
+    <string name="pdf_main_goals">Main goals</string>
+    <string name="pdf_main_goal">Main goal</string>
+    <string name="pdf_age_range">Age range</string>
+    <string name="pdf_no_storage">No storage available</string>
+    <string name="pdf_write_downloads_failed">Couldn\'t write to Downloads</string>
+    <string name="pdf_open_downloads_failed">Couldn\'t open Downloads</string>
+    <string name="pdf_create_failed">Could not create the PDF</string>
+    <string name="pdf_disclaimer">This document is a personal record. It is not a medical assessment and must not be used to diagnose any condition.</string>
+    <string name="pdf_calories_total">Calories total</string>
+    <string name="pdf_exercise_total">Exercise total</string>
+    <string name="pdf_sleep_night">Sleep per night</string>
+    <string name="pdf_steps_day">Steps per day</string>
+    <string name="pdf_averages">Averages over the week</string>
+    <string name="pdf_no_data">No wellness data was recorded in this period.</string>
+    <string name="pdf_range">%1$s – %2$s · %3$s of 7 days with data</string>
+    <string name="pdf_weekly_log">Weekly wellness log</string>
+    <string name="pdf_survey_incomplete">The survey hasn\'t been completed yet.</string>
+    <string name="pdf_adhd_profile">ADHD profile</string>
+    <string name="pdf_who">Who this belongs to</string>
+    <string name="pdf_generated">Generated %1$s</string>
+    <string name="pdf_heading">Myndora — My Profile</string>
+    <string name="pdf_col_date">Date</string>
+    <string name="pdf_col_steps">Steps</string>
+    <string name="pdf_col_hr">HR</string>
+    <string name="pdf_col_rest_hr">Rest HR</string>
+    <string name="pdf_col_kcal">kcal</string>
+    <string name="pdf_col_sleep">Sleep</string>
+    <string name="pdf_col_exercise">Exer.</string>
+
+    <!-- domain/scheduling/TimeSuggestion.kt -->
+    <string name="kind_breakfast">breakfast</string>
+    <string name="kind_lunch">lunch</string>
+    <string name="kind_dinner">dinner</string>
+    <string name="kind_snack">coffee break</string>
+    <string name="kind_workout">workout</string>
+    <string name="kind_walk">walk</string>
+    <string name="kind_deep_work">focus block</string>
+    <string name="kind_study">study</string>
+    <string name="kind_meeting">meeting</string>
+    <string name="kind_errand">errand</string>
+    <string name="kind_chore">chore</string>
+    <string name="kind_appointment">appointment</string>
+    <string name="kind_medication">medication</string>
+    <string name="kind_social">catch-up</string>
+    <string name="kind_leisure">downtime</string>
+    <string name="kind_commute">commute</string>
+    <string name="kind_self_care">self-care</string>
+    <string name="kind_wind_down">wind-down</string>
+    <string name="kind_general">event</string>
+    <string name="reason_more_in_tank">You\'ll have more in the tank</string>
+    <string name="reason_no_room_today">Today has no room for this</string>
+    <string name="reason_clearer_run">A clearer run at it than today</string>
+    <string name="reason_usual_time">Your usual %1$s time</string>
+    <string name="reason_close_to_last">Close to when you last did this</string>
+    <string name="reason_right_after">Right after %1$s</string>
+    <string name="reason_shorter_heavy">Shorter session — today\'s been a heavy one</string>
+    <string name="reason_earlier_energy">Earlier, while you\'ve still got energy</string>
+    <string name="reason_focus_window">Your best focus window</string>
+    <string name="reason_winds_down">Winds down before %1$s</string>
+    <string name="reason_free_both">Free for you both</string>
+    <string name="reason_typical_time">Typical %1$s time</string>
+    <string name="reason_clear_gap">The clearest gap in your day</string>
+
+    <!-- data/ai/MistralAiClient.kt -->
+    <string name="ai_err_code">Something went wrong (code %1$s).</string>
+    <string name="ai_err_code_detail">Something went wrong (code %1$s): %2$s</string>
+    <string name="ai_err_unreachable">Couldn\'t reach Mistral. Check your connection.</string>
+    <string name="ai_err_hiccup">Mistral had a hiccup — try again.</string>
+    <string name="ai_err_bad_request">Bad request (code %1$s): %2$s</string>
+    <string name="ai_err_no_credit">Mistral account is out of credit — top up at console.mistral.ai.</string>
+    <string name="ai_err_key_invalid">Mistral API key is invalid or has no credit.</string>
+    <string name="ai_err_rate">Too many requests — wait a few seconds and retry.</string>
+    <string name="ai_err_busy">Mistral is busy right now — give it a moment and try again.</string>
+    <string name="ai_err_network">Network error</string>
+    <string name="ai_err_no_key">Mistral API key missing — add MISTRAL_API_KEY to local.properties.</string>
+    <string name="ai_err_rejected">the assistant sent something the API rejected.</string>
+
+    <!-- data/repository/ConversationRepository.kt -->
+    <string name="ai_older_chats">Older chats</string>
+
+    <!-- data/repository/MedicationTodoSyncer.kt -->
+    <string name="med_take">Take %1$s</string>
+    <string name="med_take_dose">Take %1$s %2$s</string>
+
+    <!-- data/repository/GoogleCalendarRepository.kt -->
+    <string name="cal_untitled_event">Untitled event</string>
+
+    <!-- data/repository/TogetherRepository.kt -->
+    <string name="together_a_user">A Myndora user</string>
+
+    <!-- ui/together/AddConnectionScreen.kt -->
+    <string name="together_invite_hero_title">Invite someone</string>
+    <string name="together_invite_hero_desc">Myndora Together is invite-only. Make a private link and send it however you like: WhatsApp, Telegram, email or a text.</string>
+    <string name="together_link_ready">Your private invite is ready</string>
+    <string name="together_copy_link">Copy</string>
+    <string name="together_link_copied">Copied</string>
+    <string name="together_share_invite">Share invite</string>
+    <string name="together_link_hint">It works once and expires in 24 hours. Send it only to the person you mean to invite.</string>
+    <string name="together_share_via">Send invite via</string>
+    <string name="together_share_message">Let\'s connect on Myndora! Tap this private invite on your phone. If it doesn\'t open, copy this whole message and paste it in Myndora → Together → Add someone → Have an invite? It works once and expires in 24 hours.\n\n%1$s</string>
+    <string name="together_have_invite">Have an invite?</string>
+    <string name="together_have_invite_desc">Paste the link, or the whole message someone sent you.</string>
+    <string name="together_paste_hint">Paste the invite here</string>
+    <string name="together_paste">Paste</string>
+    <string name="together_open_invite">Open invite</string>
+    <string name="together_not_invite">That doesn\'t look like a Myndora invite.</string>
+    <string name="together_beta_title">Find people from your contacts</string>
+    <string name="together_beta_badge">BETA</string>
+    <string name="together_beta_desc">Verify your phone number to see which of your contacts already use Myndora. Still being tested.</string>
+
+    <!-- ui/plan: Myndora Plus (beta) -->
+    <string name="plan_name">Myndora Plus</string>
+    <string name="plan_beta_caps">PLUS · BETA</string>
+    <string name="plan_active">Active</string>
+    <string name="plan_tagline">The assistant in your Workspace and Calendar, and your health data working for you.</string>
+    <string name="plan_price_nd">N/D</string>
+    <string name="plan_price_label">price not decided yet</string>
+    <string name="plan_free_in_beta">Free while the beta lasts</string>
+    <string name="plan_included_caps">WHAT\'S INCLUDED</string>
+    <string name="plan_new_caps">WHAT\'S NEW IN THIS BETA</string>
+    <string name="plan_feature_workspace_ai">Workspace assistant</string>
+    <string name="plan_feature_workspace_ai_body">Talk to Myndora from the Workspace, by voice, or on the device when you\'re offline.</string>
+    <string name="plan_feature_calendar_ai">Calendar AI</string>
+    <string name="plan_feature_calendar_ai_body">Add and plan events just by saying or typing them.</string>
+    <string name="plan_feature_health">Health Connect</string>
+    <string name="plan_feature_health_body">Sleep, steps and heart rate from your phone shape your day and your suggestions.</string>
+    <string name="plan_feature_colors">Your own colors</string>
+    <string name="plan_feature_colors_body">Pick two colors and Myndora builds the whole app\'s palette around them.</string>
+    <string name="plan_new_free">Plus is free for everyone who joins during the beta.</string>
+    <string name="plan_new_price">The final price isn\'t set yet. Your feedback helps decide it.</string>
+    <string name="plan_new_rest_free">Everything else in Myndora stays free.</string>
+    <string name="plan_join">Join the beta</string>
+    <string name="plan_joined">You\'re in the beta</string>
+    <string name="plan_join_offline">Connect to the internet to join.</string>
+    <string name="plan_join_failed">Couldn\'t join right now. Try again in a moment.</string>
+    <string name="plan_fine_print">Nothing is charged during the beta.</string>
+    <string name="plan_settings_join">Beta · free to join</string>
+    <string name="plan_settings_active">Active · beta</string>
+    <string name="plan_locked_cd">Myndora Plus feature</string>
+    <string name="plan_badge_plus">PLUS</string>
+    <string name="plan_badge_cd">Myndora Plus member</string>
+    <string name="plan_health_locked">Part of Myndora Plus, free while the beta lasts.</string>
+    <string name="plan_colors_locked">Part of Myndora Plus, free while the beta lasts.</string>
+
+    <!-- Together: nearby add -->
+    <string name="together_nearby_title">Add nearby</string>
+    <string name="together_nearby_card_desc">Both open the radar and find each other over Bluetooth.</string>
+    <string name="together_nearby_searching">Looking for people nearby…</string>
+    <string name="together_nearby_found">Tap someone to send them an invite</string>
+    <string name="together_nearby_hint">The other person needs this screen open too. They confirm the invite on their own phone.</string>
+    <string name="together_nearby_sending">Sending an invite to %1$s…</string>
+    <string name="together_nearby_sent">Invite sent. %1$s just needs to accept it.</string>
+    <string name="together_nearby_failed">Couldn\'t reach %1$s. Try again a little closer.</string>
+    <string name="together_nearby_permission">Myndora needs Bluetooth and nearby devices access to find people next to you.</string>
+    <string name="together_nearby_allow">Allow</string>
+    <string name="together_nearby_unavailable">Nearby search isn\'t available on this phone right now.</string>
+    <string name="together_nearby_you">You</string>
+    <string name="together_nearby_visible">Visible as %1$s while this screen is open</string>
+    <string name="together_nearby_received">%1$s sent you an invite</string>
+    <string name="together_invite_accepted">%1$s accepted your invite</string>
+    <string name="together_now_connected_body">You\'re now connected on Myndora Together.</string>
+    <string name="notif_channel_together">Myndora Together</string>
+    <string name="notif_channel_together_desc">When someone accepts an invite you sent</string>
+    <string name="settings_signing_out">Signing out…</string>
+    <string name="settings_delete_profile">Delete profile</string>
+    <string name="settings_delete_profile_desc">Permanently deletes your account and everything in it: profile, tasks, calendar, focus history and connections. This can\'t be undone.</string>
+    <string name="settings_delete_confirm_title">Delete your profile?</string>
+    <string name="settings_delete_type_prompt">To confirm, type the words below.</string>
+    <string name="settings_delete_phrase">delete my profile</string>
+    <string name="settings_delete_forever">Delete forever</string>
+    <string name="settings_delete_failed">Couldn\'t delete your profile. Check your connection and try again.</string>
+    <string name="settings_deleting">Deleting…</string>
+    <string name="widget_nearby_add">My QR code</string>
+    <string name="settings_deactivate_profile">Deactivate profile</string>
+    <string name="settings_deactivate_profile_desc">Take a break without losing anything. Your connections will see your profile as deactivated. Sign in again any time to turn it back on.</string>
+    <string name="settings_deactivate">Deactivate</string>
+    <string name="settings_deactivate_confirm_title">Deactivate your profile?</string>
+    <string name="settings_deactivate_confirm">Deactivate and sign out</string>
+    <string name="settings_deactivating">Deactivating…</string>
+    <string name="settings_deactivate_failed">Couldn\'t deactivate your profile. Check your connection and try again.</string>
+    <string name="settings_deactivate_instead">Not sure? Deactivate instead</string>
+    <string name="together_deactivated">Deactivated</string>
+    <string name="together_deactivated_desc">This profile is deactivated for now. Shared plans and focus sessions will wait until they\'re back.</string>
+    <string name="home_welcome_back">Welcome back</string>
+    <string name="together_select_all">Select all</string>
+    <string name="together_turn_all_off">Turn all off</string>
+    <string name="together_all_shared">Everything is now shared with %1$s</string>
+    <string name="together_all_off">You stopped sharing everything with %1$s</string>
+    <string name="home_profile_reactivated">Your profile is active again.</string>
+    <string name="widget_nearby_add_blurb">Show your code or scan a friend\'s to connect</string>
+    <string name="home_nearby_caps">MY QR CODE</string>
+    <string name="home_nearby_sub">Scan or share to add a friend</string>
+    <string name="together_qr_title">My QR code</string>
+    <string name="together_qr_open">Show my QR code</string>
+    <string name="together_qr_scan">Scan</string>
+    <string name="together_qr_image">QR code to connect with you</string>
+    <string name="together_qr_hint">Let a friend scan this to connect. It works once and expires in 24 hours.</string>
+    <string name="together_qr_not_invite">That QR code isn\'t a Myndora invite.</string>
+    <string name="together_qr_scanner_failed">Couldn\'t open the scanner. Try again in a moment.</string>
+    <string name="sound_offline_hint">Each sound downloads once, then plays offline.</string>
+    <string name="sound_download_failed">Couldn\'t download this sound. Tap it to try again.</string>
+    <string name="sound_credit">Sounds by Joseph Sardin, BigSoundBank.com (CC0)</string>
+    <string name="plan_feature_focus_together">Focus Together</string>
+    <string name="plan_feature_focus_together_body">Start a shared focus room and body-double with a friend in real time.</string>
+    <string name="plan_feature_sounds">Every ambient sound</string>
+    <string name="plan_feature_sounds_body">Forest, ocean, fireplace, cafe, birds and wind for your focus sessions.</string>
+    <string name="sound_unlock_title">Unlock %1$d more sounds</string>
+    <string name="sound_unlock_body">Forest, ocean, fireplace, cafe, birds and wind. Part of Myndora Plus, free while the beta lasts.</string>
+    <string name="sound_unlock_cta">Unlock with Plus</string>
 </resources>

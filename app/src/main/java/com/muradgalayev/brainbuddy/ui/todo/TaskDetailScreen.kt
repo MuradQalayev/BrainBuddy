@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import com.muradgalayev.brainbuddy.data.local.entity.TodoItemEntity
 import java.time.LocalDate
 import java.time.LocalTime
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,7 +45,7 @@ fun TaskDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Task Details",
+                        text = stringResource(R.string.todo_task_details),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -52,7 +54,7 @@ fun TaskDetailScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.Rounded.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.common_back)
                         )
                     }
                 },
@@ -60,7 +62,7 @@ fun TaskDetailScreen(
                     IconButton(onClick = onDeleteClick) {
                         Icon(
                             imageVector = Icons.Rounded.Delete,
-                            contentDescription = "Delete",
+                            contentDescription = stringResource(R.string.common_delete),
                             tint = MaterialTheme.colorScheme.error
                         )
                     }
@@ -78,7 +80,7 @@ fun TaskDetailScreen(
         ) {
             // title
             Text(
-                text = "Title",
+                text = stringResource(R.string.todo_title),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -93,7 +95,7 @@ fun TaskDetailScreen(
             // description
             if (task.description.isNotEmpty()) {
                 Text(
-                    text = "Description",
+                    text = stringResource(R.string.todo_description),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -106,7 +108,7 @@ fun TaskDetailScreen(
 
             // date and time
             Text(
-                text = "Date & Time",
+                text = stringResource(R.string.todo_date_time),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -116,7 +118,7 @@ fun TaskDetailScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Date",
+                        text = stringResource(R.string.todo_date),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -128,7 +130,7 @@ fun TaskDetailScreen(
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Start Time",
+                        text = stringResource(R.string.todo_start_time),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -140,7 +142,7 @@ fun TaskDetailScreen(
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "End Time",
+                        text = stringResource(R.string.todo_end_time),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -156,7 +158,7 @@ fun TaskDetailScreen(
 
             // priority
             Text(
-                text = "Priority",
+                text = stringResource(R.string.common_priority),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -170,7 +172,7 @@ fun TaskDetailScreen(
 
             // colour
             Text(
-                text = "Color",
+                text = stringResource(R.string.cal_color),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -184,12 +186,12 @@ fun TaskDetailScreen(
 
             // status
             Text(
-                text = "Status",
+                text = stringResource(R.string.todo_status),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = if (task.isCompleted) "Completed" else "Active",
+                text = if (task.isCompleted) stringResource(R.string.onboarding_completed) else stringResource(R.string.ai_active),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 color = if (task.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
@@ -202,7 +204,7 @@ fun TaskDetailScreen(
                 onClick = onUpdateClick,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Update Task")
+                Text(stringResource(R.string.todo_update))
             }
         }
     }

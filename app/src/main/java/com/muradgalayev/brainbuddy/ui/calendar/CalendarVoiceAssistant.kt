@@ -69,10 +69,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.muradgalayev.brainbuddy.R
+import com.muradgalayev.brainbuddy.data.local.AppLocale
+import com.muradgalayev.brainbuddy.ui.accessibility.animationsOn
 import com.muradgalayev.brainbuddy.domain.ai.ChatRole
 import com.muradgalayev.brainbuddy.ui.ai.AiAssistantViewModel
 import com.muradgalayev.brainbuddy.ui.ai.aiVoiceProfile
 import com.muradgalayev.brainbuddy.ui.ai.curatedAiVoices
+import com.muradgalayev.brainbuddy.ui.ai.parseOptions
+import com.muradgalayev.brainbuddy.ui.ai.speechErrorMessage
 import com.muradgalayev.brainbuddy.ui.ai.toMyndoraSpeech
 import com.muradgalayev.brainbuddy.ui.components.VoiceWaveform
 import com.muradgalayev.brainbuddy.ui.utils.SpeechRecognitionHelper
@@ -82,6 +86,27 @@ import java.util.Locale
 // to listening, indefinitely. it doesn't close because you paused to think, which used to
 // happen after 9 seconds. this is only the backstop for a session left running in a pocket
 private const val ABANDONED_SESSION_MS = 3 * 60 * 1000L
+
+// how many real recognition failures in a row before the panel says so out loud. two, because one
+// is often just a stumble over the first word, and three is long enough to feel ignored
+private const val MIC_FAILURES_BEFORE_SPEAKING_UP = 3
+
+// consecutive turns that hear nothing before the recognizer is rebuilt
+private const val MIC_FAILURES_BEFORE_RESET = 3
+
+// silent turns before the microphone stops reopening and waits for a tap instead
+private const val SILENT_TURNS_BEFORE_WAITING = 2
+
+// dim behind the panel. dark in both themes: a light scrim over a light app dims nothing, and what
+// the text needs is the contrast, not the tint. deep enough to read against, not so deep that the
+// app looks switched off
+private val SCRIM = Color.Black
+private const val SCRIM_ALPHA = 0.46f
+
+// how long after the assistant stops speaking before the microphone opens. the speaker is still
+// draining when the engine reports it is done. the gate is what actually stops the two overlapping
+// now, so this only has to outlast the tail rather than be safe on its own
+private const val TTS_DRAIN_MS = 450L
 
 @Composable
 fun CalendarVoiceAssistant(
@@ -95,6 +120,16 @@ fun CalendarVoiceAssistant(
     var listening by remember { mutableStateOf(false) }
     var partial by remember { mutableStateOf("") }
     var spokenRequest by remember { mutableStateOf("") }
+    // recognition failures in a row. a voice screen has no status bar, so a recognizer that never
+    // succeeds produced total silence: every panel below is gated on spokenRequest, which is only
+    // set by a successful transcription, so 'I can't hear you' could never reach the screen. that
+    // is indistinguishable from the assistant being broken, and it is what 'it never answers' was
+    var micFailures by remember { mutableIntStateOf(0) }
+    // the microphone is idle and waiting to be tapped, rather than reopening on its own. hands-free
+    // used to mean the mic reopened every couple of seconds for as long as the panel was up, which
+    // is a recording indicator that never goes out, a flat battery, and a phone that feels like it
+    // is listening to the room. one turn, then it waits
+    var awaitingTap by remember { mutableStateOf(false) }
     var level by remember { mutableFloatStateOf(0f) }
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
     var spokenAnswerId by remember { mutableStateOf<String?>(null) }
@@ -115,6 +150,11 @@ fun CalendarVoiceAssistant(
         else colors.onSurface.copy(alpha = alpha * 0.45f)
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
     val speechRef = remember { arrayOfNulls<SpeechRecognitionHelper>(1) }
+    // the microphone may only open when the assistant is neither speaking nor about to. read at the
+    // moment a restart fires, through refs rather than captured values, because the whole failure
+    // was a decision made a beat too early
+    val micGate = remember { booleanArrayOf(true, true, true) }
+    fun canOpenMic(): Boolean = micGate[0] && micGate[1] && micGate[2]
 
     val speech = remember {
         SpeechRecognitionHelper(
@@ -125,12 +165,16 @@ fun CalendarVoiceAssistant(
                 partial = ""
                 typedAnswer = ""
                 spokenRequest = text
+                micFailures = 0
+                awaitingTap = false
                 listening = false
                 activitySignal++
                 viewModel.send(text)
             },
             onPartialResult = {
                 partial = it
+                micFailures = 0
+                awaitingTap = false
                 if (it.isNotBlank()) {
                     typedAnswer = ""
                     activitySignal++
@@ -143,6 +187,18 @@ fun CalendarVoiceAssistant(
             onError = { error ->
                 listening = false
                 level = 0f
+                // a pause with nothing said is not a failure, it's a pause. anything else is
+                // NO_MATCH once is a pause. NO_MATCH over and over, with the microphone open each
+                // time, is the recognizer hearing nothing at all — which is what a wedged audio
+                // session looks like, so it counts
+                micFailures += 1
+                // say something once it is clearly not going to fix itself. permission and 'no
+                // speech model' errors never recover on their own, and retrying in silence forever
+                // is how this looked broken
+                if (micFailures == MIC_FAILURES_BEFORE_SPEAKING_UP) {
+                    typedAnswer = context.getString(speechErrorMessage(error))
+                    activitySignal++
+                }
                 val restartDelay = when (error) {
                     SpeechRecognizer.ERROR_RECOGNIZER_BUSY,
                     SpeechRecognizer.ERROR_CLIENT -> 850L
@@ -151,8 +207,19 @@ fun CalendarVoiceAssistant(
                     SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> 250L
                     else -> 450L
                 }
-                // don't reopen the mic underneath our own voice
-                if (!speaking) speechRef[0]?.restart(restartDelay)
+                // a run of turns that open the microphone and hear nothing means the audio session is
+                // wedged, not that the room is quiet. rebuild before trying again
+                if (micFailures > 0 && micFailures % MIC_FAILURES_BEFORE_RESET == 0) {
+                    speechRef[0]?.resetEngine()
+                }
+                // heard nothing: one more go, then stop and wait to be tapped. retrying forever is
+                // what kept the microphone running the whole time the panel was open
+                if (micFailures >= SILENT_TURNS_BEFORE_WAITING) {
+                    awaitingTap = true
+                    return@SpeechRecognitionHelper
+                }
+                // don't reopen the mic underneath our own voice, checked when this actually fires
+                speechRef[0]?.restart(restartDelay) { canOpenMic() }
             },
             onRms = {
                 level = ((it + 2f) / 12f).coerceIn(0f, 1f)
@@ -161,6 +228,9 @@ fun CalendarVoiceAssistant(
         )
     }
     speechRef[0] = speech
+    micGate[0] = !speaking
+    micGate[1] = !state.isThinking
+    micGate[2] = !awaitingTap
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         permissionDenied = !it
         if (it) speech.startListening()
@@ -175,7 +245,7 @@ fun CalendarVoiceAssistant(
         var engine: TextToSpeech? = null
         engine = TextToSpeech(context.applicationContext) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                val localeResult = engine?.setLanguage(Locale.getDefault())
+                val localeResult = engine?.setLanguage(AppLocale.voiceLocale(context))
                 if (localeResult == TextToSpeech.LANG_MISSING_DATA ||
                     localeResult == TextToSpeech.LANG_NOT_SUPPORTED
                 ) {
@@ -203,9 +273,10 @@ fun CalendarVoiceAssistant(
                             speaking = false
                             activitySignal++
                         }
-                        // short pause so the speaker has actually gone quiet before the mic opens, otherwise the
-                        // tail of the last word lands in the next transcript
-                        speech.restart(350L)
+                        // onDone fires when synthesis finishes, not when the speaker has finished
+                        // playing it. 350ms was inside the tail, which opened the microphone into
+                        // the assistant's own voice and left it deaf for every turn afterwards
+                        speech.restart(TTS_DRAIN_MS) { canOpenMic() }
                     }
 
                     @Deprecated("Deprecated in Java")
@@ -214,7 +285,7 @@ fun CalendarVoiceAssistant(
                             speaking = false
                             activitySignal++
                         }
-                        speech.restart(350L)
+                        speech.restart(TTS_DRAIN_MS) { canOpenMic() }
                     }
                 })
                 tts = engine
@@ -233,7 +304,10 @@ fun CalendarVoiceAssistant(
             if (engine != null) {
                 spokenAnswerId = answer.id
                 speaking = true
-                spokenAnswerText = answer.text.toMyndoraSpeech()
+                // the chips are a tap-to-reply feature of the card, and there is nothing to tap here.
+                // read aloud, the raw marker came out as the assistant literally saying
+                // 'open square bracket options colon' at the end of every answer
+                spokenAnswerText = parseOptions(answer.text).first.toMyndoraSpeech()
                 engine.speak(spokenAnswerText, TextToSpeech.QUEUE_FLUSH, null, answer.id)
             }
         }
@@ -249,8 +323,18 @@ fun CalendarVoiceAssistant(
         if (speaking) {
             speaking = false
             activitySignal++
-            speech.restart(200L)
+            speech.restart(TTS_DRAIN_MS) { canOpenMic() }
         }
+    }
+    // the gate closes while the assistant thinks and speaks, and any restart that fired in that
+    // window was skipped rather than queued. this is what reopens the microphone once the coast is
+    // clear, so a skipped restart costs a moment instead of the rest of the conversation
+    LaunchedEffect(speaking, state.isThinking, listening) {
+        if (speaking || state.isThinking || listening) return@LaunchedEffect
+        // only once a conversation is under way: before the first turn, listen() has it
+        if (spokenRequest.isBlank()) return@LaunchedEffect
+        delay(TTS_DRAIN_MS)
+        if (canOpenMic() && !listening) speech.startListening()
     }
     LaunchedEffect(selectedVoiceName, tts) {
         val engine = tts ?: return@LaunchedEffect
@@ -266,15 +350,20 @@ fun CalendarVoiceAssistant(
         if (!spokenResponsesEnabled && !state.isThinking && spokenRequest.isNotBlank() && answer != null) {
             spokenAnswerId = answer.id
             activitySignal++
-            speech.restart(180L)
+            speech.restart(180L) { canOpenMic() }
         }
     }
     LaunchedEffect(answer?.id, state.isThinking) {
         if (!state.isThinking && spokenRequest.isNotBlank() && answer != null) {
+            // a fresh answer is a fresh turn: the mic is owed one open, whatever happened before
+            micFailures = 0
+            awaitingTap = false
             typedAnswer = ""
-            answer.text.forEach { character ->
+            // same strip as the spoken copy: the options line belongs to the nav bar's card, where
+            // it becomes tappable chips. on the voice panel it is just markup with nowhere to go
+            parseOptions(answer.text).first.forEach { character ->
                 typedAnswer += character
-                delay(18)
+                delay(12)
             }
         }
     }
@@ -293,7 +382,7 @@ fun CalendarVoiceAssistant(
             // the utterance listener reopens the mic when it finishes
             engine.speak(spokenAnswerText, TextToSpeech.QUEUE_FLUSH, null, "error-$message".take(64))
         } else {
-            speech.restart(350L)
+            speech.restart(TTS_DRAIN_MS) { canOpenMic() }
         }
     }
     // hands-free: the mic reopens after every turn and stays open through any pause. only the
@@ -350,7 +439,21 @@ fun CalendarVoiceAssistant(
     )
     val responseVisible = typedAnswer.isNotEmpty()
 
-    Box(Modifier.fillMaxSize().clickable(onClick = onDismiss)) {
+    // the panel used to float over live, moving, full-contrast app content, so its text competed
+    // with whatever happened to be underneath it. the scrim pushes the app back a step: the answer
+    // becomes the only lit thing on screen, and it makes 'tap anywhere to close' look like an
+    // instruction rather than a guess. it fades with the panel rather than snapping on
+    val scrim by animateFloatAsState(
+        targetValue = if (appeared) 1f else 0f,
+        animationSpec = tween(if (animationsOn()) 260 else 0),
+        label = "voiceScrim",
+    )
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(SCRIM.copy(alpha = SCRIM_ALPHA * scrim))
+            .clickable(onClick = onDismiss),
+    ) {
         Surface(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -382,14 +485,16 @@ fun CalendarVoiceAssistant(
                         speech.startListening()
                     } else if (!listening && !state.isThinking) {
                         activitySignal++
+                        micFailures = 0
+                        awaitingTap = false
                         speech.startListening()
                     }
                 },
             shape = RoundedCornerShape(30.dp),
             color = Color.Transparent,
-            // dark mode separates by tone, #2B2B2B on #1F1F1F. light mode has no such gap, so the panel
-            // needs a real shadow or it reads as a faint smudge rather than a floating card
-            shadowElevation = if (isDarkTheme) 0.dp else 14.dp,
+            // flat in both themes. the gradient border already separates the glass from the page, and a
+            // drop shadow under it read as a heavy box rather than something floating
+            shadowElevation = 0.dp,
             tonalElevation = 0.dp,
         ) {
             Box(
@@ -495,6 +600,21 @@ fun CalendarVoiceAssistant(
                                 painterResource(R.drawable.ic_ai),
                                 null,
                                 Modifier.size(39.dp + (voiceEnergy * 7f).dp),
+                            )
+                        }
+                        // the microphone has stopped on its own, so say how to start it again.
+                        // an orb that looks identical whether it is listening or waiting is what
+                        // made the old always-on loop feel necessary
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = awaitingTap,
+                            enter = androidx.compose.animation.fadeIn(),
+                            exit = androidx.compose.animation.fadeOut(),
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                        ) {
+                            Text(
+                                text = androidx.compose.ui.res.stringResource(R.string.ai_voice_tap_to_talk),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = colors.onSurfaceVariant,
                             )
                         }
                     }

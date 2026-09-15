@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.ui.home
 
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -51,7 +52,10 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.text.style.TextAlign
@@ -79,6 +83,8 @@ import java.time.LocalDateTime
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.random.Random
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // home, laid out as a bento rather than a grid. equal tiles make everything look equally
 // important, which on a screen meant to answer 'what now?' is the wrong answer four times.
@@ -92,8 +98,11 @@ fun HomeScreen(
     onOpenPomodoro: () -> Unit,
     onOpenProfile: () -> Unit,
     onManageModes: () -> Unit = {},
+    onEditMode: (String) -> Unit = {},
+    onOpenNearbyAdd: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val modes by viewModel.modes.collectAsState()
     val activeMode by viewModel.activeMode.collectAsState()
     val profile by viewModel.profile.collectAsState()
@@ -105,7 +114,11 @@ fun HomeScreen(
     val hiddenWidgets by viewModel.hiddenWidgets.collectAsState()
     val layout by viewModel.layout.collectAsState()
     val timerRunning by viewModel.timerRunning.collectAsState()
-    LaunchedEffect(Unit) { viewModel.refresh() }
+    val motionTipVisible by viewModel.motionTipVisible.collectAsState()
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+        viewModel.noteHomeOpened()
+    }
 
     // ten seconds is finer than the countdown reads and coarse enough to stay off the battery;
     // the ribbon marker moves about a pixel a minute either way
@@ -122,8 +135,9 @@ fun HomeScreen(
     // not reshuffle while it's being read. leaving home and coming back draws a new one
     val greetingSeed = remember { Random.nextInt() }
     val band = dayBandFor(now.toLocalTime())
-    val greeting = remember(band, greetingSeed, identity.firstName) {
-        homeGreeting(now.toLocalTime(), identity.firstName, greetingSeed)
+    val resources = context.resources
+    val greeting = remember(band, greetingSeed, identity.firstName, LocalConfiguration.current) {
+        homeGreeting(now.toLocalTime(), identity.firstName, greetingSeed, resources::getString)
     }
 
     var editing by remember { mutableStateOf(false) }
@@ -155,8 +169,7 @@ fun HomeScreen(
         val mode = activeMode ?: return
         coroutineScope.launch {
             snackbarHostState.showSnackbar(
-                "Home customization isn't available while ${mode.name} mode is active. " +
-                    "Edit the mode's Home screen from Modes instead."
+                context.getString(R.string.home_customize_locked, mode.name)
             )
         }
     }
@@ -185,6 +198,24 @@ fun HomeScreen(
         }
     }
 
+    // where the motion tip points. written from onGloballyPositioned and read only in the layout
+    // and draw phases, so a card scrolling under the tip never recomposes the page
+    val motionCardBounds = remember { mutableStateOf<Rect?>(null) }
+    val motionSpotBounds = remember { mutableStateOf<Rect?>(null) }
+    val motionAnchor = rememberMotionAnchor(motionCardBounds, motionSpotBounds)
+    val homeOrigin = remember { mutableStateOf(Offset.Zero) }
+
+    // the empty Next up card is the thing worth pointing at. with something in it, or with the
+    // tile switched off, there's nothing breathing on this page and the tip takes the nav bar
+    val emptyNextUpShown = nextUp == null && !layout.isHidden(HomeWidget.NextUp) && !editing
+    val reportMotionAnchor = motionTipVisible && emptyNextUpShown
+    LaunchedEffect(reportMotionAnchor) {
+        if (!reportMotionAnchor) {
+            motionCardBounds.value = null
+            motionSpotBounds.value = null
+        }
+    }
+
     val dragFrom = layout.order.indexOfFirst { it.id == draggingId }
     // computed rather than remembered: the centres are a snapshot map whose values move without
     // its size changing, so any key cheap enough to write would also be wrong. nine items, the
@@ -198,14 +229,18 @@ fun HomeScreen(
         )
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .onGloballyPositioned { homeOrigin.value = it.boundsInRoot().topLeft },
+    ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(storyPull.connection)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp)
-            .padding(top = 16.dp, bottom = 24.dp),
+            .padding(top = 16.dp, bottom = 24.dp + com.muradgalayev.brainbuddy.ui.navigation.LocalNavBarInset.current),
         horizontalAlignment = Alignment.Start
     ) {
         // titled like the other tabs (see CalendarHeader) so the header sits at the same weight and
@@ -217,7 +252,7 @@ fun HomeScreen(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Home",
+                    text = stringResource(R.string.home_title),
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -319,6 +354,9 @@ fun HomeScreen(
                 HomeWidgetContent(
                     widget = widget,
                     modifier = tileModifier,
+                    reportMotionAnchor = reportMotionAnchor,
+                    onMotionCard = { motionCardBounds.value = it },
+                    onMotionSpot = { motionSpotBounds.value = it },
                     weather = weather,
                     agenda = agenda,
                     now = now,
@@ -329,11 +367,13 @@ fun HomeScreen(
                     timerRunning = timerRunning,
                     onOpenWellness = onOpenWellness,
                     onOpenPomodoro = onOpenPomodoro,
+                    onOpenNearbyAdd = onOpenNearbyAdd,
                     onContinueProfile = onContinueProfile,
                     modes = modes,
                     activeMode = activeMode,
                     onSelectMode = viewModel::selectMode,
                     onManageModes = onManageModes,
+                    onEditMode = onEditMode,
                     viewModel = viewModel,
                 )
             }
@@ -375,6 +415,21 @@ fun HomeScreen(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
         )
+
+        // the one nudge towards Reduce motion, pointed at something that is actually moving
+        if (motionTipVisible && !editing && openStoryIndex == null && !trayOpen) {
+            MotionTip(
+                anchor = motionAnchor,
+                origin = homeOrigin,
+                onTurnOn = {
+                    viewModel.reduceMotionFromTip()
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(context.getString(R.string.motion_tip_confirmed))
+                    }
+                },
+                onKeep = viewModel::keepMotion,
+            )
+        }
 
         // above the content and below the snackbar: it belongs to the gesture, not to the page, so
         // it mustn't scroll away with what's underneath it
@@ -429,7 +484,7 @@ private fun ProfileAvatar(
                     .data(avatarUrl)
                     .crossfade(true)
                     .build(),
-                contentDescription = "Your profile photo",
+                contentDescription = stringResource(R.string.home_profile_photo),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize().clip(CircleShape),
             )
@@ -463,7 +518,11 @@ private fun HomeWidgetRow(
     onLongPress: () -> Unit,
     tile: @Composable (HomeWidget, Modifier) -> Unit,
 ) {
-    val height = if (row.isPair) 196.dp else null
+    val height = when {
+        !row.isPair -> null
+        row.widgets.all { it.isCompact } -> 98.dp
+        else -> 196.dp
+    }
     val holdsDragged = row.tiles.any { it.widget.id == draggingId }
 
     Row(
@@ -478,6 +537,7 @@ private fun HomeWidgetRow(
         row.tiles.forEachIndexed { position, homeTile ->
             val widget = homeTile.widget
             val dragging = widget.id == draggingId
+            val compactFocus = widget.isCompact
 
             Box(
                 Modifier
@@ -525,12 +585,28 @@ private fun HomeWidgetRow(
                         onRestore = { onToggle(widget, true) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .then(if (height != null) Modifier.fillMaxHeight() else Modifier.height(84.dp)),
+                            .then(
+                                when {
+                                    compactFocus -> Modifier.height(98.dp).align(Alignment.TopCenter)
+                                    height != null -> Modifier.fillMaxHeight()
+                                    else -> Modifier.height(84.dp)
+                                }
+                            ),
                     )
                 } else {
                     tile(
                         widget,
-                        Modifier.fillMaxWidth().then(if (height != null) Modifier.fillMaxHeight() else Modifier),
+                        Modifier
+                            .fillMaxWidth()
+                            .then(
+                                when {
+                                    // Focus needs only its heading and three quick-start buttons. Stretching
+                                    // it to the 196dp paired-row height created a large empty middle.
+                                    compactFocus -> Modifier.height(98.dp).align(Alignment.TopCenter)
+                                    height != null -> Modifier.fillMaxHeight()
+                                    else -> Modifier
+                                }
+                            ),
                     )
                 }
 
@@ -541,7 +617,13 @@ private fun HomeWidgetRow(
                     // the new meaning of a tap: take this off the home screen
                     Box(
                         Modifier
-                            .matchParentSize()
+                            .then(
+                                if (compactFocus) {
+                                    Modifier.fillMaxWidth().height(98.dp).align(Alignment.TopCenter)
+                                } else {
+                                    Modifier.matchParentSize()
+                                }
+                            )
                             .clip(HomeCardShape)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
@@ -592,9 +674,9 @@ private fun HomeWidgetRow(
 private fun EditingHint(hiddenCount: Int) {
     Text(
         text = buildString {
-            append("Tap a tile to take it off · drag the handle to reorder · ⤢ to resize")
+            append(stringResource(R.string.home_edit_hint))
             if (hiddenCount > 0) {
-                append(" · tap a dashed slot to put one back")
+                append(stringResource(R.string.home_edit_hint_slot))
             }
         },
         style = MaterialTheme.typography.bodySmall,
@@ -651,6 +733,9 @@ private fun dropTargetIndex(
 private fun HomeWidgetContent(
     widget: HomeWidget,
     modifier: Modifier,
+    reportMotionAnchor: Boolean,
+    onMotionCard: (Rect) -> Unit,
+    onMotionSpot: (Rect) -> Unit,
     weather: com.muradgalayev.brainbuddy.data.repository.WeatherSnapshot?,
     agenda: List<HomeAgendaItem>,
     now: LocalDateTime,
@@ -661,11 +746,13 @@ private fun HomeWidgetContent(
     timerRunning: Boolean,
     onOpenWellness: () -> Unit,
     onOpenPomodoro: () -> Unit,
+    onOpenNearbyAdd: () -> Unit,
     onContinueProfile: () -> Unit,
     modes: List<com.muradgalayev.brainbuddy.domain.model.AppMode>,
     activeMode: com.muradgalayev.brainbuddy.domain.model.AppMode?,
     onSelectMode: (String?) -> Unit,
     onManageModes: () -> Unit,
+    onEditMode: (String) -> Unit,
     viewModel: HomeViewModel,
 ) {
     when (widget) {
@@ -678,13 +765,20 @@ private fun HomeWidgetContent(
             onDone = viewModel::markDone,
             onSnooze = viewModel::snooze,
             modifier = modifier,
+            reportMotionAnchor = reportMotionAnchor,
+            onMotionCard = onMotionCard,
+            onMotionSpot = onMotionSpot,
         )
 
         HomeWidget.Mode -> HomeModeTile(
             modes = modes,
             activeMode = activeMode,
+            status = viewModel.activeModeStatus.collectAsState().value,
+            showIntro = viewModel.showModesIntro.collectAsState().value,
+            onDismissIntro = viewModel::dismissModesIntro,
             onSelect = onSelectMode,
             onManage = onManageModes,
+            onEdit = onEditMode,
             modifier = modifier,
         )
 
@@ -704,6 +798,15 @@ private fun HomeWidgetContent(
             onOpen = onOpenPomodoro,
             modifier = modifier,
         )
+
+        // same widget id as the old nearby tile, so saved layouts keep their slot
+        HomeWidget.NearbyAdd -> {
+            var showQr by remember { mutableStateOf(false) }
+            HomeQrTile(onOpen = { showQr = true }, modifier = modifier)
+            if (showQr) {
+                com.muradgalayev.brainbuddy.ui.together.MyQrCodeSheet(onDismiss = { showQr = false })
+            }
+        }
 
         HomeWidget.Wins -> {
             // the full view belongs to the tile that opens it, so the state lives here rather than at
@@ -752,14 +855,14 @@ private fun EmptyHome(onCustomise: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                "Your home is empty",
+                stringResource(R.string.home_empty),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                "Tap Customise home to put something back.",
+                stringResource(R.string.home_empty_body),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -855,13 +958,13 @@ private fun HomeTripleRings(steps: Float, exercise: Float, energy: Float) {
 @Composable
 private fun HomeSleepPage(hours: Double?) {
     val target = ((hours ?: 0.0) / 8.0).toFloat().coerceIn(0f, 1f)
-    HomeSingleWellnessPage(hours?.let { "${"%.1f".format(it)}h" } ?: "No data", target, Color(0xFF7367F0))
+    HomeSingleWellnessPage(hours?.let { "${"%.1f".format(it)}h" } ?: stringResource(R.string.common_no_data), target, Color(0xFF7367F0))
 }
 
 @Composable
 private fun HomeMedicationPage(logged: Int, scheduled: Int) {
     val progress = if (scheduled == 0) 0f else logged.toFloat() / scheduled
-    HomeSingleWellnessPage(if (scheduled == 0) "Not scheduled" else "$logged of $scheduled", progress, Color(0xFF18A9D1))
+    HomeSingleWellnessPage(if (scheduled == 0) stringResource(R.string.med_not_scheduled) else stringResource(R.string.count_of, logged, scheduled), progress, Color(0xFF18A9D1))
 }
 
 @Composable

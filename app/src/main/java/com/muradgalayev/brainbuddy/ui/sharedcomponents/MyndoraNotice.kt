@@ -34,16 +34,18 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 private enum class NoticeKind(
-    val title: String,
+    @androidx.annotation.StringRes val titleRes: Int,
     val color: Color,
     val softColor: Color,
     val icon: ImageVector,
 ) {
-    Success("All done", Color(0xFF3B9362), Color(0xFFE2F2E8), Icons.Outlined.CheckCircle),
-    Error("Something went wrong", Color(0xFFC95656), Color(0xFFF8E4E2), Icons.Outlined.ErrorOutline),
-    Info("Heads up", Color(0xFFEA580C), Color(0xFFFFEDD5), Icons.Outlined.Info),
+    Success(R.string.notice_all_done, Color(0xFF3B9362), Color(0xFFE2F2E8), Icons.Outlined.CheckCircle),
+    Error(R.string.notice_error, Color(0xFFC95656), Color(0xFFF8E4E2), Icons.Outlined.ErrorOutline),
+    Info(R.string.notice_heads_up, Color(0xFFEA580C), Color(0xFFFFEDD5), Icons.Outlined.Info),
 }
 
 @Composable
@@ -87,11 +89,11 @@ private fun MyndoraNotice(data: SnackbarData) {
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(kind.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text(stringResource(kind.titleRes), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 Text(message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             IconButton(onClick = data::dismiss, modifier = Modifier.size(38.dp)) {
-                Icon(Icons.Rounded.Close, "Dismiss", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                Icon(Icons.Rounded.Close, stringResource(R.string.common_dismiss), tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
             }
         }
     }

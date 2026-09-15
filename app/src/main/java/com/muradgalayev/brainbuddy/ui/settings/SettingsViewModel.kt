@@ -1,5 +1,9 @@
 package com.muradgalayev.brainbuddy.ui.settings
 
+import com.muradgalayev.brainbuddy.domain.model.AdhdProfile
+import com.muradgalayev.brainbuddy.domain.model.SurveyVersion
+import com.muradgalayev.brainbuddy.ui.onboarding.questionnaireCompletion
+import com.muradgalayev.brainbuddy.ui.onboarding.toSurveyAnswers
 import android.util.Log
 
 import android.app.PendingIntent
@@ -7,6 +11,7 @@ import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.muradgalayev.brainbuddy.data.auth.authErrorMessage
+import com.muradgalayev.brainbuddy.ui.utils.resolve
 import com.muradgalayev.brainbuddy.data.google.GoogleCalendarAuthClient
 import com.muradgalayev.brainbuddy.data.google.GoogleCalendarTokenStore
 import com.muradgalayev.brainbuddy.data.health.HealthConnectManager
@@ -48,11 +53,18 @@ import com.muradgalayev.brainbuddy.ui.theme.AppTheme
 import com.muradgalayev.brainbuddy.ui.theme.CustomThemeSpec
 import com.muradgalayev.brainbuddy.ui.theme.ThemeSelection
 import javax.inject.Inject
+import com.muradgalayev.brainbuddy.R
 
 private const val TAG = "SettingsViewModel"
 
+data class AccountDeletionState(
+    val deleting: Boolean = false,
+    val failed: Boolean = false,
+)
+
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val preferencesManager: PreferencesManager,
     private val authRepository: AuthRepository,
     private val todoRepository: com.muradgalayev.brainbuddy.data.repository.TodoRepository,
@@ -76,7 +88,16 @@ class SettingsViewModel @Inject constructor(
     private val profilePdfExporter: com.muradgalayev.brainbuddy.data.export.ProfilePdfExporter,
     private val togetherRepository: com.muradgalayev.brainbuddy.data.repository.TogetherRepository,
     private val networkObserver: NetworkObserver,
+    private val planRepository: com.muradgalayev.brainbuddy.data.repository.PlanRepository,
+    private val aiNavigator: com.muradgalayev.brainbuddy.domain.ai.AiNavigator,
 ) : ViewModel() {
+
+    // the assistant can send someone here to change their password or the app's language. both are
+    // sheets rather than screens, so it latches which one and the screen opens it on arrival
+    val pendingSettingsSheet = aiNavigator.pendingSettingsSheet
+
+    fun consumeSettingsSheet() = aiNavigator.consumeSettingsSheet()
+    val plan = planRepository.plan
     val questionnaireProgress = questionnaireReminderScheduler.progress
     // drives the '2 waiting' badge and subtitle on the Myndora Together row
     val pendingTogetherRequests = togetherRepository.incomingRequests
@@ -115,9 +136,9 @@ class SettingsViewModel @Inject constructor(
             )
             _profileExportMessage.value = when (result) {
                 is com.muradgalayev.brainbuddy.data.export.PdfExportResult.Saved ->
-                    "Saved to ${result.displayPath}"
+                    context.getString(R.string.settings_export_saved_to, result.displayPath)
                 is com.muradgalayev.brainbuddy.data.export.PdfExportResult.Failed ->
-                    "Couldn't export: ${result.message}"
+                    context.getString(R.string.settings_export_failed, result.message)
             }
             _profileExportInProgress.value = false
         }
@@ -197,6 +218,38 @@ class SettingsViewModel @Inject constructor(
     )
     val surveyCompleted: StateFlow<Boolean> = _surveyCompleted.asStateFlow()
 
+    // what the profile banner counts. an unfinished survey reports its saved draft. a finished
+    // Quick setup unlocks the app but still leaves the Deep Dive open, and the banner used to
+    // vanish at that point, so those questions are counted from the saved profile. null hides it
+    val surveyProgress: StateFlow<SurveyProgressUi?> = kotlinx.coroutines.flow.combine(
+        questionnaireReminderScheduler.progress,
+        adhdProfileRepository.profile,
+        _surveyCompleted,
+    ) { draft, profile, completed -> surveyProgressOf(draft, profile, completed) }
+        .stateIn(
+            viewModelScope,
+            kotlinx.coroutines.flow.SharingStarted.Eagerly,
+            surveyProgressOf(
+                questionnaireReminderScheduler.progress.value,
+                adhdProfileRepository.peekProfile(),
+                _surveyCompleted.value,
+            ),
+        )
+
+    private fun surveyProgressOf(
+        draft: com.muradgalayev.brainbuddy.data.notifications.QuestionnaireReminderProgress?,
+        profile: AdhdProfile?,
+        completed: Boolean,
+    ): SurveyProgressUi? {
+        if (!completed) return draft?.let { SurveyProgressUi(it.version, it.answered, it.total) }
+        if (profile?.surveyVersion != SurveyVersion.Quick) return null
+        val answered = questionnaireCompletion(profile.toSurveyAnswers(), SurveyVersion.Deep)
+            // the first page is name and username, which a finished Quick setup already required
+            .mapIndexed { index, done -> done || index == 0 }
+        return SurveyProgressUi(SurveyVersion.Deep, answered.count { it }, answered.size)
+            .takeIf { it.remaining > 0 }
+    }
+
     fun refreshSurveyCompleted() {
         viewModelScope.launch {
             // null = couldn't resolve (offline, session not restored). keep what we had rather than
@@ -209,6 +262,16 @@ class SettingsViewModel @Inject constructor(
 
     private val _loggedOut = MutableStateFlow(false)
     val loggedOut: StateFlow<Boolean> = _loggedOut.asStateFlow()
+
+    private val _signingOut = MutableStateFlow(false)
+    val signingOut: StateFlow<Boolean> = _signingOut.asStateFlow()
+
+    private val _accountDeletion = MutableStateFlow(AccountDeletionState())
+    val accountDeletion: StateFlow<AccountDeletionState> = _accountDeletion.asStateFlow()
+
+    // same shape as deletion: in flight, or failed
+    private val _accountDeactivation = MutableStateFlow(AccountDeletionState())
+    val accountDeactivation: StateFlow<AccountDeletionState> = _accountDeactivation.asStateFlow()
 
     private val _exportingToCalendar = MutableStateFlow(false)
     val exportingToCalendar: StateFlow<Boolean> = _exportingToCalendar.asStateFlow()
@@ -477,7 +540,7 @@ class SettingsViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _calendarExportMessage.value =
-                    "Could not connect Google account: ${e.message ?: "unknown error"}"
+                    context.getString(R.string.settings_google_connect_failed, e.message ?: context.getString(R.string.common_unknown_error))
                 _exportingToCalendar.value = false
             }
         }
@@ -491,7 +554,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val token = googleCalendarAuthClient.extractFromActivityResult(data)
             if (token == null) {
-                _calendarExportMessage.value = "Calendar connection cancelled"
+                _calendarExportMessage.value = context.getString(R.string.settings_calendar_connect_cancelled)
                 _exportingToCalendar.value = false
                 return@launch
             }
@@ -541,15 +604,15 @@ class SettingsViewModel @Inject constructor(
         _calendarExportMessage.value = when (result) {
             is ExportResult.Success -> {
                 val parts = mutableListOf<String>()
-                if (result.pushed > 0) parts += "${result.pushed} added"
-                if (result.alreadyExisted > 0) parts += "${result.alreadyExisted} already there"
-                if (result.failed > 0) parts += "${result.failed} failed"
-                val core = if (parts.isEmpty()) "Nothing to export" else parts.joinToString(", ")
+                if (result.pushed > 0) parts += context.getString(R.string.cal_export_added, result.pushed)
+                if (result.alreadyExisted > 0) parts += context.getString(R.string.cal_export_already, result.alreadyExisted)
+                if (result.failed > 0) parts += context.getString(R.string.cal_export_failed, result.failed)
+                val core = if (parts.isEmpty()) context.getString(R.string.cal_export_nothing) else parts.joinToString(", ")
                 val email = linkedGoogleEmail.value
                 if (email != null && parts.isNotEmpty()) "$core → $email" else core
             }
             ExportResult.NeedsGoogleSignIn ->
-                "Connect a Google account to enable Calendar export"
+                context.getString(R.string.cal_export_need_google)
         }
     }
 
@@ -560,7 +623,7 @@ class SettingsViewModel @Inject constructor(
             googleCalendarAuthClient.signOut()
             runCatching { authRepository.setLinkedGoogleEmail(null) }
             calendarSyncScheduler.cancel()
-            _calendarExportMessage.value = "Google Calendar disconnected"
+            _calendarExportMessage.value = context.getString(R.string.settings_google_disconnected)
         }
     }
 
@@ -577,7 +640,7 @@ class SettingsViewModel @Inject constructor(
 
         if (email.isNullOrBlank()) {
             _passwordResetState.value = PasswordResetUiState(
-                error = "This account does not have an email address",
+                error = context.getString(R.string.settings_no_email),
             )
             return
         }
@@ -586,7 +649,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             if (!networkObserver.isOnline.first()) {
                 _passwordResetState.value = PasswordResetUiState(
-                    error = "No internet connection",
+                    error = context.getString(R.string.common_no_internet),
                 )
                 return@launch
             }
@@ -598,8 +661,8 @@ class SettingsViewModel @Inject constructor(
                 _passwordResetState.value = PasswordResetUiState(
                     error = authErrorMessage(
                         error = e,
-                        fallback = "Couldn't send the password email. Please try again.",
-                    ),
+                        fallback = R.string.settings_password_email_failed,
+                    ).resolve(context),
                 )
             }
         }
@@ -612,10 +675,62 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun signOut() {
+        if (_signingOut.value) return
+        // raised before any clearing starts, so the screen covers itself and nobody watches their
+        // profile, modes and connections empty out one by one
+        _signingOut.value = true
         viewModelScope.launch {
             // capture the user id before signing out so we know which local caches to clear
+            clearLocalAccount(authRepository.getCurrentOrCachedUserId())
+            _loggedOut.value = true
+        }
+    }
+
+    // permanent. the server deletes the account first; only once that has succeeded is anything on
+    // this phone touched, so a failed delete leaves the user signed in with everything intact
+    fun deleteAccount() {
+        if (_accountDeletion.value.deleting) return
+        _accountDeletion.value = AccountDeletionState(deleting = true)
+        viewModelScope.launch {
             val currentUserId = authRepository.getCurrentOrCachedUserId()
+            authRepository.deleteAccount()
+                .onSuccess {
+                    clearLocalAccount(currentUserId)
+                    _loggedOut.value = true
+                }
+                .onFailure { _accountDeletion.value = AccountDeletionState(failed = true) }
+        }
+    }
+
+    fun clearAccountDeletionError() {
+        if (!_accountDeletion.value.deleting) _accountDeletion.value = AccountDeletionState()
+    }
+
+    // the reversible option. marked on the server first, then signed out and wiped locally like any
+    // sign-out; the data comes back from the server when they sign in again
+    fun deactivateAccount() {
+        if (_accountDeactivation.value.deleting || _accountDeletion.value.deleting) return
+        _accountDeactivation.value = AccountDeletionState(deleting = true)
+        viewModelScope.launch {
+            val currentUserId = authRepository.getCurrentOrCachedUserId()
+            authRepository.deactivateAccount()
+                .onSuccess {
+                    clearLocalAccount(currentUserId)
+                    _loggedOut.value = true
+                }
+                .onFailure { _accountDeactivation.value = AccountDeletionState(failed = true) }
+        }
+    }
+
+    fun clearDeactivationError() {
+        if (!_accountDeactivation.value.deleting) _accountDeactivation.value = AccountDeletionState()
+    }
+
+    // everything signing out has to wipe from this device, shared by sign-out and account deletion
+    private suspend fun clearLocalAccount(currentUserId: String?) {
+        run {
             healthConnectManager.clearForAccountSwitch()
+            planRepository.clearForSignOut()
             currentUserId?.let { modeRepository.clearLocalForUser(it) }
             // clear the selection and restore ringer/DND while the departing account still exists,
             // otherwise its mode leaks into the signed-out screen or into the next account
@@ -639,7 +754,6 @@ class SettingsViewModel @Inject constructor(
             adhdProfileRepository.clearLocalCache()
             // connections and pending requests are another user's business entirely
             togetherRepository.clear()
-            _loggedOut.value = true
         }
     }
 
@@ -683,22 +797,22 @@ class SettingsViewModel @Inject constructor(
         val cleanPhone = phone.trim()
 
         if (cleanName.isBlank()) {
-            _profileSaveMessage.value = "Name cannot be empty"
+            _profileSaveMessage.value = context.getString(R.string.settings_name_empty)
             return
         }
         // block save when we already know it's taken. the unique index is still the real guard,
         // this only avoids the round-trip
         when (_usernameAvailability.value) {
             UsernameAvailability.Taken -> {
-                _profileSaveMessage.value = "That username is already taken"
+                _profileSaveMessage.value = context.getString(R.string.settings_username_taken)
                 return
             }
             UsernameAvailability.Invalid -> {
-                _profileSaveMessage.value = "Use 3–20 letters, numbers or underscores"
+                _profileSaveMessage.value = context.getString(R.string.username_invalid)
                 return
             }
             UsernameAvailability.Checking -> {
-                _profileSaveMessage.value = "Still checking username, try again in a moment"
+                _profileSaveMessage.value = context.getString(R.string.settings_username_checking)
                 return
             }
             else -> Unit
@@ -727,17 +841,17 @@ class SettingsViewModel @Inject constructor(
                 )
 
                 _profileSaveMessage.value = if (authRepository.hasPendingProfileUpdate()) {
-                    "Saved on this device · will sync when you're online"
+                    context.getString(R.string.settings_saved_offline)
                 } else {
-                    "Profile updated"
+                    context.getString(R.string.settings_profile_updated)
                 }
             } catch (e: UsernameTakenException) {
                 // the unique index rejected it: either our check said available wrongly (RLS masked the row)
                 // or someone grabbed the name between check and save. same message either way
                 _usernameAvailability.value = UsernameAvailability.Taken
-                _profileSaveMessage.value = "That username is already taken"
+                _profileSaveMessage.value = context.getString(R.string.settings_username_taken)
             } catch (e: Exception) {
-                _profileSaveMessage.value = "Couldn't save: ${e.message ?: "unknown error"}"
+                _profileSaveMessage.value = context.getString(R.string.settings_save_failed, e.message ?: context.getString(R.string.common_unknown_error))
             } finally {
                 _profileSaving.value = false
             }
@@ -759,9 +873,9 @@ class SettingsViewModel @Inject constructor(
             try {
                 val url = authRepository.uploadAvatar(bytes, extension)
                 _profile.value = _profile.value.copy(avatarUrl = url)
-                _profileSaveMessage.value = "Photo updated"
+                _profileSaveMessage.value = context.getString(R.string.settings_photo_updated)
             } catch (e: Exception) {
-                _profileSaveMessage.value = "Couldn't upload photo: ${e.message ?: "unknown error"}"
+                _profileSaveMessage.value = context.getString(R.string.settings_photo_failed, e.message ?: context.getString(R.string.common_unknown_error))
             } finally {
                 _avatarUploading.value = false
             }
@@ -804,3 +918,13 @@ data class PasswordResetUiState(
     val error: String? = null,
     val sentTo: String? = null,
 )
+
+// the profile banner's numbers, whichever survey they come from
+data class SurveyProgressUi(
+    val version: SurveyVersion,
+    val answered: Int,
+    val total: Int,
+) {
+    val remaining: Int get() = (total - answered).coerceAtLeast(0)
+    val fraction: Float get() = if (total == 0) 0f else answered.toFloat() / total
+}

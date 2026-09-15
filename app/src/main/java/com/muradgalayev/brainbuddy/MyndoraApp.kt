@@ -14,6 +14,7 @@ import com.muradgalayev.brainbuddy.data.sync.CalendarSyncScheduler
 import com.muradgalayev.brainbuddy.data.sync.SyncCoordinator
 import com.muradgalayev.brainbuddy.data.health.HealthConnectManager
 import com.muradgalayev.brainbuddy.data.health.HealthSyncScheduler
+import dagger.Lazy
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,19 +27,29 @@ import javax.inject.Inject
 @HiltAndroidApp
 class MyndoraApp : Application(), Configuration.Provider {
 
-    @Inject lateinit var reminderBootstrapper: ReminderBootstrapper
+    // needed on the main thread before the first frame: reconcile has to beat any session start,
+    // and the lifecycle callback reads the other two on every resume
     @Inject lateinit var workerFactory: HiltWorkerFactory
-    @Inject lateinit var calendarSyncScheduler: CalendarSyncScheduler
-    @Inject lateinit var googleCalendarTokenStore: GoogleCalendarTokenStore
-    @Inject lateinit var syncCoordinator: SyncCoordinator
-    @Inject lateinit var healthConnectManager: HealthConnectManager
-    @Inject lateinit var healthSyncScheduler: HealthSyncScheduler
     @Inject lateinit var networkObserver: NetworkObserver
     @Inject lateinit var focusModeManager: com.muradgalayev.brainbuddy.data.local.FocusModeManager
     @Inject lateinit var ringerController: com.muradgalayev.brainbuddy.data.local.RingerController
     @Inject lateinit var modeManager: com.muradgalayev.brainbuddy.data.local.ModeManager
-    @Inject lateinit var deviceTokenRepository: com.muradgalayev.brainbuddy.data.repository.DeviceTokenRepository
-    @Inject lateinit var adhdProfileRepository: com.muradgalayev.brainbuddy.data.repository.AdhdProfileRepository
+
+    // everything else only does background work, so it's Lazy and first built on appScope. eager,
+    // these graphs (Supabase, Room, Health Connect, WorkManager) were all constructed on the main
+    // thread before the first frame could draw
+    @Inject lateinit var reminderBootstrapper: Lazy<ReminderBootstrapper>
+    @Inject lateinit var calendarSyncScheduler: Lazy<CalendarSyncScheduler>
+    @Inject lateinit var googleCalendarTokenStore: Lazy<GoogleCalendarTokenStore>
+    @Inject lateinit var syncCoordinator: Lazy<SyncCoordinator>
+    @Inject lateinit var healthConnectManager: Lazy<HealthConnectManager>
+    @Inject lateinit var healthSyncScheduler: Lazy<HealthSyncScheduler>
+    @Inject lateinit var deviceTokenRepository: Lazy<com.muradgalayev.brainbuddy.data.repository.DeviceTokenRepository>
+    @Inject lateinit var adhdProfileRepository: Lazy<com.muradgalayev.brainbuddy.data.repository.AdhdProfileRepository>
+    @Inject lateinit var togetherRealtime: Lazy<com.muradgalayev.brainbuddy.data.sync.TogetherRealtime>
+
+    // activities between onStart and onStop. main thread only
+    private var startedActivities = 0
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -46,6 +57,17 @@ class MyndoraApp : Application(), Configuration.Provider {
             .build()
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    override fun attachBaseContext(base: android.content.Context) {
+        super.attachBaseContext(com.muradgalayev.brainbuddy.data.local.AppLocale.wrap(base))
+    }
+
+    // a language switch arrives here as a configuration change. channel names are only read when a
+    // channel is created, so re-creating them is what renames them in the system settings
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        NotificationChannels.createAll(this)
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -68,26 +90,27 @@ class MyndoraApp : Application(), Configuration.Provider {
         // every launch, not only at sign-in: tokens rotate, and a stale one fails silently in a way
         // nobody can diagnose from the outside
         appScope.launch {
-            runCatching { deviceTokenRepository.registerCurrentDevice() }
+            runCatching { deviceTokenRepository.get().registerCurrentDevice() }
                 .onFailure { Log.w("MyndoraApp", "Token registration failed: ${it.message}") }
         }
 
         // keeps the medication to-do window rolling forward. nothing else runs on a schedule to do it,
         // so without this the list quietly runs dry
         appScope.launch {
-            runCatching { adhdProfileRepository.refreshMedicationTodos() }
+            runCatching { adhdProfileRepository.get().refreshMedicationTodos() }
                 .onFailure { Log.w("MyndoraApp", "Medication to-dos not refreshed: ${it.message}") }
         }
 
-        healthSyncScheduler.scheduleHourly()
         appScope.launch {
-            runCatching { healthConnectManager.refresh() }
+            runCatching { healthSyncScheduler.get().scheduleHourly() }
+                .onFailure { Log.w("MyndoraApp", "Health sync not scheduled: ${it.message}") }
+            runCatching { healthConnectManager.get().refresh() }
                 .onFailure { Log.w("MyndoraApp", "Health refresh failed: ${it.message}") }
         }
 
         appScope.launch {
             try {
-                reminderBootstrapper.rescheduleAll()
+                reminderBootstrapper.get().rescheduleAll()
             } catch (t: Throwable) {
                 Log.w("MyndoraApp", "Initial reschedule failed: ${t.message}")
             }
@@ -99,21 +122,21 @@ class MyndoraApp : Application(), Configuration.Provider {
         // work after a disconnect
         appScope.launch {
             combine(
-                googleCalendarTokenStore.linkedEmail,
+                googleCalendarTokenStore.get().linkedEmail,
                 modeManager.effectiveCalendarSyncFrequency,
             ) { linkedEmail, frequency -> linkedEmail to frequency }
                 .distinctUntilChanged()
                 .collect { (linkedEmail, frequency) ->
                     if (linkedEmail == null) {
-                        calendarSyncScheduler.cancel()
+                        calendarSyncScheduler.get().cancel()
                     } else {
-                        calendarSyncScheduler.applyFrequency(frequency)
+                        calendarSyncScheduler.get().applyFrequency(frequency)
                     }
                 }
         }
 
         // one-shot pull on start plus a re-pull on reconnect. never blocks the UI
-        syncCoordinator.start()
+        appScope.launch { syncCoordinator.get().start() }
     }
 
     // re-reads connectivity every time an activity comes back to the foreground. Android doesn't
@@ -131,12 +154,18 @@ class MyndoraApp : Application(), Configuration.Provider {
                     // activeMode suppresses equal values, but returning from system DND settings can make an
                     // unchanged mode newly applicable, so reassert its external state even when it didn't change
                     modeManager.reapplyDeviceState()
+                    // live calendar and list changes while the app is on screen
+                    appScope.launch { togetherRealtime.get().onForeground() }
                 }
 
                 override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
-                override fun onActivityStarted(activity: Activity) = Unit
+                override fun onActivityStarted(activity: Activity) {
+                    startedActivities++
+                }
                 override fun onActivityPaused(activity: Activity) = Unit
-                override fun onActivityStopped(activity: Activity) = Unit
+                override fun onActivityStopped(activity: Activity) {
+                    if (--startedActivities == 0) appScope.launch { togetherRealtime.get().onBackground() }
+                }
                 override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
                 override fun onActivityDestroyed(activity: Activity) = Unit
             }

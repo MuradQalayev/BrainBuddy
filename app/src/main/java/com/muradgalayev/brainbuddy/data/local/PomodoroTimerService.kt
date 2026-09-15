@@ -62,6 +62,9 @@ class PomodoroTimerService : Service() {
     @Inject
     lateinit var modeManager: ModeManager
 
+    @Inject
+    lateinit var ambientSoundPlayer: AmbientSoundPlayer
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var updateJob: Job? = null
     // partial wake lock held while the timer runs, so the CPU stays available with the screen
@@ -71,9 +74,17 @@ class PomodoroTimerService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    // services get a fresh system context, not the application's, so before 33 they'd miss the
+    // chosen language without this
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(com.muradgalayev.brainbuddy.data.local.AppLocale.wrap(newBase))
+    }
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        // the service is what keeps the process alive with the screen off, so the sound is anchored here too
+        ambientSoundPlayer.start()
 
         timerManager.onTimerStopped = {
             releaseWakeLock()
@@ -173,15 +184,15 @@ class PomodoroTimerService : Service() {
         val timeText = "%02d:%02d".format(minutes, seconds)
 
         val sessionLabel = when (state.sessionType) {
-            PomodoroSessionType.FOCUS -> "Focus Session"
-            PomodoroSessionType.BREAK -> "Break"
+            PomodoroSessionType.FOCUS -> this.getString(R.string.timer_focus_session)
+            PomodoroSessionType.BREAK -> this.getString(R.string.bd_break)
         }
 
         val statusText = when (state.timerState) {
             TimerState.RUNNING -> "$sessionLabel — $timeText"
-            TimerState.PAUSED -> "$sessionLabel — Paused ($timeText)"
-            TimerState.COMPLETED -> "$sessionLabel — Completed!"
-            TimerState.IDLE -> "$sessionLabel — Ready"
+            TimerState.PAUSED -> this.getString(R.string.timer_paused, sessionLabel, timeText)
+            TimerState.COMPLETED -> this.getString(R.string.timer_completed, sessionLabel)
+            TimerState.IDLE -> this.getString(R.string.timer_ready, sessionLabel)
         }
 
         // tap the notification to open the app
@@ -197,7 +208,7 @@ class PomodoroTimerService : Service() {
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Myndora Timer")
+            .setContentTitle(this.getString(R.string.timer_title))
             .setContentText(statusText)
             .setContentIntent(contentIntent)
             .setOngoing(true)
@@ -216,24 +227,24 @@ class PomodoroTimerService : Service() {
             TimerState.RUNNING -> {
                 builder.addAction(
                     R.drawable.ic_launcher_foreground,
-                    "Pause",
+                    this.getString(R.string.common_pause),
                     createActionIntent(ACTION_PAUSE)
                 )
                 builder.addAction(
                     R.drawable.ic_launcher_foreground,
-                    "Stop",
+                    this.getString(R.string.common_stop),
                     createActionIntent(ACTION_STOP)
                 )
             }
             TimerState.PAUSED -> {
                 builder.addAction(
                     R.drawable.ic_launcher_foreground,
-                    "Resume",
+                    this.getString(R.string.common_resume),
                     createActionIntent(ACTION_RESUME)
                 )
                 builder.addAction(
                     R.drawable.ic_launcher_foreground,
-                    "Stop",
+                    this.getString(R.string.common_stop),
                     createActionIntent(ACTION_STOP)
                 )
             }
@@ -254,8 +265,8 @@ class PomodoroTimerService : Service() {
         if (!hasPostNotificationsPermission()) return
 
         val (heading, body) = when (finishedType) {
-            PomodoroSessionType.FOCUS -> ReminderCopy.pomodoroBreakStart()
-            PomodoroSessionType.BREAK -> ReminderCopy.pomodoroBreakOver()
+            PomodoroSessionType.FOCUS -> ReminderCopy.pomodoroBreakStart(this)
+            PomodoroSessionType.BREAK -> ReminderCopy.pomodoroBreakOver(this)
         }
 
         val tapIntent = PendingIntent.getActivity(
@@ -303,10 +314,10 @@ class PomodoroTimerService : Service() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Pomodoro Timer",
+            this.getString(R.string.timer_channel),
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = "Shows the active Pomodoro timer progress"
+            description = this@PomodoroTimerService.getString(R.string.timer_channel_desc)
             setShowBadge(false)
         }
         val notificationManager = getSystemService(NotificationManager::class.java)

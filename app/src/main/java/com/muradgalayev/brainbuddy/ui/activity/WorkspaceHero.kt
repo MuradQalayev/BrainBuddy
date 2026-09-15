@@ -1,5 +1,7 @@
 package com.muradgalayev.brainbuddy.ui.activity
 
+import androidx.compose.ui.res.stringResource
+import com.muradgalayev.brainbuddy.ui.utils.resolve
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
@@ -118,22 +120,22 @@ fun RightNowHero(
                 HeroPage.Today -> SummaryCard(
                     photo = R.drawable.wellness_movement_suggestion,
                     simplified = state.isSimplified,
-                    eyebrow = "TODAY",
+                    eyebrow = stringResource(R.string.home_today_caps),
                     headline = todayHeadline(state),
                     stats = listOf(
-                        "${state.todayCompletedTasks}/${state.todayTotalTasks}" to "tasks done",
-                        "${state.todayFocusMinutes}m" to "focused",
+                        "${state.todayCompletedTasks}/${state.todayTotalTasks}" to stringResource(R.string.hero_tasks_done),
+                        "${state.todayFocusMinutes}m" to stringResource(R.string.hero_focused),
                     ),
                     progress = state.todoProgress,
                 )
                 HeroPage.Week -> SummaryCard(
                     photo = R.drawable.wellness_walk_suggestion,
                     simplified = state.isSimplified,
-                    eyebrow = "LAST 7 DAYS",
+                    eyebrow = stringResource(R.string.hero_last_7),
                     headline = weekHeadline(state),
                     stats = listOf(
-                        "${state.weekCompletedTasks}" to "tasks done",
-                        "${state.weekFocusMinutes}m" to "focused",
+                        "${state.weekCompletedTasks}" to stringResource(R.string.hero_tasks_done),
+                        "${state.weekFocusMinutes}m" to stringResource(R.string.hero_focused),
                     ),
                     progress = null,
                 )
@@ -168,17 +170,19 @@ fun RightNowHero(
     }
 }
 
+@Composable
 private fun todayHeadline(state: WorkspaceUiState): String = when {
-    state.todayTotalTasks == 0 -> "Nothing on the list yet"
-    state.todayCompletedTasks == state.todayTotalTasks -> "All clear. Nice."
-    state.todayCompletedTasks == 0 -> "Fresh page"
-    else -> "You're moving"
+    state.todayTotalTasks == 0 -> stringResource(R.string.hero_nothing_list)
+    state.todayCompletedTasks == state.todayTotalTasks -> stringResource(R.string.hero_all_clear)
+    state.todayCompletedTasks == 0 -> stringResource(R.string.greet_fresh_page_plain)
+    else -> stringResource(R.string.hero_moving)
 }
 
+@Composable
 private fun weekHeadline(state: WorkspaceUiState): String = when {
-    state.weekCompletedTasks == 0 && state.weekFocusMinutes == 0 -> "A quiet week so far"
-    state.weekCompletedTasks == 0 -> "Focus time is adding up"
-    else -> "Steady week"
+    state.weekCompletedTasks == 0 && state.weekFocusMinutes == 0 -> stringResource(R.string.hero_quiet_week)
+    state.weekCompletedTasks == 0 -> stringResource(R.string.hero_focus_adding)
+    else -> stringResource(R.string.hero_steady_week)
 }
 
 // page one, the actual answer. one thing, one button. three states in priority order:
@@ -200,7 +204,7 @@ private fun NowCard(
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = if (state.nextUpIsNow) "RIGHT NOW" else "UP NEXT",
+                    text = if (state.nextUpIsNow) stringResource(R.string.hero_right_now) else stringResource(R.string.hero_up_next),
                     color = scheme.primary,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
@@ -211,7 +215,7 @@ private fun NowCard(
                 if (hasItem) {
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = if (state.nextUpIsEvent) "· Calendar" else "· To-do",
+                        text = if (state.nextUpIsEvent) stringResource(R.string.hero_dot_calendar) else stringResource(R.string.hero_dot_todo),
                         color = scheme.onSurfaceVariant,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
@@ -231,21 +235,21 @@ private fun NowCard(
                 state.nextUpWhen?.let {
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        text = it,
+                        text = it.resolve(),
                         color = scheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
             } else {
                 Text(
-                    text = "Nothing scheduled",
+                    text = stringResource(R.string.hero_nothing_scheduled),
                     color = scheme.onSurface,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                 )
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    text = "A short focus block is an easy way to start.",
+                    text = stringResource(R.string.hero_short_block),
                     color = scheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -254,14 +258,14 @@ private fun NowCard(
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 HeroButton(
-                    label = if (state.pomodoroIsActive) "Back to focus" else "Start focus",
+                    label = if (state.pomodoroIsActive) stringResource(R.string.hero_back_focus) else stringResource(R.string.home_start_focus),
                     icon = Icons.Rounded.PlayArrow,
                     filled = true,
                     onClick = onStartFocus,
                 )
                 if (hasItem) {
                     HeroButton(
-                        label = "See list",
+                        label = stringResource(R.string.hero_see_list),
                         icon = Icons.Rounded.CheckCircle,
                         filled = false,
                         onClick = onOpenTodos,

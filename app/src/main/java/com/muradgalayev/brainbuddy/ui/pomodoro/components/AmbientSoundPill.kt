@@ -1,5 +1,7 @@
 package com.muradgalayev.brainbuddy.ui.pomodoro.components
 
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Row
@@ -32,6 +34,8 @@ fun AmbientSoundPill(
     accentColor: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    // the picked sound is still coming down, shown in place of the note so Start doesn't seem silent
+    downloading: Boolean = false,
 ) {
     val active = selectedSound != null
 
@@ -58,15 +62,23 @@ fun AmbientSoundPill(
             modifier = Modifier.padding(start = 14.dp, end = 10.dp, top = 9.dp, bottom = 9.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = Icons.Rounded.MusicNote,
-                contentDescription = null,
-                tint = contentColor,
-                modifier = Modifier.size(17.dp),
-            )
+            if (downloading) {
+                androidx.compose.material3.CircularProgressIndicator(
+                    modifier = Modifier.size(15.dp),
+                    strokeWidth = 2.dp,
+                    color = contentColor,
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Rounded.MusicNote,
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.size(17.dp),
+                )
+            }
             Spacer(Modifier.width(8.dp))
             Text(
-                text = selectedSound?.label ?: "Ambient sound",
+                text = selectedSound?.let { stringResource(it.labelRes) } ?: stringResource(R.string.sound_ambient),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium,
                 color = contentColor,
@@ -74,7 +86,7 @@ fun AmbientSoundPill(
             Spacer(Modifier.width(2.dp))
             Icon(
                 imageVector = Icons.Rounded.ExpandMore,
-                contentDescription = "Choose sound",
+                contentDescription = stringResource(R.string.sound_choose),
                 tint = contentColor.copy(alpha = 0.7f),
                 modifier = Modifier.size(18.dp),
             )

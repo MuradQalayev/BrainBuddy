@@ -17,9 +17,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -94,11 +92,17 @@ fun SplashScreen(
             painter = painterResource(id = R.drawable.ic_ai),
             contentDescription = "Myndora",
             tint = MaterialTheme.colorScheme.primary,
+            // read inside graphicsLayer, not in composition: the splash runs while the rest of startup
+            // is fighting for the main thread, and reading .value here recomposed the screen every
+            // frame of the spin. in the layer block each frame is only a redraw
             modifier = Modifier
                 .size(96.dp)
-                .rotate(rotation.value)
-                .scale(scale.value)
-                .alpha(alpha.value)
+                .graphicsLayer {
+                    rotationZ = rotation.value
+                    scaleX = scale.value
+                    scaleY = scale.value
+                    this.alpha = alpha.value
+                }
         )
         Spacer(modifier = Modifier.height(20.dp))
         Text(
@@ -106,7 +110,7 @@ fun SplashScreen(
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.alpha(textAlpha.value)
+            modifier = Modifier.graphicsLayer { this.alpha = textAlpha.value }
         )
     }
 }

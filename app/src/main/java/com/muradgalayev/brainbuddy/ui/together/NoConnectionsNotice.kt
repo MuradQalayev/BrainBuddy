@@ -28,6 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // shown when the user picks 'for someone' but has nobody connected yet. the audience switcher
 // used to be hidden outright in that case, which quietly made the feature invisible to exactly
@@ -37,7 +39,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun NoConnectionsNotice(
     // what's being created, 'event' or 'task'. keeps the copy specific
-    itemNoun: String,
+    kind: SharedItemKind,
     accent: Color,
     ink: Color,
     muted: Color,
@@ -74,7 +76,7 @@ fun NoConnectionsNotice(
             Spacer(Modifier.width(11.dp))
 
             Text(
-                text = "Nobody connected yet",
+                text = stringResource(R.string.together_nobody_connected),
                 color = ink,
                 fontSize = 13.5.sp,
                 fontWeight = FontWeight.Bold,
@@ -84,8 +86,10 @@ fun NoConnectionsNotice(
         Spacer(Modifier.height(9.dp))
 
         Text(
-            text = "Connect with someone first, then you can send this $itemNoun " +
-                "straight to them.",
+            text = stringResource(
+                if (kind == SharedItemKind.EVENT) R.string.together_connect_first_event
+                else R.string.together_connect_first_task,
+            ),
             color = muted,
             fontSize = 12.5.sp,
             lineHeight = 17.sp,
@@ -103,7 +107,7 @@ fun NoConnectionsNotice(
             horizontalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = "Add someone",
+                text = stringResource(R.string.together_add_someone),
                 color = Color.White,
                 fontSize = 12.5.sp,
                 fontWeight = FontWeight.Bold,

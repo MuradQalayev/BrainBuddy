@@ -1,5 +1,8 @@
 package com.muradgalayev.brainbuddy.domain.scheduling
 
+import com.muradgalayev.brainbuddy.ui.utils.asUiText
+import com.muradgalayev.brainbuddy.ui.utils.resolve
+import com.muradgalayev.brainbuddy.testing.TestStrings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -18,14 +21,14 @@ class TimeSuggestionDayLabelTest {
         endMinutes = 10 * 60,
         kind = ActivityKind.Meeting,
         reason = SuggestionReason.TypicalForActivity,
-        reasonText = "test",
+        reasonText = "test".asUiText(),
         score = 1.0,
     )
 
     @Test
     fun `no label when the suggestion is for the day already open`() {
         val open = LocalDate.of(2026, 8, 25)
-        assertNull(suggestionOn(open).dayLabel(relativeTo = open, today = today))
+        assertNull(suggestionOn(open).dayLabel(relativeTo = open, today = today)?.resolve(TestStrings.en))
     }
 
     @Test
@@ -33,7 +36,7 @@ class TimeSuggestionDayLabelTest {
         // dialog open on today, suggestion for today + 1
         assertEquals(
             "Tomorrow",
-            suggestionOn(today.plusDays(1)).dayLabel(relativeTo = today, today = today),
+            suggestionOn(today.plusDays(1)).dayLabel(relativeTo = today, today = today)?.resolve(TestStrings.en),
         )
     }
 
@@ -42,7 +45,7 @@ class TimeSuggestionDayLabelTest {
         val open = LocalDate.of(2026, 8, 25)
         val offered = LocalDate.of(2026, 8, 26)
 
-        val label = suggestionOn(offered).dayLabel(relativeTo = open, today = today)
+        val label = suggestionOn(offered).dayLabel(relativeTo = open, today = today)?.resolve(TestStrings.en)
 
         // the old code said Tomorrow here, which on the 24th means the 25th
         assertEquals("Wed 26", label)
@@ -53,13 +56,13 @@ class TimeSuggestionDayLabelTest {
         val open = LocalDate.of(2026, 8, 27)
         assertEquals(
             "Today",
-            suggestionOn(today).dayLabel(relativeTo = open, today = today),
+            suggestionOn(today).dayLabel(relativeTo = open, today = today)?.resolve(TestStrings.en),
         )
     }
 
     @Test
     fun `within the week the weekday always carries its date`() {
-        val label = suggestionOn(today.plusDays(3)).dayLabel(relativeTo = today, today = today)
+        val label = suggestionOn(today.plusDays(3)).dayLabel(relativeTo = today, today = today)?.resolve(TestStrings.en)
         // never a bare 'Thu', that's the same ambiguity one week out
         assertEquals("Thu 27", label)
     }
@@ -69,7 +72,7 @@ class TimeSuggestionDayLabelTest {
         val far = today.plusDays(20) // 13 September
         assertEquals(
             "13 Sep",
-            suggestionOn(far).dayLabel(relativeTo = today, today = today),
+            suggestionOn(far).dayLabel(relativeTo = today, today = today)?.resolve(TestStrings.en),
         )
     }
 }

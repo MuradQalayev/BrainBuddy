@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +36,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun SectionTitle(index: Int?, title: String, subtitle: String? = null) {
@@ -81,7 +84,7 @@ fun SectionTitle(index: Int?, title: String, subtitle: String? = null) {
 fun <T> ChipRow(
     options: List<T>,
     selected: T?,
-    label: (T) -> String,
+    label: @Composable (T) -> String,
     onSelect: (T) -> Unit,
 ) {
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -100,7 +103,7 @@ fun <T> ChipRow(
 fun <T> ChipGrid(
     options: List<T>,
     selected: Set<T>,
-    label: (T) -> String,
+    label: @Composable (T) -> String,
     onToggle: (T) -> Unit,
 ) {
     androidx.compose.foundation.layout.FlowRow(
@@ -127,7 +130,7 @@ fun <T> CappedChipGrid(
     options: List<T>,
     selected: List<T>,
     max: Int,
-    label: (T) -> String,
+    label: @Composable (T) -> String,
     onToggle: (T) -> Unit,
 ) {
     val atCap = selected.size >= max
@@ -149,21 +152,29 @@ fun <T> CappedChipGrid(
         }
         Spacer(Modifier.height(10.dp))
         Text(
-            text = if (atCap) "That's your $max — tap one to swap it out"
-            else "${selected.size} of $max chosen",
+            text = if (atCap) stringResource(R.string.survey_cap_reached, max)
+            else stringResource(R.string.survey_cap_count, selected.size, max),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
 
+// set by SwipeQuestionnaire for the page on screen. a no-op anywhere else, so the grids behave the
+// same outside the questionnaire
+val LocalAdvanceQuestion = compositionLocalOf<() -> Unit> { {} }
+
+// one answer, so picking it is the whole question and the page moves on by itself. advanceOn
+// holds it back for answers that open a follow-up on the same page
 @Composable
 fun <T> SingleChipGrid(
     options: List<T>,
     selected: T?,
-    label: (T) -> String,
+    label: @Composable (T) -> String,
     onSelect: (T) -> Unit,
+    advanceOn: (T) -> Boolean = { true },
 ) {
+    val advance = LocalAdvanceQuestion.current
     androidx.compose.foundation.layout.FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -173,7 +184,10 @@ fun <T> SingleChipGrid(
             ChoiceChip(
                 label = label(option),
                 selected = selected == option,
-                onClick = { onSelect(option) },
+                onClick = {
+                    onSelect(option)
+                    if (advanceOn(option)) advance()
+                },
             )
         }
     }
@@ -280,11 +294,11 @@ fun UsernameField(
 ) {
     val colors = MaterialTheme.colorScheme
     val helper = when (availability) {
-        UsernameAvailability.Idle -> "3–20 characters · letters, numbers, _"
-        UsernameAvailability.Checking -> "Checking…"
-        UsernameAvailability.Available -> "Available"
-        UsernameAvailability.Taken -> "Already taken"
-        UsernameAvailability.Invalid -> "Use 3–20 letters, numbers or underscores"
+        UsernameAvailability.Idle -> stringResource(R.string.username_hint)
+        UsernameAvailability.Checking -> stringResource(R.string.common_checking)
+        UsernameAvailability.Available -> stringResource(R.string.username_available)
+        UsernameAvailability.Taken -> stringResource(R.string.username_taken)
+        UsernameAvailability.Invalid -> stringResource(R.string.username_invalid)
     }
     val helperColor = when (availability) {
         UsernameAvailability.Available -> Color(0xFF0D9488)
@@ -307,8 +321,8 @@ fun UsernameField(
                 focusedContainerColor = colors.surface,
                 unfocusedContainerColor = colors.surface,
             ),
-            label = { Text("Username") },
-            placeholder = { Text("e.g. focus_owl") },
+            label = { Text(stringResource(R.string.username_label)) },
+            placeholder = { Text(stringResource(R.string.username_placeholder)) },
             trailingIcon = {
                 when (availability) {
                     UsernameAvailability.Checking -> CircularProgressIndicator(
@@ -334,6 +348,11 @@ fun UsernameField(
         )
     }
 }
+
+// age ranges are stored as their English text, so only the one with words in it needs translating
+@Composable
+fun ageRangeLabel(range: String): String =
+    if (range == "Under 18") stringResource(R.string.age_under_18) else range
 
 fun isUsernameSyntaxValid(username: String): Boolean {
     val v = username.trim()

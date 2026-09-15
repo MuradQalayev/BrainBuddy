@@ -35,6 +35,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.muradgalayev.brainbuddy.domain.model.CalendarEvent
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun ReservationHistoryScreen(
@@ -51,10 +53,10 @@ fun ReservationHistoryScreen(
             Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") }
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.common_back)) }
             Column(Modifier.padding(start = 6.dp)) {
-                Text("Your appointments", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
-                Text("Reservation history", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.res_your_appointments), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+                Text(stringResource(R.string.res_history), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
@@ -64,8 +66,8 @@ fun ReservationHistoryScreen(
                     Surface(Modifier.size(72.dp), CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
                         Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.CalendarMonth, null, tint = MaterialTheme.colorScheme.primary) }
                     }
-                    Text("No appointments yet", Modifier.padding(top = 16.dp), fontWeight = FontWeight.Bold)
-                    Text("Appointments you add will appear here.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.res_no_appointments), Modifier.padding(top = 16.dp), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.res_no_appointments_body), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         } else {
@@ -74,11 +76,11 @@ fun ReservationHistoryScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 if (upcoming.isNotEmpty()) {
-                    item { HistoryLabel("Upcoming", upcoming.size) }
+                    item { HistoryLabel(stringResource(R.string.todo_filter_upcoming), upcoming.size) }
                     items(upcoming, key = { it.id }) { AppointmentCard(it, true) }
                 }
                 if (past.isNotEmpty()) {
-                    item { Spacer(Modifier.size(8.dp)); HistoryLabel("Past", past.size) }
+                    item { Spacer(Modifier.size(8.dp)); HistoryLabel(stringResource(R.string.res_past), past.size) }
                     items(past, key = { it.id }) { AppointmentCard(it, false) }
                 }
             }
@@ -123,7 +125,7 @@ private fun AppointmentCard(event: CalendarEvent, upcoming: Boolean) {
                     Text(event.location, Modifier.padding(start = 5.dp), style = MaterialTheme.typography.bodySmall, maxLines = 1)
                 }
             }
-            Text(if (upcoming) "Planned" else "Past", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(if (upcoming) stringResource(R.string.res_planned) else stringResource(R.string.res_past), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

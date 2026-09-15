@@ -122,6 +122,14 @@ class TodoRepository @Inject constructor(
         reminderScheduler.cancelForItem(todoItem.id)
     }
 
+    // a row deleted on the server by someone else. sync's pull never removes rows, so this is the only
+    // way a to-do a connection took back leaves this phone
+    suspend fun applyRemoteDelete(todoId: String) {
+        val userId = getCurrentUserId() ?: return
+        todoItemDao.deleteById(todoId, userId)
+        reminderScheduler.cancelForItem(todoId)
+    }
+
     suspend fun updateTodoItem(todoItem: TodoItem) {
         val userId = getCurrentUserId() ?: return
         // TodoItem carries no authorship, so toEntity() stamps createdBy with the current user. carry

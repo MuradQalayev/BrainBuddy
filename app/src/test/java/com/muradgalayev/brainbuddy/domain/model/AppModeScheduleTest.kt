@@ -22,6 +22,11 @@ class AppModeScheduleTest {
         enabled: Boolean = true,
     ) = ModeSchedule(days = days, startMinute = start, endMinute = end, enabled = enabled)
 
+    // the built-ins ship with their schedules off. these tests are about schedules, so switch them on
+    private fun AppMode.scheduled() = copy(schedule = schedule?.copy(enabled = true))
+    private val scheduledWork = BuiltInModes.work.scheduled()
+    private val scheduledBuiltIns = BuiltInModes.all.map { it.scheduled() }
+
     // windows within one day
 
     @Test
@@ -82,7 +87,7 @@ class AppModeScheduleTest {
     @Test
     fun `a manual pick beats any schedule`() {
         val active = resolveActiveMode(
-            modes = BuiltInModes.all,
+            modes = scheduledBuiltIns,
             selection = ModeSelection.Manual(AppMode.ID_WEEKEND),
             day = DayOfWeek.WEDNESDAY,
             time = LocalTime.of(10, 0),
@@ -95,7 +100,7 @@ class AppModeScheduleTest {
     fun `a manual id that no longer exists falls back to the schedule`() {
         // the mode was deleted on another device, and the stale pick must not blank everything
         val active = resolveActiveMode(
-            modes = BuiltInModes.all,
+            modes = scheduledBuiltIns,
             selection = ModeSelection.Manual("deleted-mode"),
             day = DayOfWeek.WEDNESDAY,
             time = LocalTime.of(10, 0),
@@ -105,8 +110,8 @@ class AppModeScheduleTest {
 
     @Test
     fun `overlapping schedules resolve by sort order, not by list order`() {
-        val late = BuiltInModes.work.copy(id = "late", sortIndex = 5)
-        val early = BuiltInModes.work.copy(id = "early", sortIndex = 1)
+        val late = scheduledWork.copy(id = "late", sortIndex = 5)
+        val early = scheduledWork.copy(id = "early", sortIndex = 1)
         val active = resolveActiveMode(
             modes = listOf(late, early),
             selection = ModeSelection.Automatic,
@@ -120,7 +125,7 @@ class AppModeScheduleTest {
     fun `nothing scheduled and nothing picked means no mode`() {
         assertNull(
             resolveActiveMode(
-                modes = BuiltInModes.all,
+                modes = scheduledBuiltIns,
                 selection = ModeSelection.Automatic,
                 day = DayOfWeek.WEDNESDAY,
                 time = LocalTime.of(22, 0),
@@ -132,7 +137,7 @@ class AppModeScheduleTest {
     fun `explicit no mode suppresses a matching schedule`() {
         assertNull(
             resolveActiveMode(
-                modes = BuiltInModes.all,
+                modes = scheduledBuiltIns,
                 selection = ModeSelection.NoMode,
                 day = DayOfWeek.WEDNESDAY,
                 time = LocalTime.of(10, 0),
@@ -168,7 +173,7 @@ class AppModeScheduleTest {
     @Test
     fun `next boundary is the next same-day start`() {
         val boundary = nextModeScheduleBoundary(
-            modes = listOf(BuiltInModes.work),
+            modes = listOf(scheduledWork),
             after = LocalDateTime.of(2026, 8, 12, 8, 30), // Wednesday
         )
 
@@ -292,7 +297,40 @@ class AppModeScheduleTest {
         assertEquals(Duration.ofMinutes(30), Duration.between(rollback.toInstant(), repeatedStart.toInstant()))
     }
 
+    // why a mode is on
+
+    @Test
+    fun `a manual pick stays until changed`() {
+        assertEquals(ModeStatus.Manual, modeStatus(scheduledWork, ModeSelection.Manual(AppMode.ID_WORK)))
+    }
+
+    @Test
+    fun `a scheduled mode says when it stops`() {
+        assertEquals(ModeStatus.Until(LocalTime.of(17, 0)), modeStatus(scheduledWork, ModeSelection.Automatic))
+    }
+
+    @Test
+    fun `an all-day schedule reads as all day`() {
+        assertEquals(ModeStatus.AllDay, modeStatus(BuiltInModes.weekend.scheduled(), ModeSelection.Automatic))
+    }
+
     // ── The presets ──
+
+    @Test
+    fun `built-in schedules ship switched off`() {
+        // a fresh account must not have its phone silenced by a mode nobody chose
+        BuiltInModes.all.forEach { mode ->
+            assertFalse("${mode.name} starts on its own", mode.schedule?.enabled == true)
+        }
+        assertNull(
+            resolveActiveMode(
+                modes = BuiltInModes.all,
+                selection = ModeSelection.Automatic,
+                day = DayOfWeek.WEDNESDAY,
+                time = LocalTime.of(10, 0),
+            )
+        )
+    }
 
     @Test
     fun `built-in modes never silence medication reminders`() {

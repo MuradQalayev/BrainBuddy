@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.muradgalayev.brainbuddy.R
 
 // a connection as the picker sees them: invitable, or there but not yet allowed
 data class FocusCandidate(
@@ -49,6 +50,7 @@ data class FocusTogetherUiState(
 
 @HiltViewModel
 class FocusTogetherViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val focusRepository: FocusTogetherRepository,
     private val togetherRepository: TogetherRepository,
     private val timerManager: PomodoroTimerManager,
@@ -58,7 +60,11 @@ class FocusTogetherViewModel @Inject constructor(
     // the session whose timer we already started, so a later poll can't restart it
     private var startedFor: String? = null
 
-    private val _uiState = MutableStateFlow(FocusTogetherUiState())
+    // seeded from the connections already in memory, so opening the timer shows the faces at once
+    // instead of an empty pill that fills in after a network round-trip
+    private val _uiState = MutableStateFlow(
+        FocusTogetherUiState(candidates = candidatesFrom(togetherRepository.connections.value))
+    )
     val uiState: StateFlow<FocusTogetherUiState> = _uiState.asStateFlow()
 
     init {
@@ -74,23 +80,30 @@ class FocusTogetherViewModel @Inject constructor(
     // what matters is whether they decided I may ask, not whether I opened my focus to them.
     // getting this backwards is how you build a feature that pings anyone you've ever added
     private fun loadInvitable() {
+        // only when nothing has loaded this process. SyncCoordinator already keeps the list fresh, and
+        // refreshing on every visit is what made each trip to the timer refetch everyone
+        if (!togetherRepository.hasLoadedOnce) {
+            viewModelScope.launch { runCatching { togetherRepository.refresh() } }
+        }
         viewModelScope.launch {
-            runCatching { togetherRepository.refresh() }
             togetherRepository.connections.collect { connections ->
-                val next = connections.map { c ->
-                    FocusCandidate(
-                        userId = c.userId,
-                        name = c.name,
-                        avatarUrl = c.avatarUrl,
-                        allowed = ShareScope.FOCUS in c.grantedToMe,
-                    )
-                }.sortedByDescending { it.allowed }
+                val next = candidatesFrom(connections)
                 _uiState.update { state ->
                     if (state.candidates == next) state else state.copy(candidates = next)
                 }
             }
         }
     }
+
+    private fun candidatesFrom(connections: List<Connection>): List<FocusCandidate> =
+        connections.map { c ->
+            FocusCandidate(
+                userId = c.userId,
+                name = c.name,
+                avatarUrl = c.avatarUrl,
+                allowed = ShareScope.FOCUS in c.grantedToMe,
+            )
+        }.sortedByDescending { it.allowed }
 
     fun refresh() = watcher.refreshNow()
 
@@ -139,7 +152,7 @@ class FocusTogetherViewModel @Inject constructor(
                 .onSuccess { id -> _uiState.update { it.copy(createdSessionId = id) } }
                 .onFailure { e ->
                     _uiState.update {
-                        it.copy(error = "Couldn't send that — ${e.message ?: "try again"}.")
+                        it.copy(error = context.getString(R.string.focus_send_failed, e.message ?: context.getString(R.string.common_try_again)))
                     }
                 }
             _uiState.update { it.copy(sending = false) }

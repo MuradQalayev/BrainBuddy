@@ -25,6 +25,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.muradgalayev.brainbuddy.R
 
 // Mistral client. the API is OpenAI-compatible, so this is the standard messages array, tools
 // array and tool_calls response format.
@@ -36,7 +37,9 @@ import javax.inject.Singleton
 // mistral-small-latest: fast, cheap, native tool calling, and more than enough for the short
 // replies this assistant gives. swap MODEL to mistral-large-latest if tool selection drifts
 @Singleton
-class MistralAiClient @Inject constructor() : AiClient {
+class MistralAiClient @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
+) : AiClient {
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -48,7 +51,7 @@ class MistralAiClient @Inject constructor() : AiClient {
         val apiKey = BuildConfig.MISTRAL_API_KEY
         if (apiKey.isBlank() || apiKey == "PASTE_YOUR_KEY_HERE") {
             return@withContext AiResponse.Error(
-                "Mistral API key missing — add MISTRAL_API_KEY to local.properties."
+                context.getString(R.string.ai_err_no_key)
             )
         }
 
@@ -86,7 +89,7 @@ class MistralAiClient @Inject constructor() : AiClient {
                 if (!retryable) return@withContext AiResponse.Error(friendlyError(code, text))
             } catch (e: Exception) {
                 Log.w(TAG, "Mistral call failed (attempt ${attempt + 1})", e)
-                lastErrorBody = e.message ?: "Network error"
+                lastErrorBody = e.message ?: context.getString(R.string.ai_err_network)
             }
 
             if (attempt < MAX_ATTEMPTS - 1) {
@@ -98,17 +101,17 @@ class MistralAiClient @Inject constructor() : AiClient {
     }
 
     private fun friendlyError(code: Int, body: String = ""): String = when (code) {
-        503, 502, 504 -> "Mistral is busy right now — give it a moment and try again."
-        429 -> "Too many requests — wait a few seconds and retry."
-        401, 403 -> "Mistral API key is invalid or has no credit."
-        402 -> "Mistral account is out of credit — top up at console.mistral.ai."
-        422, 400 -> "Bad request (code $code): ${extractApiMessage(body) ?: "the assistant sent something the API rejected."}"
-        in 500..599 -> "Mistral had a hiccup — try again."
-        -1 -> body.ifBlank { "Couldn't reach Mistral. Check your connection." }
+        503, 502, 504 -> context.getString(R.string.ai_err_busy)
+        429 -> context.getString(R.string.ai_err_rate)
+        401, 403 -> context.getString(R.string.ai_err_key_invalid)
+        402 -> context.getString(R.string.ai_err_no_credit)
+        422, 400 -> context.getString(R.string.ai_err_bad_request, code, extractApiMessage(body) ?: context.getString(R.string.ai_err_rejected))
+        in 500..599 -> context.getString(R.string.ai_err_hiccup)
+        -1 -> body.ifBlank { context.getString(R.string.ai_err_unreachable) }
         else -> {
             val detail = extractApiMessage(body)
-            if (detail != null) "Something went wrong (code $code): $detail"
-            else "Something went wrong (code $code)."
+            if (detail != null) context.getString(R.string.ai_err_code_detail, code, detail)
+            else context.getString(R.string.ai_err_code, code)
         }
     }
 
@@ -278,10 +281,13 @@ class MistralAiClient @Inject constructor() : AiClient {
 
     companion object {
         private const val TAG = "MistralAiClient"
-        // mistral-small-latest supports tool calling. if you swap this, check the replacement's
-        // function-calling support first, not every Mistral model emits tool calls (the open-* and
-        // embedding families in particular)
-        private const val MODEL = "mistral-small-latest"
+        // check two things before swapping this, not one. function calling, because a model that
+        // can't emit tool calls makes every AiTool dead weight; and the account's allocation for
+        // it, because a model the tier grants zero requests a minute answers 429 forever and looks
+        // exactly like a bad key. mistral-small-latest is an alias of magistral-small-latest, which
+        // the free tier allocates nothing to, which is why this used to fail every single call.
+        // `curl https://api.mistral.ai/v1/chat/completions` and read x-ratelimit-limit-req-minute
+        private const val MODEL = "ministral-8b-latest"
         private const val MAX_OUTPUT_TOKENS = 120
         private const val MAX_ATTEMPTS = 3
     }

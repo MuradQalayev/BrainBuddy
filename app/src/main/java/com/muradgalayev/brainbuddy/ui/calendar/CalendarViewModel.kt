@@ -1,5 +1,8 @@
 package com.muradgalayev.brainbuddy.ui.calendar
 
+import com.muradgalayev.brainbuddy.ui.utils.uiText
+import com.muradgalayev.brainbuddy.ui.utils.UiText
+import com.muradgalayev.brainbuddy.R
 import android.app.PendingIntent
 import android.content.Intent
 import androidx.compose.ui.graphics.Color
@@ -24,6 +27,7 @@ import com.muradgalayev.brainbuddy.data.sync.CalendarSyncScheduler
 import com.muradgalayev.brainbuddy.domain.model.CalendarEvent
 import com.muradgalayev.brainbuddy.domain.model.CalendarSubtask
 import com.muradgalayev.brainbuddy.domain.model.SubtaskKind
+import com.muradgalayev.brainbuddy.domain.model.isReservation
 import com.muradgalayev.brainbuddy.domain.scheduling.BusyInterval
 import com.muradgalayev.brainbuddy.domain.scheduling.DayContext
 import com.muradgalayev.brainbuddy.domain.scheduling.EnergySignals
@@ -90,7 +94,9 @@ data class CalendarTaskUi(
     val addedByName: String? = null,
     val subtasks: List<CalendarSubtaskUi> = emptyList(),
     // a dose from the medication list rather than an event the user made, spotted by the id prefix
-    val isMedication: Boolean = false
+    val isMedication: Boolean = false,
+    // a medical booking. the appointment is the whole task, there's nothing to break down
+    val isReservation: Boolean = false,
 ) {
     // done directly, or every station in its breakdown done. derived rather than stored so
     // un-ticking a station re-opens the event instead of leaving a stale flag behind
@@ -126,6 +132,7 @@ data class CalendarUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val calendarRepository: CalendarRepository,
     private val googleCalendarRepository: GoogleCalendarRepository,
     private val googleCalendarAuthClient: GoogleCalendarAuthClient,
@@ -142,7 +149,10 @@ class CalendarViewModel @Inject constructor(
     private val healthConnectManager: HealthConnectManager,
     private val aiNavigator: com.muradgalayev.brainbuddy.domain.ai.AiNavigator,
     networkObserver: NetworkObserver,
+    private val planRepository: com.muradgalayev.brainbuddy.data.repository.PlanRepository,
 ) : ViewModel() {
+    // the calendar assistant is a Plus feature
+    val plan = planRepository.plan
 
     init {
         // the assistant can hand a job over instead of doing it ('I can't add to their calendar,
@@ -170,8 +180,8 @@ class CalendarViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    private val _togetherShareMessage = MutableStateFlow<String?>(null)
-    val togetherShareMessage: StateFlow<String?> = _togetherShareMessage.asStateFlow()
+    private val _togetherShareMessage = MutableStateFlow<com.muradgalayev.brainbuddy.ui.utils.UiText?>(null)
+    val togetherShareMessage: StateFlow<com.muradgalayev.brainbuddy.ui.utils.UiText?> = _togetherShareMessage.asStateFlow()
 
     fun clearTogetherShareMessage() {
         _togetherShareMessage.value = null
@@ -450,15 +460,14 @@ class CalendarViewModel @Inject constructor(
     // one line under the suggestion strip, or null when there is nothing to say. it names who,
     // and it says what isn't happening: 'we looked at your friend's calendar' is alarming until
     // you know it was only ever the outline of it
-    val suggestionAvailabilityNote: StateFlow<String?> = _availabilityNames
+    val suggestionAvailabilityNote: StateFlow<UiText?> = _availabilityNames
         .map { names ->
-            val who = when {
-                names.isEmpty() -> return@map null
-                names.size == 1 -> "${names.first()} is"
-                names.size == 2 -> "${names[0]} and ${names[1]} are"
-                else -> "${names.size} people are"
+            when {
+                names.isEmpty() -> null
+                names.size == 1 -> uiText(R.string.cal_avail_one, names.first())
+                names.size == 2 -> uiText(R.string.cal_avail_two, names[0], names[1])
+                else -> uiText(R.string.cal_avail_many, names.size)
             }
-            "Working around the hours $who busy — Myndora never shows you what those are."
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(2_000), null)
 
@@ -677,7 +686,7 @@ class CalendarViewModel @Inject constructor(
         val failed = mutableListOf<String>()
 
         for (id in targetIds) {
-            val name = targets[id]?.name ?: "your connection"
+            val name = targets[id]?.name ?: context.getString(R.string.cal_your_connection)
             togetherRepository.createEventFor(
                 ownerId = id,
                 title = event.title,
@@ -832,7 +841,7 @@ class CalendarViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _googleSyncMessage.value =
-                    "Could not connect Google account: ${e.message ?: "unknown error"}"
+                    context.getString(R.string.settings_google_connect_failed, e.message ?: context.getString(R.string.common_unknown_error))
                 _isSyncingToGoogle.value = false
             }
         }
@@ -846,7 +855,7 @@ class CalendarViewModel @Inject constructor(
         viewModelScope.launch {
             val token = googleCalendarAuthClient.extractFromActivityResult(data)
             if (token == null) {
-                _googleSyncMessage.value = "Calendar connection cancelled"
+                _googleSyncMessage.value = context.getString(R.string.settings_calendar_connect_cancelled)
                 _isSyncingToGoogle.value = false
                 return@launch
             }
@@ -868,15 +877,15 @@ class CalendarViewModel @Inject constructor(
         _googleSyncMessage.value = when (result) {
             is ExportResult.Success -> {
                 val parts = mutableListOf<String>()
-                if (result.pushed > 0) parts += "${result.pushed} added"
-                if (result.alreadyExisted > 0) parts += "${result.alreadyExisted} already there"
-                if (result.failed > 0) parts += "${result.failed} failed"
-                val core = if (parts.isEmpty()) "Nothing to sync" else parts.joinToString(", ")
+                if (result.pushed > 0) parts += context.getString(R.string.cal_export_added, result.pushed)
+                if (result.alreadyExisted > 0) parts += context.getString(R.string.cal_export_already, result.alreadyExisted)
+                if (result.failed > 0) parts += context.getString(R.string.cal_export_failed, result.failed)
+                val core = if (parts.isEmpty()) context.getString(R.string.cal_nothing_to_sync) else parts.joinToString(", ")
                 val email = googleCalendarTokenStore.getLinkedEmail()
                 if (email != null && parts.isNotEmpty()) "$core → $email" else core
             }
             ExportResult.NeedsGoogleSignIn ->
-                "Connect a Google account to enable Calendar sync"
+                context.getString(R.string.cal_need_google_sync)
         }
     }
 
@@ -936,11 +945,12 @@ class CalendarViewModel @Inject constructor(
             accent = resolveEventColor(this.color).accent,
             completed = this.completed,
             flagged = false,
-            addedByName = this.createdByOther?.let { authorNames[it] ?: "a connection" },
+            addedByName = this.createdByOther?.let { authorNames[it] ?: context.getString(R.string.cal_a_connection) },
             isMedication = this.id.startsWith(
                 com.muradgalayev.brainbuddy.data.repository
                     .MedicationTodoSyncer.MEDICATION_EVENT_PREFIX
             ),
+            isReservation = this.isReservation,
             subtasks = subtasks
                 .sortedBy { it.orderIndex }
                 .map {

@@ -96,6 +96,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // quick capture, the fastest path from 'I must not forget this' to it being written down. it
 // earns its place on the home screen rather than living behind the Todo or Calendar tab,
@@ -157,14 +159,14 @@ fun QuickCaptureCard(
                 PulsingAdd()
                 Column {
                     Text(
-                        "Quick add",
+                        stringResource(R.string.widget_quick_add),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         maxLines = 1,
                     )
                     Text(
-                        "Catch it before it's gone",
+                        stringResource(R.string.qc_catch_it),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White.copy(alpha = .82f),
                         maxLines = 2,
@@ -172,8 +174,8 @@ fun QuickCaptureCard(
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    CaptureChip(Icons.Rounded.TaskAlt, "Task") { open(QuickCaptureMode.Task) }
-                    CaptureChip(Icons.Rounded.CalendarMonth, "Event") { open(QuickCaptureMode.Event) }
+                    CaptureChip(Icons.Rounded.TaskAlt, stringResource(R.string.qc_task)) { open(QuickCaptureMode.Task) }
+                    CaptureChip(Icons.Rounded.CalendarMonth, stringResource(R.string.qc_event)) { open(QuickCaptureMode.Event) }
                 }
             }
             // the glass edge, drawn last so it sits above the wash and the content
@@ -366,22 +368,6 @@ private fun QuickCaptureSheet(
     val parsed = remember(text) { parseQuickCapture(text) }
     val hint = if (whenChoice == null) rememberWhenHint(parsed) else null
 
-    LaunchedEffect(Unit) {
-        // let the sheet finish arriving before the keyboard starts arriving. both animations used to
-        // run at once: the IME came up over a sheet that was still sliding, so for the first
-        // half-second the Task/Event switch was somewhere behind the keyboard and the thing you had
-        // just tapped + to see wasn't on screen. waiting costs a few hundred milliseconds and buys the
-        // whole control being visible the entire time.
-        // the timeout is the safety net: if the sheet state never reports Expanded, focus still
-        // happens and the field still works
-        withTimeoutOrNull(700) {
-            snapshotFlow { sheetState.currentValue }.first { it == SheetValue.Expanded }
-        }
-        delay(60)
-        focusRequester.requestFocus()
-        keyboard?.show()
-    }
-
     fun close() {
         keyboard?.hide()
         scope.launch { sheetState.hide() }.invokeOnCompletion { onDismiss() }
@@ -399,6 +385,18 @@ private fun QuickCaptureSheet(
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         dragHandle = null,
     ) {
+        // inside the sheet, not above it: the sheet is its own window with its own composition, and
+        // requestFocus throws if the field's node isn't attached yet. from here it always is.
+        // the wait lets the sheet finish sliding before the IME arrives, otherwise the Task/Event
+        // switch spends half a second behind the keyboard. the timeout is the safety net
+        LaunchedEffect(Unit) {
+            withTimeoutOrNull(700) {
+                snapshotFlow { sheetState.currentValue }.first { it == SheetValue.Expanded }
+            }
+            delay(60)
+            runCatching { focusRequester.requestFocus() }
+            keyboard?.show()
+        }
         Column(
             Modifier
                 .fillMaxWidth()
@@ -447,8 +445,8 @@ private fun QuickCaptureSheet(
                         decorationBox = { field ->
                             if (text.isEmpty()) {
                                 Text(
-                                    if (mode == QuickCaptureMode.Task) "Call pharmacy tomorrow at 3pm"
-                                    else "Standup in 30 min",
+                                    if (mode == QuickCaptureMode.Task) stringResource(R.string.qc_placeholder_task)
+                                    else stringResource(R.string.qc_placeholder_event),
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .6f),
                                     maxLines = 1,
@@ -479,7 +477,7 @@ private fun QuickCaptureSheet(
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        "· picked up from your text",
+                        stringResource(R.string.qc_picked_up),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -490,7 +488,7 @@ private fun QuickCaptureSheet(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 QuickWhen.entries.forEach { option ->
                     WhenChip(
-                        label = option.label,
+                        label = stringResource(option.labelRes),
                         selected = whenChoice == option,
                         onClick = { whenChoice = if (whenChoice == option) null else option },
                     )
@@ -499,7 +497,7 @@ private fun QuickCaptureSheet(
 
             Spacer(Modifier.height(20.dp))
             SubmitButton(
-                label = if (mode == QuickCaptureMode.Task) "Add task" else "Add event",
+                label = if (mode == QuickCaptureMode.Task) stringResource(R.string.qc_add_task) else stringResource(R.string.qc_add_event),
                 enabled = text.isNotBlank(),
                 onClick = ::submit,
             )
@@ -555,7 +553,7 @@ private fun ModeSwitch(mode: QuickCaptureMode, onModeChange: (QuickCaptureMode) 
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        if (option == QuickCaptureMode.Task) "Task" else "Event",
+                        if (option == QuickCaptureMode.Task) stringResource(R.string.qc_task) else stringResource(R.string.qc_event),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = color,
@@ -631,15 +629,21 @@ private fun SubmitButton(label: String, enabled: Boolean, onClick: () -> Unit) {
 
 // 'Tomorrow, 15:00', or null when the text didn't say anything about when
 @Composable
-private fun rememberWhenHint(draft: QuickCaptureDraft): String? = remember(draft) {
-    if (!draft.hasWhen) return@remember null
+private fun rememberWhenHint(draft: QuickCaptureDraft): String? {
+    val todayLabel = stringResource(R.string.common_today)
+    val tomorrowLabel = stringResource(R.string.common_tomorrow)
+    return remember(draft, todayLabel) { whenHint(draft, todayLabel, tomorrowLabel) }
+}
+
+private fun whenHint(draft: QuickCaptureDraft, todayLabel: String, tomorrowLabel: String): String? {
+    if (!draft.hasWhen) return null
     val today = LocalDate.now()
     val day = when (draft.date) {
         null -> null
-        today -> "Today"
-        today.plusDays(1) -> "Tomorrow"
+        today -> todayLabel
+        today.plusDays(1) -> tomorrowLabel
         else -> draft.date.format(DateTimeFormatter.ofPattern("EEE d MMM"))
     }
     val clock = draft.time?.format(DateTimeFormatter.ofPattern("HH:mm"))
-    listOfNotNull(day, clock).joinToString(" · ")
+    return listOfNotNull(day, clock).joinToString(" · ")
 }

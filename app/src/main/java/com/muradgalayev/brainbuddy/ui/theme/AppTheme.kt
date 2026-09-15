@@ -7,6 +7,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import com.muradgalayev.brainbuddy.R
 
 // selectable colour themes. the set is built around one idea: for ADHD the useful axis isn't
 // 'which colour do you like' but how much stimulation you want right now. sensory needs swing,
@@ -26,37 +27,37 @@ import androidx.compose.ui.graphics.Color
 // - no saturated complementary pairs sitting adjacent, they shimmer at the boundary
 enum class AppTheme(
     val id: String,
-    val label: String,
+    @androidx.annotation.StringRes val labelRes: Int,
     // shown under the name in the picker, says when to reach for it
-    val blurb: String,
+    @androidx.annotation.StringRes val blurbRes: Int,
     val light: ThemePalette,
     val dark: ThemePalette,
 ) {
     Calm(
         id = "calm",
-        label = "Calm",
-        blurb = "Quietest option. For days when everything is already too much.",
+        labelRes = R.string.theme_calm,
+        blurbRes = R.string.theme_calm_blurb,
         light = CalmLight,
         dark = CalmDark,
     ),
     Tide(
         id = "tide",
-        label = "Tide",
-        blurb = "Cool and low-arousal. Good for long stretches of focused work.",
+        labelRes = R.string.theme_tide,
+        blurbRes = R.string.theme_tide_blurb,
         light = TideLight,
         dark = TideDark,
     ),
     Ember(
         id = "ember",
-        label = "Ember",
-        blurb = "Warm and activating. Myndora's own colours.",
+        labelRes = R.string.theme_ember,
+        blurbRes = R.string.theme_ember_blurb,
         light = EmberLight,
         dark = EmberDark,
     ),
     Bloom(
         id = "bloom",
-        label = "Bloom",
-        blurb = "Boldest and brightest. For when nothing is holding your attention.",
+        labelRes = R.string.theme_bloom,
+        blurbRes = R.string.theme_bloom_blurb,
         light = BloomLight,
         dark = BloomDark,
     );
@@ -127,8 +128,8 @@ val LocalMyndoraAccents = compositionLocalOf {
 @Immutable
 data class ThemeSelection(
     val id: String,
-    val label: String,
-    val blurb: String,
+    @androidx.annotation.StringRes val labelRes: Int,
+    @androidx.annotation.StringRes val blurbRes: Int,
     val light: ThemePalette,
     val dark: ThemePalette,
 ) {
@@ -146,8 +147,8 @@ data class ThemeSelection(
             vividness: Vividness,
         ) = ThemeSelection(
             id = CUSTOM_ID,
-            label = "Yours",
-            blurb = "Built from the two colors you picked.",
+            labelRes = R.string.theme_yours,
+            blurbRes = R.string.theme_yours_blurb,
             light = customPalette(accentHue, supportHue, vividness, dark = false),
             dark = customPalette(accentHue, supportHue, vividness, dark = true),
         )
@@ -156,8 +157,8 @@ data class ThemeSelection(
 
 fun AppTheme.toSelection() = ThemeSelection(
     id = id,
-    label = label,
-    blurb = blurb,
+    labelRes = labelRes,
+    blurbRes = blurbRes,
     light = light,
     dark = dark,
 )

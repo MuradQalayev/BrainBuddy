@@ -16,9 +16,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
+import com.muradgalayev.brainbuddy.R
 
 @HiltViewModel
 class ModesViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val modeRepository: ModeRepository,
     private val modeManager: ModeManager,
 ) : ViewModel() {
@@ -74,7 +76,7 @@ class ModesViewModel @Inject constructor(
             if (loaded == null) {
                 loadedDraftId = id
                 _draftLoadError.value =
-                    "This mode is no longer available. It may have been deleted on another device."
+                    context.getString(R.string.modes_err_unavailable)
             } else {
                 loadedDraftId = id
                 _draft.value = loaded
@@ -91,7 +93,7 @@ class ModesViewModel @Inject constructor(
         if (_saving.value) return
         val draft = _draft.value ?: return onSaved(false)
         if (draft.name.isBlank()) {
-            _message.value = "Give the mode a name"
+            _message.value = context.getString(R.string.modes_err_name)
             return onSaved(false)
         }
         viewModelScope.launch {
@@ -101,11 +103,11 @@ class ModesViewModel @Inject constructor(
                     _draft.value = null
                     onSaved(true)
                 } else {
-                    _message.value = "Sign in again to save this mode"
+                    _message.value = context.getString(R.string.modes_err_sign_in)
                     onSaved(false)
                 }
             } catch (_: Exception) {
-                _message.value = "Couldn't save this mode. Try again."
+                _message.value = context.getString(R.string.modes_err_save)
                 onSaved(false)
             } finally {
                 _saving.value = false
@@ -132,7 +134,7 @@ class ModesViewModel @Inject constructor(
             try {
                 val removed = modeRepository.delete(id)
                 if (!removed) {
-                    _message.value = "Built-in modes can't be deleted — edit it instead"
+                    _message.value = context.getString(R.string.modes_err_builtin)
                 } else if (wasManuallySelected) {
                     // the deleted manual id can't remain durable. hand schedules control back, since explicit No
                     // mode now means something different and would pause them
@@ -140,7 +142,7 @@ class ModesViewModel @Inject constructor(
                 }
                 onDone(removed)
             } catch (_: Exception) {
-                _message.value = "Couldn't delete this mode. Try again."
+                _message.value = context.getString(R.string.modes_err_delete)
                 onDone(false)
             } finally {
                 _deleting.value = false

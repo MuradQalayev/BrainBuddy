@@ -44,6 +44,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.muradgalayev.brainbuddy.ui.accessibility.animationsOn
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // one setting a mode may override, as three choices rather than a switch. a plain on/off switch
 // can't say the thing that matters most here: don't touch this. every override is optional,
@@ -87,9 +89,9 @@ private fun TriStateSelector(
             .padding(3.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
-        SegmentButton("Don't change", value == null, accent, Modifier.weight(1.2f)) { onChange(null) }
-        SegmentButton("On", value == true, accent, Modifier.weight(1f)) { onChange(true) }
-        SegmentButton("Off", value == false, accent, Modifier.weight(1f)) { onChange(false) }
+        SegmentButton(stringResource(R.string.mode_dont_change), value == null, accent, Modifier.weight(1.2f)) { onChange(null) }
+        SegmentButton(stringResource(R.string.common_on), value == true, accent, Modifier.weight(1f)) { onChange(true) }
+        SegmentButton(stringResource(R.string.common_off), value == false, accent, Modifier.weight(1f)) { onChange(false) }
     }
 }
 
@@ -165,10 +167,10 @@ fun <T> OverrideSetRow(
     // null means the mode has no opinion
     selected: Set<T>?,
     options: List<T>,
-    optionLabel: (T) -> String,
+    optionLabel: @Composable (T) -> String,
     accent: Color,
     // warns rather than blocks, for choices that are legal but usually a mistake
-    warnWhenMissing: (T) -> String? = { null },
+    warnWhenMissing: @Composable (T) -> String? = { null },
     onChange: (Set<T>?) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -192,10 +194,10 @@ fun <T> OverrideSetRow(
                 .padding(3.dp),
             horizontalArrangement = Arrangement.spacedBy(3.dp),
         ) {
-            SegmentButton("Don't change", selected == null, accent, Modifier.weight(1f)) {
+            SegmentButton(stringResource(R.string.mode_dont_change), selected == null, accent, Modifier.weight(1f)) {
                 onChange(null)
             }
-            SegmentButton("Choose", selected != null, accent, Modifier.weight(1f)) {
+            SegmentButton(stringResource(R.string.mode_choose), selected != null, accent, Modifier.weight(1f)) {
                 if (selected == null) onChange(options.toSet())
             }
         }

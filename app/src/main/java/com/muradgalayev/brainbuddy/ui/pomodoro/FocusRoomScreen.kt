@@ -64,6 +64,8 @@ import com.muradgalayev.brainbuddy.data.repository.FocusRoomMember
 import com.muradgalayev.brainbuddy.ui.accessibility.animationsOn
 import com.muradgalayev.brainbuddy.ui.accessibility.speaking
 import kotlinx.coroutines.delay
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // the focus room: the place between accepting and working. it exists because 'both tap start'
 // needs somewhere to happen. doing it from a strip on the timer screen meant two people
@@ -95,20 +97,20 @@ fun FocusRoomScreen(
             Modifier.fillMaxWidth().padding(start = 8.dp, top = 8.dp, end = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = speaking("Back, staying in the room", onClose)) {
+            IconButton(onClick = speaking(stringResource(R.string.focus_back_staying), onClose)) {
                 Icon(
                     Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "Back — you stay in the room",
+                    contentDescription = stringResource(R.string.focus_back_stay_cd),
                 )
             }
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = "Focus room",
+                    text = stringResource(R.string.focus_room),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = "${state.readyCount} of ${state.members.size} ready",
+                    text = stringResource(R.string.focus_ready_count, state.readyCount, state.members.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                 )
@@ -158,11 +160,11 @@ fun FocusRoomScreen(
             Spacer(Modifier.height(8.dp))
             Text(
                 text = when {
-                    state.onBreak && state.isRunning -> "Break together \u2615"
-                    state.isRunning -> "Focusing together"
-                    state.everyoneReady -> "Starting…"
+                    state.onBreak && state.isRunning -> stringResource(R.string.focus_break_together)
+                    state.isRunning -> stringResource(R.string.focus_focusing_together)
+                    state.everyoneReady -> stringResource(R.string.focus_starting)
                     state.iAmReady -> waitingLine(state.members)
-                    else -> "Tap ready when you're at your desk"
+                    else -> stringResource(R.string.focus_tap_ready)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
@@ -184,7 +186,7 @@ fun FocusRoomScreen(
 
             if (!state.iAmReady) {
                 Button(
-                    onClick = speaking("I'm ready", viewModel::markReady),
+                    onClick = speaking(stringResource(R.string.focus_im_ready), viewModel::markReady),
                     modifier = Modifier.fillMaxWidth().height(54.dp),
                     shape = RoundedCornerShape(16.dp),
                 ) {
@@ -194,7 +196,7 @@ fun FocusRoomScreen(
                         modifier = Modifier.size(19.dp),
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text("I'm ready", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                    Text(stringResource(R.string.focus_im_ready), fontWeight = FontWeight.Bold, fontSize = 17.sp)
                 }
             } else if (!state.isRunning) {
                 // deliberately not a disabled button. a greyed Ready invites repeated tapping at the one
@@ -216,7 +218,7 @@ fun FocusRoomScreen(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "You're ready",
+                        stringResource(R.string.focus_youre_ready),
                         fontWeight = FontWeight.SemiBold,
                         color = colors.onSecondaryContainer,
                     )
@@ -228,11 +230,11 @@ fun FocusRoomScreen(
             // you from the session for good, while the back arrow just closes the screen and keeps your
             // place. two very different actions that looked identical before
             TextButton(
-                onClick = speaking("Leave the session", viewModel::leave),
+                onClick = speaking(stringResource(R.string.focus_leave), viewModel::leave),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
-                    text = if (state.isRunning) "Leave the session" else "Not now, leave",
+                    text = if (state.isRunning) stringResource(R.string.focus_leave) else stringResource(R.string.focus_not_now_leave),
                     color = colors.error.copy(alpha = 0.85f),
                 )
             }
@@ -242,12 +244,13 @@ fun FocusRoomScreen(
 }
 
 // 'Waiting for Ali' beats 'waiting for 1 person', it's a person so name them
+@Composable
 private fun waitingLine(members: List<FocusRoomMember>): String {
     val notReady = members.filterNot { it.isReady }
     return when {
-        notReady.isEmpty() -> "Starting…"
-        notReady.size == 1 -> "Waiting for ${notReady.first().name}"
-        else -> "Waiting for ${notReady.size} others"
+        notReady.isEmpty() -> stringResource(R.string.focus_starting)
+        notReady.size == 1 -> stringResource(R.string.focus_waiting_for, notReady.first().name)
+        else -> stringResource(R.string.focus_waiting_others, notReady.size)
     }
 }
 

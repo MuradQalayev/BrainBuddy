@@ -41,8 +41,8 @@ class FocusInviteNotifier @Inject constructor(
 
         val notification = NotificationCompat.Builder(context, NotificationChannels.FOCUS_NUDGE)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("$hostName wants to focus with you")
-            .setContentText("$minutes min · starts when you both tap start")
+            .setContentTitle(context.getString(R.string.focus_wants_with_you, hostName))
+            .setContentText(context.getString(R.string.focus_invite_body, minutes))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_SOCIAL)
             .setAutoCancel(true)

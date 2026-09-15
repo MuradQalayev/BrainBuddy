@@ -1,5 +1,8 @@
 package com.muradgalayev.brainbuddy.ui.together
 
+import com.muradgalayev.brainbuddy.ui.utils.resolve
+import com.muradgalayev.brainbuddy.testing.TestStrings
+import com.muradgalayev.brainbuddy.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -12,7 +15,10 @@ import org.junit.Test
 // genuinely opaque driver noise falls back
 class TogetherErrorMessageTest {
 
-    private fun message(raw: String) = Exception(raw).friendlyMessage("FALLBACK")
+    private val FALLBACK = TestStrings.en(R.string.together_check_failed)
+
+    private fun message(raw: String) =
+        Exception(raw).friendlyMessage(R.string.together_check_failed).resolve(TestStrings.en)
 
     @Test
     fun `guard clause from our own RPC is shown to the user as written`() {
@@ -44,7 +50,7 @@ class TogetherErrorMessageTest {
         val result = message(raw)
 
         assertTrue(result, result.contains("SQL migration"))
-        assertNotEquals("FALLBACK", result)
+        assertNotEquals(FALLBACK, result)
     }
 
     @Test
@@ -72,7 +78,7 @@ class TogetherErrorMessageTest {
 
         val result = message(raw)
 
-        assertNotEquals("FALLBACK", result)
+        assertNotEquals(FALLBACK, result)
         assertTrue(result, result.contains("expires_at"))
         // unescaped on the way out, the user shouldn't see backslashes
         assertTrue(result, !result.contains("\\\""))
@@ -114,25 +120,25 @@ class TogetherErrorMessageTest {
     fun `opaque driver noise falls back to the caller's wording`() {
         val raw = "SQLSTATE(08006) connection reset by peer while reading from socket"
 
-        assertEquals("FALLBACK", message(raw))
+        assertEquals(FALLBACK, message(raw))
     }
 
     @Test
     fun `a wall of json falls back rather than being dumped on screen`() {
         val raw = "{" + "\"detail\":\"" + "x".repeat(400) + "\"}"
 
-        assertEquals("FALLBACK", message(raw))
+        assertEquals(FALLBACK, message(raw))
     }
 
     @Test
     fun `transport details and bearer token never reach the UI`() {
         val raw = "POST https://project.supabase.co/rest/v1/rpc Authorization: Bearer secret-token"
 
-        assertEquals("FALLBACK", message(raw))
+        assertEquals(FALLBACK, message(raw))
     }
 
     @Test
     fun `an exception with no message falls back`() {
-        assertEquals("FALLBACK", Exception().friendlyMessage("FALLBACK"))
+        assertEquals(FALLBACK, Exception().friendlyMessage(R.string.together_check_failed).resolve(TestStrings.en))
     }
 }

@@ -12,6 +12,10 @@ import com.muradgalayev.brainbuddy.data.remote.dto.OutgoingRequestDto
 import com.muradgalayev.brainbuddy.data.remote.dto.SharedWellnessDto
 import com.muradgalayev.brainbuddy.data.remote.dto.TodoItemDto
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.functions.functions
+import io.github.jan.supabase.postgrest.query.Columns
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.json.buildJsonObject
@@ -32,6 +36,12 @@ class SupabaseTogetherDataSource @Inject constructor(
 ) {
     suspend fun listConnections(): List<ConnectionDto> =
         supabase.postgrest.rpc("list_my_connections").decodeAs()
+
+    // which of my connections are deactivated right now. scoped to my own connections server-side
+    suspend fun listDeactivatedConnections(): List<String> =
+        supabase.postgrest.rpc("list_deactivated_connections")
+            .decodeAs<List<com.muradgalayev.brainbuddy.data.remote.dto.DeactivatedUserDto>>()
+            .map { it.userId }
 
     suspend fun listIncomingRequests(): List<IncomingRequestDto> =
         supabase.postgrest.rpc("list_incoming_connection_requests").decodeAs()
@@ -145,17 +155,32 @@ class SupabaseTogetherDataSource @Inject constructor(
         supabase.from("todo_items").insert(todo)
     }
 
-    suspend fun deleteEventIAuthored(eventId: String) {
+    // returns whose calendar it was, so the owner can be told to sync. null when nothing was deleted
+    suspend fun deleteEventIAuthored(eventId: String): String? =
         supabase.from("calendar_events").delete {
+            select(Columns.list("user_id"))
             filter { eq("id", eventId) }
-        }
+        }.decodeList<OwnerRow>().firstOrNull()?.userId
+
+    suspend fun deleteTodoIAuthored(todoId: String): String? =
+        supabase.from("todo_items").delete {
+            select(Columns.list("user_id"))
+            filter { eq("id", todoId) }
+        }.decodeList<OwnerRow>().firstOrNull()?.userId
+
+    // server checks ownerId is one of my connections before pushing, see notify-together-change
+    suspend fun notifyTogetherChange(ownerId: String, kind: String) {
+        supabase.functions.invoke(
+            function = "notify-together-change",
+            body = buildJsonObject {
+                put("ownerId", ownerId)
+                put("kind", kind)
+            },
+        )
     }
 
-    suspend fun deleteTodoIAuthored(todoId: String) {
-        supabase.from("todo_items").delete {
-            filter { eq("id", todoId) }
-        }
-    }
+    @Serializable
+    private data class OwnerRow(@SerialName("user_id") val userId: String)
 
     // when a connection is already busy, between two dates. the RPC raises when AVAILABILITY isn't
     // granted rather than returning an empty list, and that distinction is load-bearing: 'no

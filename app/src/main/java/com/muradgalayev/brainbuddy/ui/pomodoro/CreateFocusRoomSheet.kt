@@ -44,6 +44,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.muradgalayev.brainbuddy.ui.accessibility.speaking
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // lengths worth one tap. anything else is what the timer's own picker is for
 private val DURATIONS = listOf(15, 25, 45, 50, 60)
@@ -79,20 +81,20 @@ fun CreateFocusRoomSheet(
                 .navigationBarsPadding(),
         ) {
             Text(
-                text = "Focus together",
+                text = stringResource(R.string.together_scope_focus),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = colors.onSurface,
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "You'll both tap start before the clock begins",
+                text = stringResource(R.string.focus_both_tap),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
             )
 
             Spacer(Modifier.height(22.dp))
-            SectionLabel("How long")
+            SectionLabel(stringResource(R.string.focus_how_long))
             Spacer(Modifier.height(10.dp))
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -108,13 +110,12 @@ fun CreateFocusRoomSheet(
             }
 
             Spacer(Modifier.height(24.dp))
-            SectionLabel("With who")
+            SectionLabel(stringResource(R.string.focus_with_who))
             Spacer(Modifier.height(6.dp))
 
             if (people.isEmpty()) {
                 Text(
-                    text = "Add someone in Together first, then they can turn on " +
-                        "Focus together for you.",
+                    text = stringResource(R.string.focus_add_someone_first),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 12.dp),
@@ -131,7 +132,7 @@ fun CreateFocusRoomSheet(
 
             Spacer(Modifier.height(20.dp))
             Button(
-                onClick = speaking("Create the room") {
+                onClick = speaking(stringResource(R.string.focus_create_room)) {
                     selected?.let { onCreate(listOf(it), minutes) }
                 },
                 // enabled only once both decisions are made. a Create that can fail on a missing choice teaches
@@ -141,7 +142,7 @@ fun CreateFocusRoomSheet(
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Text(
-                    text = if (sending) "Creating…" else "Create the room",
+                    text = if (sending) stringResource(R.string.focus_creating) else stringResource(R.string.focus_create_room),
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                 )
@@ -170,11 +171,11 @@ private fun DurationChip(minutes: Int, selected: Boolean, onClick: () -> Unit) {
             .background(
                 if (selected) colors.primary else colors.surfaceContainerHigh
             )
-            .clickable(onClick = speaking("$minutes minutes", onClick))
+            .clickable(onClick = speaking(stringResource(R.string.focus_n_minutes, minutes), onClick))
             .padding(horizontal = 18.dp, vertical = 11.dp),
     ) {
         Text(
-            text = "$minutes min",
+            text = stringResource(R.string.common_minutes_short, minutes),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
             color = if (selected) colors.onPrimary else colors.onSurface,
@@ -241,7 +242,7 @@ private fun PersonRow(
             )
             if (!enabled) {
                 Text(
-                    text = "Hasn't turned on Focus together yet",
+                    text = stringResource(R.string.focus_not_enabled),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant.copy(alpha = 0.7f),
                 )

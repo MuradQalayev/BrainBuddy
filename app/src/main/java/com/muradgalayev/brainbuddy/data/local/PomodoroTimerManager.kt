@@ -58,15 +58,16 @@ internal fun prepareStandaloneTimerState(
     else -> current
 }
 
-enum class AmbientSound(val label: String) {
-    RAIN("Rain"),
-    FOREST("Forest"),
-    OCEAN("Ocean Waves"),
-    FIREPLACE("Fireplace"),
-    WHITE_NOISE("White Noise"),
-    CAFE("Cafe"),
-    BIRDS("Birds"),
-    WIND("Wind")
+// plus: part of Myndora Plus. rain and white noise stay free, the two most-reached-for focus sounds
+enum class AmbientSound(@androidx.annotation.StringRes val labelRes: Int, val plus: Boolean = true) {
+    RAIN(com.muradgalayev.brainbuddy.R.string.sound_rain, plus = false),
+    FOREST(com.muradgalayev.brainbuddy.R.string.sound_forest),
+    OCEAN(com.muradgalayev.brainbuddy.R.string.sound_ocean),
+    FIREPLACE(com.muradgalayev.brainbuddy.R.string.sound_fireplace),
+    WHITE_NOISE(com.muradgalayev.brainbuddy.R.string.sound_white_noise, plus = false),
+    CAFE(com.muradgalayev.brainbuddy.R.string.sound_cafe),
+    BIRDS(com.muradgalayev.brainbuddy.R.string.sound_birds),
+    WIND(com.muradgalayev.brainbuddy.R.string.sound_wind)
 }
 
 data class PomodoroQueueItem(

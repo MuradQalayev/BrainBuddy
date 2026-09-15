@@ -1,5 +1,7 @@
 package com.muradgalayev.brainbuddy.ui.pomodoro
 
+import androidx.compose.ui.res.stringResource
+import com.muradgalayev.brainbuddy.ui.utils.resolve
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -88,7 +90,6 @@ import com.muradgalayev.brainbuddy.ui.theme.myndoraAccents
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.AmbientSoundPill
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.BottomControls
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.CalendarPlanStrip
-import com.muradgalayev.brainbuddy.ui.pomodoro.components.DailyFocusCard
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.FocusRing
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.HistorySummarySwitcher
 import com.muradgalayev.brainbuddy.ui.pomodoro.components.SessionTypePills
@@ -103,6 +104,7 @@ fun PomodoroScreen(
     onBackClick: () -> Unit,
     onOpenBreakdown: (String) -> Unit = {},
     onOpenFocusRoom: (String) -> Unit = {},
+    onOpenPlan: (com.muradgalayev.brainbuddy.domain.model.PlanFeature) -> Unit = {},
     viewModel: PomodoroViewModel = hiltViewModel()
 ) {
     val timerState by viewModel.timerState.collectAsState()
@@ -112,6 +114,8 @@ fun PomodoroScreen(
     val focusTogetherState by focusTogetherViewModel.uiState.collectAsState()
     val roomOwnsTheClock = focusTogetherState.activeSession != null
     val spotifyPlaylistLink by viewModel.spotifyPlaylistLink.collectAsState()
+    val soundDownloads by viewModel.soundDownloads.collectAsState()
+    val plusActive = viewModel.plan.collectAsState().value == com.muradgalayev.brainbuddy.domain.model.Plan.Plus
     val pomodoroQueue by viewModel.pomodoroQueue.collectAsState()
     val planCompletedIds by viewModel.planCompletedIds.collectAsState()
     var planExpanded by rememberSaveable { mutableStateOf(false) }
@@ -121,6 +125,11 @@ fun PomodoroScreen(
     var showSoundSheet by rememberSaveable { mutableStateOf(false) }
     var showFocusStatus by rememberSaveable { mutableStateOf(false) }
     var showHistoryDialog by rememberSaveable { mutableStateOf(false) }
+    var showTogetherSheet by rememberSaveable { mutableStateOf(false) }
+    // nothing pending with anyone: the together offer is just a pill beside the sound one
+    val togetherResting = focusTogetherState.invites.isEmpty() &&
+        focusTogetherState.waitingSession == null &&
+        focusTogetherState.activeSession == null
     val sessionTypes = PomodoroSessionType.entries
     val pagerState = rememberPagerState(
         initialPage = sessionTypes.indexOf(timerState.sessionType).coerceAtLeast(0),
@@ -281,12 +290,12 @@ fun PomodoroScreen(
             IconButton(onClick = onBackClick) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.common_back),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
             Text(
-                text = "Focus Timer",
+                text = stringResource(R.string.focus_timer_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -334,9 +343,9 @@ fun PomodoroScreen(
                         ),
                         contentDescription = when {
                             uiExtra.focusModeControlledByMode ->
-                                "Focus silence managed by ${uiExtra.controllingModeName} mode"
-                            uiExtra.focusModeEnabled -> "Focus Mode Enabled"
-                            else -> "Focus Mode Disabled"
+                                stringResource(R.string.focus_silence_by_mode_cd, uiExtra.controllingModeName.orEmpty())
+                            uiExtra.focusModeEnabled -> stringResource(R.string.focus_mode_enabled_cd)
+                            else -> stringResource(R.string.focus_mode_disabled_cd)
                         },
                         tint = if (uiExtra.focusModeEnabled)
                             arcColor
@@ -396,9 +405,9 @@ fun PomodoroScreen(
                 Text(
                     text = when {
                         uiExtra.focusModeControlledByMode ->
-                            "${uiExtra.controllingModeName} mode manages focus silence"
-                        uiExtra.focusModeEnabled -> "Focus mode enabled"
-                        else -> "Focus mode disabled"
+                            stringResource(R.string.focus_mode_manages, uiExtra.controllingModeName.orEmpty())
+                        uiExtra.focusModeEnabled -> stringResource(R.string.focus_mode_enabled)
+                        else -> stringResource(R.string.focus_mode_disabled)
                     },
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                     color = if (uiExtra.focusModeEnabled) {
@@ -440,24 +449,6 @@ fun PomodoroScreen(
 
             if (pomodoroQueue != null) {
                 Spacer(modifier = Modifier.height(12.dp))
-            }
-
-            AnimatedVisibility(
-                visible = isIdle && pomodoroQueue == null,
-                enter = fadeIn(tween(200)) + expandVertically(animationSpec = tween(220)),
-                exit = fadeOut(tween(150)) + shrinkVertically(animationSpec = tween(180))
-            ) {
-                Column {
-                    DailyFocusCard(
-                        hasFocusedToday = uiExtra.hasFocusedToday,
-                        todayLabel = uiExtra.todayFocusLabel,
-                        comparisonMessage = uiExtra.comparisonMessage,
-                        emptyStateTitle = uiExtra.emptyStateTitle,
-                        emptyStateMessage = uiExtra.emptyStateMessage,
-                        accentColor = arcColor
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
             }
 
             SessionTypePills(
@@ -532,8 +523,8 @@ fun PomodoroScreen(
                             ) {
                                 Text(
                                     text = when (timerState.sessionType) {
-                                        PomodoroSessionType.FOCUS -> "FOCUS SESSION"
-                                        PomodoroSessionType.BREAK -> "BREAK"
+                                        PomodoroSessionType.FOCUS -> stringResource(R.string.focus_session_caps)
+                                        PomodoroSessionType.BREAK -> stringResource(R.string.focus_break_caps)
                                     },
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                     color = arcColor,
@@ -595,13 +586,13 @@ fun PomodoroScreen(
                                     Spacer(modifier = Modifier.height(4.dp))
 
                                     val statusText = when {
-                                        scrubbing && atEnd -> "Release to finish"
-                                        scrubbing -> "Drag to adjust"
+                                        scrubbing && atEnd -> stringResource(R.string.focus_release_finish)
+                                        scrubbing -> stringResource(R.string.focus_drag_adjust)
                                         else -> when (timerState.timerState) {
-                                            TimerState.IDLE -> "Tap to set duration"
-                                            TimerState.RUNNING -> "Drag the ring to adjust"
-                                            TimerState.PAUSED -> "Paused"
-                                            TimerState.COMPLETED -> "Session completed"
+                                            TimerState.IDLE -> stringResource(R.string.focus_tap_duration)
+                                            TimerState.RUNNING -> stringResource(R.string.focus_drag_ring)
+                                            TimerState.PAUSED -> stringResource(R.string.focus_paused)
+                                            TimerState.COMPLETED -> stringResource(R.string.focus_session_completed)
                                         }
                                     }
 
@@ -628,7 +619,8 @@ fun PomodoroScreen(
                                 Spacer(modifier = Modifier.height(14.dp))
 
                                 Text(
-                                    text = "${timerState.completedSessions} session${if (timerState.completedSessions > 1) "s" else ""} completed",
+                                    text = if (timerState.completedSessions == 1) stringResource(R.string.focus_one_session_done)
+                                    else stringResource(R.string.focus_sessions_done, timerState.completedSessions),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = arcColor,
                                     fontWeight = FontWeight.SemiBold
@@ -637,11 +629,33 @@ fun PomodoroScreen(
 
                             Spacer(modifier = Modifier.height(18.dp))
 
-                            AmbientSoundPill(
-                                selectedSound = timerState.selectedAmbientSound,
-                                accentColor = arcColor,
-                                onClick = { showSoundSheet = true }
-                            )
+                            // the two things you can add to a session, side by side and the same shape. focus together
+                            // used to be a full-width strip between the ring and Start
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                AmbientSoundPill(
+                                    selectedSound = timerState.selectedAmbientSound,
+                                    accentColor = arcColor,
+                                    onClick = { showSoundSheet = true },
+                                    downloading = timerState.selectedAmbientSound
+                                        ?.let { soundDownloads[it] } is com.muradgalayev.brainbuddy.data.local.SoundDownload.Downloading,
+                                )
+                                if (togetherResting) {
+                                    FocusTogetherPill(
+                                        people = focusTogetherState.candidates,
+                                        sending = focusTogetherState.sending,
+                                        // starting a room is Plus. joining someone else's invite stays free
+                                        onClick = {
+                                            if (plusActive) showTogetherSheet = true
+                                            else onOpenPlan(com.muradgalayev.brainbuddy.domain.model.PlanFeature.FocusTogether)
+                                        },
+                                        locked = !plusActive,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -650,23 +664,23 @@ fun PomodoroScreen(
             Spacer(modifier = Modifier.height(20.dp))
         }
 
-        // directly under the ring and always present, invite or not. below the controls it sat past
-        // the fold and was found by nobody, and hidden when no one had granted permission it was
-        // invisible to exactly the person who needed to learn the feature existed
+        // only an invite, a room waiting to start or one in progress shows here, the resting offer is
+        // the pill in the timer card. it still hosts the invite sheet and the jump into a new room
         FocusTogetherCard(
             focusMinutes = (timerState.totalDurationMs / 60_000).toInt().coerceIn(5, 180),
+            showSheet = showTogetherSheet,
+            onDismissSheet = { showTogetherSheet = false },
             onOpenRoom = onOpenFocusRoom,
             viewModel = focusTogetherViewModel,
-            modifier = Modifier.padding(horizontal = 20.dp),
+            modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
         )
-        Spacer(modifier = Modifier.height(16.dp))
 
         BottomControls(
             timerState = timerState.timerState,
             accentColor = arcColor,
             accentGradient = if (timerState.sessionType == PomodoroSessionType.FOCUS) focusGradient
             else breakGradient,
-            onStart = viewModel::start,
+            onStart = viewModel::requestStart,
             onPause = viewModel::pause,
             onResume = viewModel::resume,
             onReset = viewModel::reset,
@@ -696,6 +710,13 @@ fun PomodoroScreen(
             onOpenSpotifyPlaylist = viewModel::openSpotifyPlaylist,
             accentColor = arcColor,
             onDismiss = { showSoundSheet = false },
+            downloads = soundDownloads,
+            onRetry = viewModel::retrySoundDownload,
+            plusActive = plusActive,
+            onUnlock = {
+                showSoundSheet = false
+                onOpenPlan(com.muradgalayev.brainbuddy.domain.model.PlanFeature.AmbientSounds)
+            },
         )
     }
 
@@ -708,25 +729,50 @@ fun PomodoroScreen(
         )
     }
 
+    // asked before the first few focus sessions only, then it's on the person to use the icon up top
+    if (uiExtra.showDndStartPrompt) {
+        AlertDialog(
+            onDismissRequest = { viewModel.answerDndStartPrompt(turnOn = false) },
+            icon = {
+                Icon(
+                    painter = painterResource(R.drawable.ic_dnd_on),
+                    contentDescription = null,
+                    tint = arcColor,
+                    modifier = Modifier.size(30.dp),
+                )
+            },
+            title = { Text(stringResource(R.string.focus_dnd_prompt_title)) },
+            text = { Text(stringResource(R.string.focus_dnd_prompt_body)) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.answerDndStartPrompt(turnOn = true) }) {
+                    Text(stringResource(R.string.focus_dnd_prompt_on), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.answerDndStartPrompt(turnOn = false) }) {
+                    Text(stringResource(R.string.common_not_now_title))
+                }
+            },
+        )
+    }
+
     // DND permission dialog
     if (uiExtra.showPermissionDialog) {
         AlertDialog(
             onDismissRequest = viewModel::dismissPermissionDialog,
-            title = { Text("Focus Mode Permission") },
+            title = { Text(stringResource(R.string.focus_permission_title)) },
             text = {
                 Text(
-                    "To silence notifications during focus sessions, Myndora needs " +
-                    "Do Not Disturb access. This lets the app temporarily mute notifications " +
-                    "while your timer is running and restore them when it ends."
+                    stringResource(R.string.focus_permission_body)
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     permissionLauncher.launch(viewModel.getFocusModePermissionIntent())
-                }) { Text("Open Settings") }
+                }) { Text(stringResource(R.string.common_open_settings_title)) }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::dismissPermissionDialog) { Text("Not Now") }
+                TextButton(onClick = viewModel::dismissPermissionDialog) { Text(stringResource(R.string.common_not_now_title)) }
             }
         )
     }

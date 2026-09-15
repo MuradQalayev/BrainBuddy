@@ -22,6 +22,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Group
+import androidx.compose.material.icons.rounded.AutoAwesome
+import com.muradgalayev.brainbuddy.ui.theme.myndoraAccents
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +40,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -50,11 +53,13 @@ import coil.request.ImageRequest
 import com.muradgalayev.brainbuddy.data.repository.FocusSession
 import com.muradgalayev.brainbuddy.ui.accessibility.speaking
 import kotlinx.coroutines.delay
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
-// focus together, the body-doubling surface on the Pomodoro screen. three states, only one of
-// them on screen at a time: someone asked you (the invite, with Join and Not now), a session
-// is running (who else is in it and how long is left), or neither and you have people who
-// allow it (the invite button).
+// focus together, the body-doubling surface on the Pomodoro screen. this card is the three
+// states that need attention: someone asked you (Join and Not now), a room waiting on the others,
+// or one in progress. with none of those it draws nothing, and the offer is FocusTogetherPill
+// in the timer card instead.
 // nothing here says what anyone is working on, because nothing upstream carries it. what's
 // shared is that a person is present and a countdown they are both inside, which is the entire
 // mechanism body doubling runs on.
@@ -65,16 +70,17 @@ import kotlinx.coroutines.delay
 fun FocusTogetherCard(
     modifier: Modifier = Modifier,
     focusMinutes: Int,
+    showSheet: Boolean,
+    onDismissSheet: () -> Unit,
     onOpenRoom: (String) -> Unit = {},
     viewModel: FocusTogetherViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
-    var showSheet by remember { mutableStateOf(false) }
     val invite = state.invites.firstOrNull()
     val waiting = state.waitingSession
     val active = state.activeSession
 
-    Surface(
+    if (invite != null || waiting != null || active != null || state.error != null) Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.40f),
@@ -101,15 +107,10 @@ fun FocusTogetherCard(
                     session = active,
                     onOpen = { onOpenRoom(active.id) },
                 )
-                else -> InvitePicker(
-                    people = state.candidates,
-                    sending = state.sending,
-                    onOpenSheet = { showSheet = true },
-                )
             }
 
             state.error?.let { message ->
-                Spacer(Modifier.height(8.dp))
+                if (invite != null || waiting != null || active != null) Spacer(Modifier.height(8.dp))
                 Text(
                     text = message,
                     style = MaterialTheme.typography.bodySmall,
@@ -125,7 +126,7 @@ fun FocusTogetherCard(
             defaultMinutes = focusMinutes,
             sending = state.sending,
             onCreate = { ids, minutes -> viewModel.invite(ids, minutes) },
-            onDismiss = { showSheet = false },
+            onDismiss = onDismissSheet,
         )
     }
 
@@ -133,7 +134,7 @@ fun FocusTogetherCard(
     // to find your own way in is the moment an invite gets sent and then forgotten by the sender
     LaunchedEffect(state.createdSessionId) {
         val id = state.createdSessionId ?: return@LaunchedEffect
-        showSheet = false
+        onDismissSheet()
         viewModel.consumeCreatedSession()
         onOpenRoom(id)
     }
@@ -149,18 +150,18 @@ private fun WaitingRow(session: FocusSession, onCancel: () -> Unit) {
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                text = "Waiting for ${session.pendingCount} to tap start",
+                text = stringResource(R.string.focus_waiting_start, session.pendingCount),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
             )
             Text(
-                text = "${session.focusMinutes} min · starts when everyone's in",
+                text = stringResource(R.string.focus_starts_everyone, session.focusMinutes),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.75f),
             )
         }
-        TextButton(onClick = speaking("Cancel", onCancel)) { Text("Cancel") }
+        TextButton(onClick = speaking(stringResource(R.string.common_cancel), onCancel)) { Text(stringResource(R.string.common_cancel)) }
     }
 }
 
@@ -175,14 +176,14 @@ private fun InviteRow(
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                text = "${session.hostName} wants to focus with you",
+                text = stringResource(R.string.focus_wants_with_you, session.hostName),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
             )
             Text(
                 // the clock starts on joining, not on inviting, or the number reads as time already lost
-                text = "${session.focusMinutes} min · starts when you join",
+                text = stringResource(R.string.focus_starts_join, session.focusMinutes),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.75f),
             )
@@ -193,19 +194,19 @@ private fun InviteRow(
         // decline stays quiet and Join is the filled one. two identical text buttons made the choice
         // look symmetrical, when accepting is the whole point and declining is the escape hatch
         TextButton(
-            onClick = speaking("Not now", onDecline),
+            onClick = speaking(stringResource(R.string.common_not_now), onDecline),
             modifier = Modifier.weight(1f),
         ) {
-            Text("Not now", color = MaterialTheme.colorScheme.onSecondaryContainer)
+            Text(stringResource(R.string.common_not_now), color = MaterialTheme.colorScheme.onSecondaryContainer)
         }
         Spacer(Modifier.width(8.dp))
         Button(
-            onClick = speaking("Join", onJoin),
+            onClick = speaking(stringResource(R.string.focus_join), onJoin),
             modifier = Modifier.weight(1f).height(40.dp),
             shape = RoundedCornerShape(12.dp),
             contentPadding = PaddingValues(horizontal = 12.dp),
         ) {
-            Text("Join", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.focus_join), fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -222,7 +223,7 @@ private fun ActiveRow(session: FocusSession, onOpen: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .clickable(onClick = speaking("Open the focus room", onOpen))
+            .clickable(onClick = speaking(stringResource(R.string.focus_open_room), onOpen))
             .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -233,7 +234,7 @@ private fun ActiveRow(session: FocusSession, onOpen: () -> Unit) {
                 append(
                     if (session.phase == com.muradgalayev.brainbuddy.data.repository
                             .FocusPhase.BREAK
-                    ) "On a break with " else "Focusing with ",
+                    ) stringResource(R.string.focus_break_with) else stringResource(R.string.focus_focusing_with),
                 )
                 append(session.hostName)
                 if (session.joinedCount > 2) append(" +${session.joinedCount - 2}")
@@ -251,69 +252,72 @@ private fun ActiveRow(session: FocusSession, onOpen: () -> Unit) {
     }
 }
 
-// the resting state: a pill under the ring showing who you could work alongside. faces before
-// words, a stack of the people you actually know says what this does faster than the label
-// can, and it's the same avatar-stack idiom the Together card on the workspace uses.
-// tapping opens a sheet rather than expanding a list here, because choosing a length is part
-// of the invite and there's no room for that on a strip wedged between the ring and Start
+// the resting offer, a pill next to the ambient sound one and cut to match it. faces before
+// words: a stack of the people you actually know says what this does faster than the label.
+// tapping opens the sheet, because choosing a length is part of the invite
 @Composable
-private fun InvitePicker(
+fun FocusTogetherPill(
     people: List<FocusCandidate>,
     sending: Boolean,
-    onOpenSheet: () -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    // Free account: a Plus sparkle, and the tap opens the plan instead of the sheet
+    locked: Boolean = false,
 ) {
     val colors = MaterialTheme.colorScheme
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .clickable(enabled = !sending, onClick = speaking("Focus together", onOpenSheet))
-            .padding(vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    val label = if (sending) stringResource(R.string.focus_creating) else stringResource(R.string.focus_together_short)
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(999.dp),
+        color = colors.onSurface.copy(alpha = 0.06f),
+        enabled = !sending,
+        onClick = speaking(stringResource(R.string.together_scope_focus), onClick),
     ) {
-        if (people.isEmpty()) {
-            androidx.compose.material3.Icon(
-                imageVector = Icons.Rounded.Group,
-                contentDescription = null,
-                tint = colors.onSecondaryContainer.copy(alpha = 0.7f),
-                modifier = Modifier.size(18.dp),
-            )
-        } else {
-            AvatarStack(people.take(3))
-        }
-        Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = if (sending) "Creating\u2026" else "Focus together",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = colors.onSecondaryContainer,
-            )
+        Row(
+            modifier = Modifier.padding(start = if (people.isEmpty()) 14.dp else 8.dp, end = 14.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             if (people.isEmpty()) {
-                Text(
-                    text = "Add someone in Together to work alongside them",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.onSecondaryContainer.copy(alpha = 0.7f),
+                androidx.compose.material3.Icon(
+                    imageVector = Icons.Rounded.Group,
+                    contentDescription = null,
+                    tint = colors.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
+            } else {
+                AvatarStack(people.take(3), size = 22.dp, ringColor = colors.surfaceContainerHighest)
+            }
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Medium,
+                color = colors.onSurfaceVariant,
+            )
+            if (locked) {
+                Spacer(Modifier.width(6.dp))
+                androidx.compose.material3.Icon(
+                    imageVector = Icons.Rounded.AutoAwesome,
+                    contentDescription = stringResource(R.string.plan_locked_cd),
+                    tint = MaterialTheme.myndoraAccents.accent,
+                    modifier = Modifier.size(15.dp),
                 )
             }
         }
-        Text(
-            text = "\u203a",
-            style = MaterialTheme.typography.titleMedium,
-            color = colors.onSecondaryContainer.copy(alpha = 0.6f),
-        )
     }
 }
 
 // overlapping faces, newest first. same idiom as the workspace Together card
 @Composable
-private fun AvatarStack(people: List<FocusCandidate>) {
-    Row {
-        people.forEachIndexed { index, person ->
-            Box(Modifier.offset(x = if (index == 0) 0.dp else (-8 * index).dp)) {
-                Avatar(person, size = 26.dp, dimmed = !person.allowed, ringed = true)
-            }
+private fun AvatarStack(
+    people: List<FocusCandidate>,
+    size: androidx.compose.ui.unit.Dp,
+    ringColor: Color,
+) {
+    // overlap by a third of a face. offset alone would leave the row as wide as the unshifted faces
+    Row(horizontalArrangement = Arrangement.spacedBy(-(size / 3))) {
+        people.forEach { person ->
+            Avatar(person, size = size, dimmed = !person.allowed, ringColor = ringColor)
         }
     }
 }
@@ -323,18 +327,15 @@ private fun Avatar(
     person: FocusCandidate,
     size: androidx.compose.ui.unit.Dp,
     dimmed: Boolean,
-    ringed: Boolean = false,
+    ringColor: Color,
 ) {
     val colors = MaterialTheme.colorScheme
-    val base = Modifier
+    // a ring in the colour behind the stack is what separates one face from the next
+    val shaped = Modifier
         .size(size)
         .clip(CircleShape)
         .background(colors.primary.copy(alpha = if (dimmed) 0.15f else 0.30f))
-    val shaped = if (ringed) {
-        base.border(1.5.dp, colors.secondaryContainer, CircleShape)
-    } else {
-        base
-    }
+        .border(1.5.dp, ringColor, CircleShape)
 
     Box(shaped, contentAlignment = Alignment.Center) {
         if (person.avatarUrl != null) {

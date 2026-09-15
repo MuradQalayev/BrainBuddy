@@ -52,6 +52,12 @@ class AppearancePreferencesViewModel @Inject constructor(
     val readAloudTaps = preferencesManager.readAloudTaps
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    // Called only by the registration appearance screen, so its live preview shows the base theme
+    // instead of a scheduled mode overlay and its writes are not rejected by the Settings guard.
+    fun setAppearanceSetupActive(active: Boolean) {
+        modeManager.setAppearanceSetupActive(active)
+    }
+
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch {
             if (modeManager.activeModeNow() != null) return@launch

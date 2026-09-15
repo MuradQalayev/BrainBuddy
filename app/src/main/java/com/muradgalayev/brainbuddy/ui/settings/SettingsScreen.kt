@@ -1,5 +1,10 @@
 package com.muradgalayev.brainbuddy.ui.settings
 
+import com.muradgalayev.brainbuddy.ui.settings.components.flag
+import androidx.compose.material.icons.outlined.Language
+import com.muradgalayev.brainbuddy.ui.settings.components.LanguageSheet
+import com.muradgalayev.brainbuddy.ui.settings.components.autonym
+import com.muradgalayev.brainbuddy.ui.settings.components.currentAppLanguage
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.animation.AnimatedVisibility
@@ -64,6 +69,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -100,6 +106,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.muradgalayev.brainbuddy.ui.plan.PlusBadge
 import com.muradgalayev.brainbuddy.ui.theme.myndoraAccents
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -121,6 +128,7 @@ import com.muradgalayev.brainbuddy.ui.modes.modeAccentColor
 import com.muradgalayev.brainbuddy.ui.modes.modeIcon
 import com.muradgalayev.brainbuddy.ui.modes.scheduleSummary
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
 
 private val CardCorner = 24.dp
 private val IconCircleSize = 44.dp
@@ -142,8 +150,14 @@ fun SettingsScreen(
     onOpenLinkedDevices: () -> Unit = {},
     onOpenTogether: () -> Unit = {},
     onOpenModes: () -> Unit = {},
+    onOpenPlan: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+    var languageDialogOpen by remember { mutableStateOf(false) }
+    if (languageDialogOpen) LanguageSheet(onDismiss = { languageDialogOpen = false })
+    var qrSheetOpen by rememberSaveable { mutableStateOf(false) }
+    if (qrSheetOpen) com.muradgalayev.brainbuddy.ui.together.MyQrCodeSheet(onDismiss = { qrSheetOpen = false })
     val themeMode by viewModel.themeMode.collectAsState()
     val activeMode by viewModel.activeMode.collectAsState()
     val fontMode by viewModel.fontMode.collectAsState()
@@ -160,6 +174,7 @@ fun SettingsScreen(
     val pomodoroBreakReminders by viewModel.pomodoroBreakReminders.collectAsState()
     val fontSize by viewModel.fontSize.collectAsState()
     val loggedOut by viewModel.loggedOut.collectAsState()
+    val signingOut by viewModel.signingOut.collectAsState()
     val exportingToCalendar by viewModel.exportingToCalendar.collectAsState()
     val calendarExportMessage by viewModel.calendarExportMessage.collectAsState()
     val profileExporting by viewModel.profileExportInProgress.collectAsState()
@@ -169,8 +184,10 @@ fun SettingsScreen(
     val healthConnectState by viewModel.healthConnectState.collectAsState()
     val aiHealthPersonalization by viewModel.aiHealthPersonalization.collectAsState(initial = false)
     val profile by viewModel.profile.collectAsState()
+    val plan by viewModel.plan.collectAsState()
+    val plusActive = plan == com.muradgalayev.brainbuddy.domain.model.Plan.Plus
     val surveyCompleted by viewModel.surveyCompleted.collectAsState()
-    val questionnaireProgress by viewModel.questionnaireProgress.collectAsState()
+    val questionnaireProgress by viewModel.surveyProgress.collectAsState()
     val profileSaving by viewModel.profileSaving.collectAsState()
     val profileSaveMessage by viewModel.profileSaveMessage.collectAsState()
     val passwordResetState by viewModel.passwordResetState.collectAsState()
@@ -178,6 +195,22 @@ fun SettingsScreen(
     val togetherConnections by viewModel.togetherConnections.collectAsState()
     var editProfileOpen by rememberSaveable { mutableStateOf(false) }
     var passwordResetOpen by rememberSaveable { mutableStateOf(false) }
+
+    // arriving here because the assistant was asked about passwords or the app's language: open the
+    // sheet it latched, then clear it so returning to Settings by hand doesn't reopen it
+    val pendingSheet by viewModel.pendingSettingsSheet.collectAsState()
+    LaunchedEffect(pendingSheet) {
+        when (pendingSheet) {
+            com.muradgalayev.brainbuddy.domain.ai.AiNavigator.SettingsSheet.PasswordSignIn -> {
+                viewModel.clearPasswordResetFeedback()
+                passwordResetOpen = true
+            }
+            com.muradgalayev.brainbuddy.domain.ai.AiNavigator.SettingsSheet.Language ->
+                languageDialogOpen = true
+            null -> return@LaunchedEffect
+        }
+        viewModel.consumeSettingsSheet()
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -222,12 +255,13 @@ fun SettingsScreen(
         }
     }
 
+    val profileUpdated = stringResource(R.string.settings_profile_updated)
     LaunchedEffect(profileSaveMessage) {
         val msg = profileSaveMessage
         if (msg != null) {
             snackbarHostState.showSnackbar(msg)
 
-            if (msg == "Profile updated") {
+            if (msg == profileUpdated) {
                 editProfileOpen = false
             }
 
@@ -238,7 +272,7 @@ fun SettingsScreen(
     LaunchedEffect(passwordResetState.sentTo) {
         val email = passwordResetState.sentTo ?: return@LaunchedEffect
         passwordResetOpen = false
-        snackbarHostState.showSnackbar("Password link sent to $email")
+        snackbarHostState.showSnackbar(context.getString(R.string.settings_password_link_sent, email))
         viewModel.clearPasswordResetFeedback()
     }
 
@@ -278,7 +312,7 @@ fun SettingsScreen(
             // title header
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Settings",
+                text = stringResource(R.string.common_settings),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -292,17 +326,20 @@ fun SettingsScreen(
 
             // profile card
             ProfileCard(
+                plusActive = plusActive,
+                onOpenPlan = onOpenPlan,
                 name = profile.name,
                 username = profile.username,
                 email = profile.email,
                 avatarUrl = profile.avatarUrl,
                 onEditProfile = onEditProfile,
+                onOpenQr = { qrSheetOpen = true },
                 downloadInProgress = profileExporting,
                 onDownloadProfile = { viewModel.downloadMyProfile() },
                 modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
             )
 
-            if (!surveyCompleted) {
+            if (!surveyCompleted || questionnaireProgress != null) {
                 Spacer(modifier = Modifier.height(12.dp))
                 CompleteSurveyBanner(
                     progress = questionnaireProgress,
@@ -322,7 +359,7 @@ fun SettingsScreen(
                     .padding(horizontal = ScreenHorizontalPadding)
             ) {
                 // about you
-                SectionHeader(title = "About You")
+                SectionHeader(title = stringResource(R.string.settings_about_you))
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -330,13 +367,24 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                SectionHeader(title = "Account")
+                SectionHeader(title = stringResource(R.string.settings_account))
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 SettingsNavRow(
-                    title = "Password & sign-in",
-                    subtitle = "Create or reset your password",
+                    title = stringResource(R.string.plan_name),
+                    subtitle = if (plusActive) stringResource(R.string.plan_settings_active)
+                    else stringResource(R.string.plan_settings_join),
+                    icon = Icons.Rounded.AutoAwesome,
+                    iconTint = MaterialTheme.myndoraAccents.accent,
+                    onClick = onOpenPlan,
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                SettingsNavRow(
+                    title = stringResource(R.string.settings_password_signin),
+                    subtitle = stringResource(R.string.settings_password_signin_sub),
                     icon = Icons.Rounded.Lock,
                     iconTint = MaterialTheme.colorScheme.secondary,
                     onClick = {
@@ -348,7 +396,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(28.dp))
 
                 // general
-                SectionHeader(title = "General")
+                SectionHeader(title = stringResource(R.string.settings_general))
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -359,11 +407,11 @@ fun SettingsScreen(
                     scheduleSummary(it.days, it.startMinute, it.endMinute, it.enabled)
                 }
                 SettingsNavRow(
-                    title = "Modes",
+                    title = stringResource(R.string.settings_modes),
                     subtitle = when {
-                        runningMode == null -> "Create calm, focused setups that switch together"
-                        activeSchedule != null -> "${runningMode.name} active • $activeSchedule"
-                        else -> "${runningMode.name} active • switched on manually"
+                        runningMode == null -> stringResource(R.string.settings_modes_sub)
+                        activeSchedule != null -> stringResource(R.string.settings_mode_running_sched, runningMode.name, activeSchedule)
+                        else -> stringResource(R.string.settings_mode_running_manual, runningMode.name)
                     },
                     icon = runningMode?.let { modeIcon(it.icon) } ?: Icons.Rounded.AutoAwesome,
                     iconTint = modeAccentColor(runningMode?.accent),
@@ -373,9 +421,9 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 SettingsNavRow(
-                    title = "Customization",
-                    subtitle = activeMode?.let { "Locked while ${it.name} mode is active" }
-                        ?: "Theme, font & display",
+                    title = stringResource(R.string.settings_customization),
+                    subtitle = activeMode?.let { stringResource(R.string.settings_locked_while, it.name) }
+                        ?: stringResource(R.string.settings_customization_sub),
                     icon = Icons.Outlined.Tune,
                     trailingIcon = if (activeMode != null) Icons.Rounded.Lock else null,
                     onClick = {
@@ -385,8 +433,7 @@ fun SettingsScreen(
                                 onOpenCustomization()
                             } else {
                                 snackbarHostState.showSnackbar(
-                                    "Customization isn't available while ${mode.name} mode is active. " +
-                                        "Turn it off or edit that mode first."
+                                    context.getString(R.string.settings_customization_snackbar, mode.name)
                                 )
                             }
                         }
@@ -395,9 +442,22 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
+                // outside Customization on purpose: a mode can lock the look of the app, never its language
                 SettingsNavRow(
-                    title = "Notifications",
-                    subtitle = "Reminders, daily summary & nudges",
+                    title = stringResource(R.string.language_title),
+                    subtitle = currentAppLanguage().let { language ->
+                        stringResource(R.string.language_settings_subtitle, "${language.flag} ${language.autonym}")
+                    },
+                    icon = Icons.Outlined.Language,
+                    iconTint = MaterialTheme.colorScheme.secondary,
+                    onClick = { languageDialogOpen = true },
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                SettingsNavRow(
+                    title = stringResource(R.string.settings_notifications),
+                    subtitle = stringResource(R.string.settings_notifications_sub),
                     icon = Icons.Outlined.Notifications,
                     iconTint = MaterialTheme.colorScheme.secondary,
                     onClick = onOpenNotifications,
@@ -406,15 +466,15 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Myndora AI
-                SectionHeader(title = "Myndora AI")
+                SectionHeader(title = stringResource(R.string.ai_myndora_ai))
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 SettingsNavRow(
-                    title = "Myndora AI",
+                    title = stringResource(R.string.ai_myndora_ai),
                     subtitle = if (healthConnectState.connected && !aiHealthPersonalization)
-                        "1 boost available • unlock wellness-aware support"
-                    else "Voice, wellness personalization & preferences",
+                        stringResource(R.string.settings_ai_boost)
+                    else stringResource(R.string.settings_ai_sub),
                     iconRes = R.drawable.ic_ai,
                     iconTint = MaterialTheme.colorScheme.primary,
                     attentionCount = if (healthConnectState.connected && !aiHealthPersonalization) 1 else 0,
@@ -426,23 +486,24 @@ fun SettingsScreen(
 
                 // people. just a doorway, the hub itself lives in the Workspace where the things you do with
                 // a connection are. Settings only has to get you there and flag anything waiting
-                SectionHeader(title = "People")
+                SectionHeader(title = stringResource(R.string.settings_people))
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 SettingsNavRow(
-                    title = "Myndora Together",
+                    title = stringResource(R.string.together_title),
                     subtitle = when {
                         pendingTogetherRequests.isNotEmpty() -> {
                             val count = pendingTogetherRequests.size
-                            "$count ${if (count == 1) "request" else "requests"} waiting for you"
+                            if (count == 1) stringResource(R.string.settings_together_waiting_one)
+                            else stringResource(R.string.settings_together_waiting_many, count)
                         }
                         togetherConnections.isNotEmpty() ->
                             togetherConnections.take(2).joinToString(" & ") { it.name } +
                                 if (togetherConnections.size > 2) {
                                     " +${togetherConnections.size - 2}"
                                 } else ""
-                        else -> "Add someone you trust"
+                        else -> stringResource(R.string.settings_together_add)
                     },
                     icon = Icons.Rounded.Diversity3,
                     iconTint = MaterialTheme.colorScheme.tertiary,
@@ -453,13 +514,13 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // linked accounts
-                SectionHeader(title = "Linked accounts")
+                SectionHeader(title = stringResource(R.string.settings_linked_accounts))
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 SettingsNavRow(
-                    title = "Google Calendar",
-                    subtitle = linkedGoogleEmail ?: "Not connected",
+                    title = stringResource(R.string.settings_google_calendar),
+                    subtitle = linkedGoogleEmail ?: stringResource(R.string.settings_not_connected),
                     iconRes = R.drawable.ic_google_calendar,
                     onClick = onOpenLinkedAccounts,
                 )
@@ -468,8 +529,8 @@ fun SettingsScreen(
 
                 if (healthConnectState.connected) {
                     SettingsNavRow(
-                        title = "Health Connect",
-                        subtitle = "Connected • steps and heart rate",
+                        title = stringResource(R.string.settings_health_connect),
+                        subtitle = stringResource(R.string.settings_health_connected_sub),
                         iconRes = R.drawable.health,
                         iconTint = MaterialTheme.colorScheme.tertiary,
                         onClick = onOpenLinkedDevices,
@@ -480,8 +541,8 @@ fun SettingsScreen(
 
                 if (!healthConnectState.connected) {
                     SettingsNavRow(
-                        title = "Connect Health Connect",
-                        subtitle = "Share steps and heart rate securely",
+                        title = stringResource(R.string.ai_chip_connect_health),
+                        subtitle = stringResource(R.string.settings_health_connect_sub),
                         iconRes = R.drawable.health,
                         iconTint = MaterialTheme.colorScheme.primary,
                         onClick = onOpenLinkedDevices,
@@ -492,7 +553,7 @@ fun SettingsScreen(
 
                 // about
                 SectionHeader(
-                    title = "About",
+                    title = stringResource(R.string.settings_about),
                     accent = MaterialTheme.colorScheme.outline,
                 )
 
@@ -516,8 +577,8 @@ fun SettingsScreen(
                     textAlign = TextAlign.Center
                 )
 
-                // breathing room above the bottom nav bar
-                Spacer(modifier = Modifier.height(96.dp))
+                // the list scrolls under the floating nav bar, so the end has to clear it
+                Spacer(modifier = Modifier.height(24.dp + com.muradgalayev.brainbuddy.ui.navigation.LocalNavBarInset.current))
             }
         }
 
@@ -546,7 +607,7 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "Settings",
+                        text = stringResource(R.string.common_settings),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -567,7 +628,7 @@ fun SettingsScreen(
                                     .data(profile.avatarUrl)
                                     .crossfade(true)
                                     .build(),
-                                contentDescription = "Profile",
+                                contentDescription = stringResource(R.string.settings_profile_cd),
                                 modifier = Modifier.size(40.dp).clip(CircleShape),
                             )
                         } else {
@@ -590,6 +651,39 @@ fun SettingsScreen(
                 .padding(16.dp)
                 .zIndex(3f)
         )
+
+        // covers the screen for the whole sign-out. clearing the caches empties the cards one at a time,
+        // and that half-dismantled settings page is not something anyone should watch on the way out
+        AnimatedVisibility(
+            visible = signingOut,
+            enter = fadeIn(tween(160)),
+            exit = fadeOut(tween(120)),
+            modifier = Modifier
+                .matchParentSize()
+                .zIndex(10f),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {},
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    androidx.compose.material3.CircularProgressIndicator(strokeWidth = 3.dp)
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.settings_signing_out),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
     }
 
     if (passwordResetOpen) {
@@ -627,7 +721,7 @@ private fun PasswordResetDialog(
         },
         title = {
             Text(
-                text = "Create or reset password",
+                text = stringResource(R.string.settings_create_reset_password),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
@@ -637,10 +731,9 @@ private fun PasswordResetDialog(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = if (email.isNullOrBlank()) {
-                        "We couldn't find an email address for this account."
+                        stringResource(R.string.settings_no_email_found)
                     } else {
-                        "We'll email $email. Open the secure link to choose a password. " +
-                            "You can still continue with Google afterward."
+                        stringResource(R.string.settings_reset_email_body, email)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -670,13 +763,13 @@ private fun PasswordResetDialog(
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 } else {
-                    Text("Send email", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.settings_send_email), fontWeight = FontWeight.SemiBold)
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !sending) {
-                Text("Cancel")
+                Text(stringResource(R.string.common_cancel))
             }
         },
     )
@@ -685,7 +778,7 @@ private fun PasswordResetDialog(
 // Supportive progress card for a profile that can be continued in small chunks.
 @Composable
 private fun CompleteSurveyBanner(
-    progress: com.muradgalayev.brainbuddy.data.notifications.QuestionnaireReminderProgress?,
+    progress: SurveyProgressUi?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -720,7 +813,7 @@ private fun CompleteSurveyBanner(
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Your profile is taking shape",
+                    text = stringResource(R.string.settings_profile_shaping),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -728,8 +821,8 @@ private fun CompleteSurveyBanner(
                 Spacer(Modifier.height(3.dp))
                 Text(
                     text = progress?.let {
-                        "${it.answered} of ${it.total} steps complete · ${it.remaining} left"
-                    } ?: "Continue to unlock more personal guidance.",
+                        stringResource(R.string.settings_profile_progress, it.answered, it.total, it.remaining)
+                    } ?: stringResource(R.string.settings_profile_continue),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -762,11 +855,14 @@ private fun CompleteSurveyBanner(
 
 @Composable
 private fun ProfileCard(
+    plusActive: Boolean,
+    onOpenPlan: () -> Unit,
     name: String?,
     username: String?,
     email: String?,
     avatarUrl: String?,
     onEditProfile: () -> Unit,
+    onOpenQr: () -> Unit,
     downloadInProgress: Boolean,
     onDownloadProfile: () -> Unit,
     modifier: Modifier = Modifier,
@@ -774,10 +870,10 @@ private fun ProfileCard(
     val colors = MaterialTheme.colorScheme
     val displayName = name?.takeIf { it.isNotBlank() }
         ?: email?.substringBefore("@")
-        ?: "Welcome"
+        ?: stringResource(R.string.settings_welcome)
     val subtitle = email
         ?: username?.takeIf { it.isNotBlank() }?.let { "@$it" }
-        ?: "Not signed in"
+        ?: stringResource(R.string.settings_not_signed_in)
     val initials = (name?.takeIf { it.isNotBlank() } ?: username ?: email)
         ?.split(" ", ".", "_", "-")
         ?.mapNotNull { it.firstOrNull()?.uppercase() }
@@ -816,7 +912,7 @@ private fun ProfileCard(
                                 .data(avatarUrl)
                                 .crossfade(true)
                                 .build(),
-                            contentDescription = "Profile picture",
+                            contentDescription = stringResource(R.string.settings_profile_picture),
                             modifier = Modifier.fillMaxSize().clip(CircleShape),
                         )
                     } else {
@@ -831,6 +927,12 @@ private fun ProfileCard(
             }
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
+                // membership sits above the name, small and silver: it marks the account without
+                // competing with it, and tapping it opens the plan
+                if (plusActive) {
+                    PlusBadge(onClick = onOpenPlan)
+                    Spacer(modifier = Modifier.height(3.dp))
+                }
                 Text(
                     text = displayName,
                     style = MaterialTheme.typography.titleMedium,
@@ -847,11 +949,23 @@ private fun ProfileCard(
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
             }
-            Icon(
-                imageVector = Icons.Rounded.ChevronRight,
-                contentDescription = null,
-                tint = colors.onSurfaceVariant.copy(alpha = 0.8f),
-            )
+            // your QR in place of the chevron: the row itself still opens edit profile
+            androidx.compose.material3.IconButton(onClick = onOpenQr) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colors.primary.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.QrCode2,
+                        contentDescription = stringResource(R.string.together_qr_open),
+                        tint = colors.primary,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+            }
         }
 
         // download strip, tucked into the lower edge of the profile card: it's about your data, so
@@ -881,14 +995,14 @@ private fun ProfileCard(
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (downloadInProgress) "Preparing your PDF…" else "Download my profile",
+                    text = if (downloadInProgress) stringResource(R.string.settings_preparing_pdf) else stringResource(R.string.settings_download_profile),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = colors.primary,
                 )
                 Spacer(modifier = Modifier.height(1.dp))
                 Text(
-                    text = "A PDF with your details and the last week of activity.",
+                    text = stringResource(R.string.settings_download_profile_sub),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                     fontSize = 11.sp,
@@ -910,10 +1024,10 @@ private fun ProfileHeroCard(
 ) {
     val displayName = name?.takeIf { it.isNotBlank() }
         ?: email?.substringBefore("@")
-        ?: "Welcome"
+        ?: stringResource(R.string.settings_welcome)
     val handle = username?.takeIf { it.isNotBlank() }?.let { "@$it" }
         ?: email
-        ?: "Not signed in"
+        ?: stringResource(R.string.settings_not_signed_in)
     val initialsSource = name?.takeIf { it.isNotBlank() }
         ?: username?.takeIf { it.isNotBlank() }
         ?: email
@@ -1020,7 +1134,7 @@ private fun ProfileHeroCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Edit profile",
+                        text = stringResource(R.string.settings_edit_profile),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White,
@@ -1055,7 +1169,7 @@ private fun ProfileAvatar(
                         .data(avatarUrl)
                         .crossfade(true)
                         .build(),
-                    contentDescription = "Profile picture",
+                    contentDescription = stringResource(R.string.settings_profile_picture),
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(CircleShape)
@@ -1093,11 +1207,11 @@ private fun EditProfileDialog(
 
     val statusText: String? = when (availability) {
         com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Idle -> null
-        com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Checking -> "Checking…"
-        com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Available -> "Available"
-        com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Taken -> "Already taken"
+        com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Checking -> stringResource(R.string.common_checking)
+        com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Available -> stringResource(R.string.username_available)
+        com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Taken -> stringResource(R.string.username_taken)
         com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Invalid ->
-            "Use 3–20 letters, numbers or underscores"
+            stringResource(R.string.username_invalid)
     }
     val statusColor = when (availability) {
         com.muradgalayev.brainbuddy.ui.onboarding.UsernameAvailability.Available ->
@@ -1118,7 +1232,7 @@ private fun EditProfileDialog(
         containerColor = MaterialTheme.colorScheme.surface,
         title = {
             Text(
-                text = "Edit Profile",
+                text = stringResource(R.string.settings_edit_profile_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -1128,7 +1242,7 @@ private fun EditProfileDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name") },
+                    label = { Text(stringResource(R.string.med_name)) },
                     leadingIcon = {
                         Icon(Icons.Rounded.Person, contentDescription = null)
                     },
@@ -1148,7 +1262,7 @@ private fun EditProfileDialog(
                             username = it
                             onUsernameChange(it)
                         },
-                        label = { Text("Username") },
+                        label = { Text(stringResource(R.string.username_label)) },
                         leadingIcon = {
                             Icon(Icons.Rounded.AlternateEmail, contentDescription = null)
                         },
@@ -1188,9 +1302,9 @@ private fun EditProfileDialog(
                 OutlinedTextField(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = { Text("Phone (optional)") },
+                    label = { Text(stringResource(R.string.settings_phone_optional)) },
                     leadingIcon = { Icon(Icons.Rounded.Phone, contentDescription = null) },
-                    placeholder = { Text("e.g. +1 555 123 4567") },
+                    placeholder = { Text(stringResource(R.string.settings_phone_placeholder)) },
                     singleLine = true,
                     enabled = !saving,
                     shape = RoundedCornerShape(16.dp),
@@ -1205,13 +1319,13 @@ private fun EditProfileDialog(
                 OutlinedTextField(
                     value = email.orEmpty(),
                     onValueChange = {},
-                    label = { Text("Email") },
+                    label = { Text(stringResource(R.string.common_email)) },
                     leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
                     readOnly = true,
                     enabled = false,
                     singleLine = true,
                     shape = RoundedCornerShape(16.dp),
-                    supportingText = { Text("Used to sign in — can't be changed here") },
+                    supportingText = { Text(stringResource(R.string.settings_email_note)) },
                     colors = OutlinedTextFieldDefaults.colors(
                         disabledBorderColor = MaterialTheme.colorScheme.outlineVariant,
                         disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1238,13 +1352,13 @@ private fun EditProfileDialog(
                         modifier = Modifier.size(16.dp)
                     )
                 } else {
-                    Text("Save", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.common_save), fontWeight = FontWeight.SemiBold)
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !saving) {
-                Text("Cancel")
+                Text(stringResource(R.string.common_cancel))
             }
         }
     )
@@ -1405,7 +1519,7 @@ private fun SettingsNavRow(
             }
             Icon(
                 imageVector = trailingIcon ?: Icons.Rounded.ChevronRight,
-                contentDescription = if (trailingIcon != null) "Unavailable while a mode is active" else null,
+                contentDescription = if (trailingIcon != null) stringResource(R.string.settings_unavailable_mode) else null,
                 tint = if (trailingIcon != null) iconTint
                 else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
             )
@@ -1451,7 +1565,7 @@ private fun SettingsGroup(
                 )
                 Icon(
                     imageVector = Icons.Rounded.KeyboardArrowDown,
-                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    contentDescription = if (expanded) stringResource(R.string.common_collapse) else stringResource(R.string.common_expand),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.rotate(rotation),
                 )
@@ -1509,7 +1623,7 @@ fun GoogleCalendarExportRow(
                         if (isConnected && !avatarUrl.isNullOrBlank()) {
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current).data(avatarUrl).crossfade(true).build(),
-                                contentDescription = "Google account photo",
+                                contentDescription = stringResource(R.string.settings_google_photo),
                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                             )
                         } else {
@@ -1544,7 +1658,7 @@ fun GoogleCalendarExportRow(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (isConnected) "Google Calendar" else "Connect Google Calendar",
+                        text = if (isConnected) stringResource(R.string.settings_google_calendar) else stringResource(R.string.settings_connect_google_calendar),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -1552,7 +1666,7 @@ fun GoogleCalendarExportRow(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = if (isConnected) linkedEmail.orEmpty()
-                        else "Connect to push your events to Google Calendar",
+                        else stringResource(R.string.settings_connect_google_sub),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1580,7 +1694,7 @@ fun GoogleCalendarExportRow(
                 TextButton(
                     onClick = onDisconnect,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
-                ) { Text("Disconnect Google account", color = MaterialTheme.colorScheme.error) }
+                ) { Text(stringResource(R.string.settings_disconnect_google), color = MaterialTheme.colorScheme.error) }
             }
         }
     }
@@ -1606,7 +1720,7 @@ private fun StatusPill() {
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = "Linked",
+                text = stringResource(R.string.settings_linked),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 0.4.sp,
@@ -1663,7 +1777,7 @@ private fun ConnectedAccountChip(
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Connected account",
+                    text = stringResource(R.string.settings_connected_account),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 0.4.sp
@@ -1681,7 +1795,7 @@ private fun ConnectedAccountChip(
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "Disconnect",
+                    text = stringResource(R.string.settings_disconnect),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold
@@ -1724,7 +1838,7 @@ private fun ExportActionButton(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Exporting…",
+                        text = stringResource(R.string.settings_exporting),
                         color = Color.White,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
@@ -1738,7 +1852,7 @@ private fun ExportActionButton(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Sync todos to Calendar",
+                        text = stringResource(R.string.settings_sync_todos),
                         color = Color.White,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
@@ -1798,14 +1912,14 @@ private fun AdhdProfileRow(completed: Boolean, onClick: () -> Unit) {
                 Spacer(modifier = Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "ADHD Profile",
+                        text = stringResource(R.string.settings_adhd_profile),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colors.onSurface,
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Personalizes how your assistant helps you.",
+                        text = stringResource(R.string.settings_adhd_profile_sub),
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.onSurfaceVariant,
                     )
@@ -1835,7 +1949,7 @@ private fun AdhdProfileRow(completed: Boolean, onClick: () -> Unit) {
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (completed) "Complete" else "Not finished",
+                            text = if (completed) stringResource(R.string.settings_complete) else stringResource(R.string.settings_not_finished),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = statusColor,
@@ -1844,7 +1958,7 @@ private fun AdhdProfileRow(completed: Boolean, onClick: () -> Unit) {
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = if (completed) "Edit" else "Finish now",
+                    text = if (completed) stringResource(R.string.common_edit) else stringResource(R.string.settings_finish_now),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = accent,
@@ -1877,7 +1991,7 @@ private fun AboutSection() {
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
-                text = "Version",
+                text = stringResource(R.string.settings_version),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -1957,7 +2071,7 @@ private fun SignOutRow(onSignOut: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Sign out",
+                    text = stringResource(R.string.settings_sign_out),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = errorColor,

@@ -1,5 +1,11 @@
 package com.muradgalayev.brainbuddy.ui.activity
 
+import com.muradgalayev.brainbuddy.ui.pomodoro.formatFocusMinutes
+import com.muradgalayev.brainbuddy.ui.utils.localizedDateFormatter
+import com.muradgalayev.brainbuddy.ui.utils.uiText
+import com.muradgalayev.brainbuddy.ui.utils.asUiText
+import com.muradgalayev.brainbuddy.ui.utils.UiText
+import com.muradgalayev.brainbuddy.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.muradgalayev.brainbuddy.data.local.PomodoroTimerManager
@@ -56,7 +62,10 @@ class WorkspaceViewModel @Inject constructor(
     togetherRepository: com.muradgalayev.brainbuddy.data.repository.TogetherRepository,
     focusInviteWatcher: com.muradgalayev.brainbuddy.data.repository.FocusInviteWatcher,
     networkObserver: NetworkObserver,
+    private val planRepository: com.muradgalayev.brainbuddy.data.repository.PlanRepository,
 ) : ViewModel(){
+    // the Workspace assistant handle is a Plus feature
+    val plan = planRepository.plan
 
     // drives the Together card: avatar stack plus a 'needs you' badge
     val togetherConnections = togetherRepository.connections
@@ -276,20 +285,22 @@ class WorkspaceViewModel @Inject constructor(
                 val seconds = totalSeconds % 60
                 val formattedTime = "%02d:%02d".format(minutes, seconds)
 
-                val statusText = when (timer.sessionType) {
-                    PomodoroSessionType.FOCUS -> when (timer.timerState) {
-                        TimerState.RUNNING -> "Focus"
-                        TimerState.PAUSED -> "Focus paused"
-                        TimerState.COMPLETED -> "Focus complete"
-                        TimerState.IDLE -> "Focus ready"
+                val statusText = uiText(
+                    when (timer.sessionType) {
+                        PomodoroSessionType.FOCUS -> when (timer.timerState) {
+                            TimerState.RUNNING -> R.string.home_focus_widget
+                            TimerState.PAUSED -> R.string.ws_pomo_focus_paused
+                            TimerState.COMPLETED -> R.string.ws_pomo_focus_complete
+                            TimerState.IDLE -> R.string.ws_pomo_focus_ready
+                        }
+                        PomodoroSessionType.BREAK -> when (timer.timerState) {
+                            TimerState.RUNNING -> R.string.bd_break
+                            TimerState.PAUSED -> R.string.ws_pomo_break_paused
+                            TimerState.COMPLETED -> R.string.ws_pomo_break_complete
+                            TimerState.IDLE -> R.string.ws_pomo_break_ready
+                        }
                     }
-                    PomodoroSessionType.BREAK -> when (timer.timerState) {
-                        TimerState.RUNNING -> "Break"
-                        TimerState.PAUSED -> "Break paused"
-                        TimerState.COMPLETED -> "Break complete"
-                        TimerState.IDLE -> "Break ready"
-                    }
-                }
+                )
 
                 _uiState.update {
                     it.copy(
@@ -373,11 +384,11 @@ class WorkspaceViewModel @Inject constructor(
                 val nextMeetingText = nextEvent?.let { entry ->
                     val d = entry.start.toLocalDate()
                     val dayLabel = when {
-                        d.isEqual(nowDate) -> "Today"
-                        d.isEqual(nowDate.plusDays(1)) -> "Tomorrow"
-                        else -> d.toString()
+                        d.isEqual(nowDate) -> uiText(R.string.common_today)
+                        d.isEqual(nowDate.plusDays(1)) -> uiText(R.string.common_tomorrow)
+                        else -> d.format(localizedDateFormatter("MMMd")).asUiText()
                     }
-                    "$dayLabel · ${entry.start.toLocalTime().format(timeFormatter)}"
+                    uiText(R.string.ws_day_time, dayLabel, entry.start.toLocalTime().format(timeFormatter))
                 }
 
                 // hero: what's happening now, else what's next
@@ -387,25 +398,26 @@ class WorkspaceViewModel @Inject constructor(
                 val upcoming = agenda.firstOrNull { it.start.isAfter(now) }
                 val heroEntry = runningNow ?: upcoming
 
-                val heroWhen = when {
-                    runningNow != null -> "Happening now"
+                val heroWhen: UiText? = when {
+                    runningNow != null -> uiText(R.string.ws_happening_now)
                     upcoming != null -> {
                         val d = upcoming.start.toLocalDate()
                         val hasTime = upcoming.start.toLocalTime() != LocalTime.MAX
+                        val clock = upcoming.start.toLocalTime().format(timeFormatter)
                         when {
                             d.isEqual(nowDate) && hasTime -> {
                                 val mins = java.time.Duration.between(now, upcoming.start).toMinutes()
                                 when {
-                                    mins <= 0L -> "Starting now"
-                                    mins < 60L -> "in $mins min"
-                                    else -> "Today · ${upcoming.start.toLocalTime().format(timeFormatter)}"
+                                    mins <= 0L -> uiText(R.string.agenda_starting_now)
+                                    mins < 60L -> uiText(R.string.agenda_in, uiText(R.string.common_minutes_short, mins))
+                                    else -> uiText(R.string.ws_day_time, uiText(R.string.common_today), clock)
                                 }
                             }
-                            d.isEqual(nowDate) -> "Today"
+                            d.isEqual(nowDate) -> uiText(R.string.common_today)
                             d.isEqual(nowDate.plusDays(1)) ->
-                                if (hasTime) "Tomorrow · ${upcoming.start.toLocalTime().format(timeFormatter)}"
-                                else "Tomorrow"
-                            else -> d.toString()
+                                if (hasTime) uiText(R.string.ws_day_time, uiText(R.string.common_tomorrow), clock)
+                                else uiText(R.string.common_tomorrow)
+                            else -> d.format(localizedDateFormatter("MMMd")).asUiText()
                         }
                     }
                     else -> null
@@ -416,9 +428,9 @@ class WorkspaceViewModel @Inject constructor(
                 val todayTotal = todayActive + todayCompleted
                 val progress = if (todayTotal > 0) todayCompleted.toFloat() / todayTotal else 0f
                 val completedText = when (todayCompleted) {
-                    0 -> "No tasks completed yet"
-                    1 -> "You completed 1 task"
-                    else -> "You completed $todayCompleted tasks"
+                    0 -> uiText(R.string.ws_no_tasks_completed)
+                    1 -> uiText(R.string.ws_completed_one)
+                    else -> uiText(R.string.ws_completed_n, todayCompleted)
                 }
 
                 val weekStart = nowDate.minusDays(6)
@@ -471,10 +483,10 @@ class WorkspaceViewModel @Inject constructor(
                 val yesterdayMinutes = pomodoroRepository.getCompletedFocusMinutesForDay(yesterdayStart, yesterdayEnd)
 
                 val comparisonText = when {
-                    todayMinutes == 0 && yesterdayMinutes == 0 -> "No focus sessions yet"
-                    todayMinutes > yesterdayMinutes -> "${todayMinutes - yesterdayMinutes} min more than yesterday"
-                    todayMinutes < yesterdayMinutes -> "${yesterdayMinutes - todayMinutes} min less than yesterday"
-                    else -> "Same as yesterday"
+                    todayMinutes == 0 && yesterdayMinutes == 0 -> uiText(R.string.ws_no_focus_sessions)
+                    todayMinutes > yesterdayMinutes -> uiText(R.string.ws_min_more, todayMinutes - yesterdayMinutes)
+                    todayMinutes < yesterdayMinutes -> uiText(R.string.ws_min_less, yesterdayMinutes - todayMinutes)
+                    else -> uiText(R.string.ws_same_as_yesterday)
                 }
 
                 val (heroTitle, heroSubtitle) = buildFocusHeroCopy(
@@ -505,45 +517,37 @@ class WorkspaceViewModel @Inject constructor(
     }
 }
 
-private fun formatFocusMinutes(minutes: Int): String {
-    if (minutes <= 0) return "0m"
-    val hours = minutes / 60
-    val mins = minutes % 60
+private fun buildFocusHeroCopy(today: Int, yesterday: Int): Pair<UiText, UiText> {
+    val focusedToday = uiText(R.string.ws_focused_today, formatFocusMinutes(today))
     return when {
-        hours == 0 -> "${mins}m"
-        mins == 0 -> "${hours}h"
-        else -> "${hours}h ${mins}m"
+        today == 0 && yesterday == 0 ->
+            uiText(R.string.ws_hero_fresh) to uiText(R.string.ws_hero_fresh_sub)
+        today == 0 && yesterday > 0 ->
+            uiText(R.string.focus_empty_title_today) to
+                uiText(R.string.ws_hero_yesterday, formatFocusMinutes(yesterday))
+        yesterday == 0 && today > 0 -> focusedToday to uiText(R.string.focus_cmp_first)
+        today > yesterday ->
+            focusedToday to uiText(R.string.focus_cmp_more, formatFocusMinutes(today - yesterday))
+        today < yesterday ->
+            focusedToday to uiText(R.string.focus_cmp_less, formatFocusMinutes(yesterday - today))
+        else -> focusedToday to uiText(R.string.ws_hero_same)
     }
 }
 
-private fun buildFocusHeroCopy(today: Int, yesterday: Int): Pair<String, String> = when {
-    today == 0 && yesterday == 0 ->
-        "A fresh start is ready" to "Try one gentle 25-minute session. Starting small still counts."
-    today == 0 && yesterday > 0 ->
-        "Nothing focused today yet" to "Yesterday you did ${formatFocusMinutes(yesterday)}. Don't break the streak!"
-    yesterday == 0 && today > 0 ->
-        "${formatFocusMinutes(today)} focused today" to "Great start — first focused day in a while!"
-    today > yesterday ->
-        "${formatFocusMinutes(today)} focused today" to "${formatFocusMinutes(today - yesterday)} more than yesterday — keep it up!"
-    today < yesterday ->
-        "${formatFocusMinutes(today)} focused today" to "${formatFocusMinutes(yesterday - today)} less than yesterday — push for it."
-    else ->
-        "${formatFocusMinutes(today)} focused today" to "Matching yesterday's pace — steady wins."
-}
-
-private fun buildActivityBannerCopy(completedToday: Int, todayMinutes: Int): Pair<String, String> {
-    val tasksPart = when (completedToday) {
-        0 -> "no tasks completed"
-        1 -> "1 task completed"
-        else -> "$completedToday tasks completed"
-    }
-    val focusPart = if (todayMinutes > 0) "stayed focused for ${formatFocusMinutes(todayMinutes)}"
-    else "no focus time logged"
-
+// whole sentences per case rather than 'You've $tasks and $focus': the fragments don't survive
+// translation, Italian needs the verb to agree with whatever ends up in the slot
+private fun buildActivityBannerCopy(completedToday: Int, todayMinutes: Int): Pair<UiText, UiText> {
+    val tasks = if (completedToday == 1) uiText(R.string.ws_task_count_one)
+    else uiText(R.string.ws_task_count_n, completedToday)
+    val focus = formatFocusMinutes(todayMinutes)
     return when {
         completedToday == 0 && todayMinutes == 0 ->
-            "A fresh start" to "Plan a task and try a quick focus session to get going."
+            uiText(R.string.ws_banner_fresh) to uiText(R.string.ws_banner_fresh_sub)
+        completedToday == 0 ->
+            uiText(R.string.ws_banner_great) to uiText(R.string.ws_banner_focus_only, focus)
+        todayMinutes == 0 ->
+            uiText(R.string.ws_banner_great) to uiText(R.string.ws_banner_tasks_only, tasks)
         else ->
-            "Great work today" to "You've $tasksPart and $focusPart."
+            uiText(R.string.ws_banner_great) to uiText(R.string.ws_banner_both, tasks, focus)
     }
 }

@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import com.muradgalayev.brainbuddy.ui.accessibility.animationsOn
 import com.muradgalayev.brainbuddy.ui.accessibility.speaking
 import kotlinx.coroutines.delay
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // how long each line holds before the other one takes its turn
 private const val SWAP_INTERVAL_MS = 3_400L
@@ -62,8 +64,8 @@ fun StoryHint(
     val colors = MaterialTheme.colorScheme
     val animate = animationsOn()
 
-    val countLine = if (unseenCount == 1) "1 story" else "$unseenCount stories"
-    val nudgeLine = "Pull down"
+    val countLine = if (unseenCount == 1) stringResource(R.string.story_one) else stringResource(R.string.story_many, unseenCount)
+    val nudgeLine = stringResource(R.string.story_pull_down)
 
     // under reduce-motion the line doesn't alternate at all: text that swaps itself on a timer is
     // movement the reader didn't ask for, and the count is the half worth keeping

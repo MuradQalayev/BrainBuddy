@@ -23,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun ProfileHeaderCard(
@@ -101,7 +103,7 @@ fun ProfileHeaderCard(
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
                     ) {
                         Text(
-                            text = "Get started",
+                            text = stringResource(R.string.profile_get_started),
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.labelLarge,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)

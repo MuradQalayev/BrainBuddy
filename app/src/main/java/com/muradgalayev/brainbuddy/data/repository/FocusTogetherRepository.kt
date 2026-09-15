@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.data.repository
 
+import com.muradgalayev.brainbuddy.R
 import android.util.Log
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.functions.functions
@@ -111,6 +112,7 @@ private data class FocusRoomRow(
 // opportunity, an error dialog over someone's focus screen is an interruption
 @Singleton
 class FocusTogetherRepository @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val supabase: SupabaseClient,
 ) {
 
@@ -208,7 +210,7 @@ class FocusTogetherRepository @Inject constructor(
     private fun FocusSessionRow.toDomain() = FocusSession(
         id = sessionId,
         hostId = hostId,
-        hostName = hostName?.takeIf { it.isNotBlank() } ?: "Someone",
+        hostName = hostName?.takeIf { it.isNotBlank() } ?: context.getString(R.string.common_someone),
         focusMinutes = focusMinutes,
         breakMinutes = breakMinutes,
         phase = runCatching { FocusPhase.valueOf(phase) }.getOrDefault(FocusPhase.FOCUS),
@@ -234,7 +236,7 @@ class FocusTogetherRepository @Inject constructor(
             ).decodeAs<List<FocusRoomRow>>().map {
                 FocusRoomMember(
                     userId = it.userId,
-                    name = it.displayName?.takeIf { n -> n.isNotBlank() } ?: "Someone",
+                    name = it.displayName?.takeIf { n -> n.isNotBlank() } ?: context.getString(R.string.common_someone),
                     avatarUrl = it.avatarUrl,
                     state = runCatching { FocusParticipantState.valueOf(it.state) }
                         .getOrDefault(FocusParticipantState.UNKNOWN),

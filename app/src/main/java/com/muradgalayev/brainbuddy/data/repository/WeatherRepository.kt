@@ -87,7 +87,7 @@ class WeatherRepository @Inject constructor(@ApplicationContext context: Context
 
         val encoded = URLEncoder.encode(city, Charsets.UTF_8.name())
         val geo = getJson<GeocodingResponse>(
-            "https://geocoding-api.open-meteo.com/v1/search?name=$encoded&count=1&language=en&format=json",
+            "https://geocoding-api.open-meteo.com/v1/search?name=$encoded&count=1&language=${java.util.Locale.getDefault().language}&format=json",
         ).results.firstOrNull() ?: error("Location not found")
         val cached = CachedGeo(geo.latitude, geo.longitude, geo.name)
         prefs.edit().putString(key, json.encodeToString(CachedGeo.serializer(), cached)).apply()

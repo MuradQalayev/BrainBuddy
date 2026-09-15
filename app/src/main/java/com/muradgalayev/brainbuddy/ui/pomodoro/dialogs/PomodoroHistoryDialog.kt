@@ -39,6 +39,7 @@ import com.muradgalayev.brainbuddy.ui.pomodoro.utils.formatSessionTime
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun PomodoroHistoryDialog(
@@ -110,7 +111,7 @@ fun PomodoroHistoryDialog(
 
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Focus History",
+                                        text = stringResource(R.string.focus_history_title),
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSurface
@@ -130,13 +131,13 @@ fun PomodoroHistoryDialog(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 HistoryStatChip(
-                                    title = "Today",
+                                    title = stringResource(R.string.common_today),
                                     value = "${sessions.size}",
                                     subtitle = "sessions",
                                     modifier = Modifier.weight(1f)
                                 )
                                 HistoryStatChip(
-                                    title = "Focused",
+                                    title = stringResource(R.string.focus_focused),
                                     value = "$totalMinutes",
                                     subtitle = "minutes",
                                     modifier = Modifier.weight(1f)
@@ -163,8 +164,8 @@ fun PomodoroHistoryDialog(
                                 val sessionType = PomodoroSessionType.fromStored(session.sessionType)
 
                                 val sessionLabel = when (sessionType) {
-                                    PomodoroSessionType.FOCUS -> "Focus"
-                                    PomodoroSessionType.BREAK -> "Break"
+                                    PomodoroSessionType.FOCUS -> stringResource(R.string.home_focus_widget)
+                                    PomodoroSessionType.BREAK -> stringResource(R.string.bd_break)
                                 }
 
                                 val durationMinutes = (session.plannedDurationMs / 60000L).toInt()
@@ -220,7 +221,7 @@ fun PomodoroHistoryDialog(
                                             color = chipColor
                                         ) {
                                             Text(
-                                                text = "${durationMinutes} min",
+                                                text = stringResource(R.string.common_minutes_short, durationMinutes),
                                                 modifier = Modifier.padding(
                                                     horizontal = 12.dp,
                                                     vertical = 7.dp
@@ -246,7 +247,7 @@ fun PomodoroHistoryDialog(
                     ) {
                         TextButton(onClick = onDismiss) {
                             Text(
-                                text = "Close",
+                                text = stringResource(R.string.common_close),
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -319,7 +320,7 @@ private fun EmptyHistoryState() {
         Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = "No sessions yet",
+            text = stringResource(R.string.focus_no_sessions),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
@@ -328,7 +329,7 @@ private fun EmptyHistoryState() {
         Spacer(modifier = Modifier.height(6.dp))
 
         Text(
-            text = "Complete a focus session and it will appear here.",
+            text = stringResource(R.string.focus_no_sessions_body),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

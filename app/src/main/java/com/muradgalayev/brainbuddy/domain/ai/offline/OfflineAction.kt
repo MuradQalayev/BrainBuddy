@@ -1,5 +1,7 @@
 package com.muradgalayev.brainbuddy.domain.ai.offline
 
+import com.muradgalayev.brainbuddy.R
+
 // a thing the assistant can do with no network at all.
 // the model here is deliberately not a chat. offline, the assistant offers a short list of
 // concrete actions; the user picks one, fills its slots from pre-built options (typing only
@@ -15,6 +17,9 @@ data class OfflineAction(
     val title: String,
     // one line under the title, what confirming will actually do
     val subtitle: String,
+    // what the result screen says once it worked. null shows the tool's own answer instead, for
+    // the one action whose answer is the point (care nearby lists what it found)
+    val confirmation: String? = null,
     val group: OfflineActionGroup,
     val icon: OfflineActionIcon,
     // name of the AiTool that performs it. must exist in the tool multibinding
@@ -34,12 +39,12 @@ enum class OfflineActionIcon {
     Todo, Event, Font, TextSize, TextSpacing, Theme, FocusTimer, Clock, Tone, Note, Care,
 }
 
-enum class OfflineActionGroup(val label: String) {
-    Capture("Capture"),
-    Appearance("Look & feel"),
-    Profile("My profile"),
-    Focus("Focus"),
-    Care("Care"),
+enum class OfflineActionGroup(@androidx.annotation.StringRes val labelRes: Int) {
+    Capture(R.string.offline_group_capture),
+    Appearance(R.string.offline_group_appearance),
+    Profile(R.string.offline_group_profile),
+    Focus(R.string.offline_group_focus),
+    Care(R.string.offline_group_care),
 }
 
 // one question the user answers before an action can run
@@ -89,12 +94,16 @@ data class OfflineOption(val value: String, val label: String)
 object OfflineSlotOptions {
 
     // today through the next few days. values are ISO yyyy-MM-dd
-    fun days(today: java.time.LocalDate = java.time.LocalDate.now()): List<OfflineOption> =
+    fun days(
+        todayLabel: String,
+        tomorrowLabel: String,
+        today: java.time.LocalDate = java.time.LocalDate.now(),
+    ): List<OfflineOption> =
         (0..4L).map { offset ->
             val date = today.plusDays(offset)
             val label = when (offset) {
-                0L -> "Today"
-                1L -> "Tomorrow"
+                0L -> todayLabel
+                1L -> tomorrowLabel
                 else -> date.dayOfWeek
                     .getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.getDefault())
                     .plus(" ${date.dayOfMonth}")
@@ -110,8 +119,10 @@ object OfflineSlotOptions {
             val t = start.plusMinutes(step * 30L)
             OfflineOption(
                 value = "%02d:%02d".format(t.hour, t.minute),
-                label = "%d:%02d".format(if (t.hour % 12 == 0) 12 else t.hour % 12, t.minute) +
-                    if (t.hour < 12) " am" else " pm",
+                // the locale's own clock: 2:30 pm in English, 14:30 in Italian
+                label = t.format(
+                    java.time.format.DateTimeFormatter.ofLocalizedTime(java.time.format.FormatStyle.SHORT),
+                ),
             )
         }
     }

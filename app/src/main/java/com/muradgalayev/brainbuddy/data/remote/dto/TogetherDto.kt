@@ -22,6 +22,12 @@ data class ConnectionDto(
     @SerialName("connected_at") val connectedAt: String? = null,
 )
 
+// one row of list_deactivated_connections()
+@Serializable
+data class DeactivatedUserDto(
+    @SerialName("user_id") val userId: String,
+)
+
 @Serializable
 data class IncomingRequestDto(
     val id: String,

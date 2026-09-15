@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.data.repository
 
+import com.muradgalayev.brainbuddy.R
 import com.muradgalayev.brainbuddy.domain.model.AdhdProfile
 import com.muradgalayev.brainbuddy.domain.model.Medication
 import com.muradgalayev.brainbuddy.domain.model.MedicationSlot
@@ -15,6 +16,7 @@ import javax.inject.Singleton
 
 @Singleton
 class MedicationTodoSyncer @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val todoRepository: TodoRepository,
     private val calendarRepository: CalendarRepository,
     private val preferencesManager: com.muradgalayev.brainbuddy.data.local.PreferencesManager,
@@ -160,8 +162,13 @@ class MedicationTodoSyncer @Inject constructor(
         )
     }
 
-    private fun formatTitle(med: Medication): String =
-        if (med.doseLabel.isBlank()) "Take ${med.name}" else "Take ${med.name} ${med.doseLabel}"
+    // written into the to-do and calendar rows, so it lands in whatever language the app has when
+    // the window rolls forward
+    private fun formatTitle(med: Medication): String {
+        val dose = med.doseLabel(context.resources)
+        return if (dose.isBlank()) context.getString(R.string.med_take, med.name)
+        else context.getString(R.string.med_take_dose, med.name, dose)
+    }
 
     companion object {
         const val MEDICATION_CATEGORY = "medication"

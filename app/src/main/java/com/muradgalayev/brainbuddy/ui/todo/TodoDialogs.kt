@@ -89,6 +89,8 @@ import com.muradgalayev.brainbuddy.ui.sharedcomponents.swipeToSwitch
 import com.muradgalayev.brainbuddy.data.local.entity.TodoPriority
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -223,9 +225,9 @@ fun AddTaskDialog(
                         ) {
                             Text(
                                 text = if (audience == TodoAudience.Together) {
-                                    "Task for someone"
+                                    stringResource(R.string.todo_task_for_someone)
                                 } else {
-                                    "New Task"
+                                    stringResource(R.string.todo_new_task)
                                 },
                                 color = palette.ink,
                                 fontSize = 24.sp,
@@ -240,7 +242,7 @@ fun AddTaskDialog(
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.Close,
-                                    contentDescription = "Close",
+                                    contentDescription = stringResource(R.string.common_close),
                                     tint = palette.muted,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -265,7 +267,7 @@ fun AddTaskDialog(
                         Spacer(Modifier.height(16.dp))
                         if (shareTargets.isEmpty()) {
                             NoConnectionsNotice(
-                                itemNoun = "task",
+                                kind = com.muradgalayev.brainbuddy.ui.together.SharedItemKind.TASK,
                                 accent = palette.lavender,
                                 ink = palette.ink,
                                 muted = palette.muted,
@@ -280,7 +282,7 @@ fun AddTaskDialog(
                                 palette = palette,
                                 targets = shareTargets,
                                 selected = alsoAddFor,
-                                heading = "Who is this for?",
+                                heading = stringResource(R.string.cal_who_for),
                                 required = true,
                                 addToMyList = addToMyList,
                                 showMineToggle = true,
@@ -304,24 +306,24 @@ fun AddTaskDialog(
                             palette = palette,
                             value = title,
                             onValueChange = { title = it },
-                            label = "Task name",
-                            placeholder = "e.g. Yoga practice",
+                            label = stringResource(R.string.todo_task_name),
+                            placeholder = stringResource(R.string.todo_task_name_hint),
                             imeAction = ImeAction.Next
                         )
                     }
 
                     Spacer(Modifier.height(20.dp))
 
-                    SectionLabel(palette, "Date")
+                    SectionLabel(palette, stringResource(R.string.todo_date))
                     Spacer(Modifier.height(10.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         item {
-                            CategoryChip(palette, "Today", selectedDate == LocalDate.now()) {
+                            CategoryChip(palette, stringResource(R.string.common_today), selectedDate == LocalDate.now()) {
                                 selectedDate = LocalDate.now()
                             }
                         }
                         item {
-                            CategoryChip(palette, "Tomorrow", selectedDate == LocalDate.now().plusDays(1)) {
+                            CategoryChip(palette, stringResource(R.string.common_tomorrow), selectedDate == LocalDate.now().plusDays(1)) {
                                 selectedDate = LocalDate.now().plusDays(1)
                             }
                         }
@@ -329,7 +331,7 @@ fun AddTaskDialog(
                             CategoryChip(
                                 palette,
                                 if (selectedDate in listOf(LocalDate.now(), LocalDate.now().plusDays(1)))
-                                    "Pick date" else selectedDate.format(DateTimeFormatter.ofPattern("d MMM")),
+                                    stringResource(R.string.todo_pick_date) else selectedDate.format(DateTimeFormatter.ofPattern("d MMM")),
                                 selectedDate > LocalDate.now().plusDays(1) || selectedDate < LocalDate.now(),
                             ) {
                                 android.app.DatePickerDialog(
@@ -344,7 +346,7 @@ fun AddTaskDialog(
                     }
 
                     Spacer(Modifier.height(20.dp))
-                    SectionLabel(palette, "Priority")
+                    SectionLabel(palette, stringResource(R.string.common_priority))
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         TodoPriority.entries.forEach { priority ->
@@ -363,12 +365,12 @@ fun AddTaskDialog(
                         modifier = Modifier
                             .staggerAnim(sectionAlphas[2].value, sectionOffsets[2].value)
                     ) {
-                        SectionLabel(palette, "Time")
+                        SectionLabel(palette, stringResource(R.string.cal_time))
                         Spacer(Modifier.height(10.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             TimePickerField(
                                 value = startTime,
-                                label = "Start",
+                                label = stringResource(R.string.common_start),
                                 placeholder = "09:00",
                                 mutedColor = palette.muted,
                                 accentColor = palette.lavender,
@@ -382,7 +384,7 @@ fun AddTaskDialog(
                             )
                             TimePickerField(
                                 value = endTime,
-                                label = "End",
+                                label = stringResource(R.string.cal_end),
                                 placeholder = "10:00",
                                 mutedColor = palette.muted,
                                 accentColor = palette.lavender,
@@ -403,7 +405,7 @@ fun AddTaskDialog(
                         modifier = Modifier
                             .staggerAnim(sectionAlphas[3].value, sectionOffsets[3].value)
                     ) {
-                        SectionLabel(palette, "Category")
+                        SectionLabel(palette, stringResource(R.string.todo_category))
                         Spacer(Modifier.height(10.dp))
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -425,7 +427,7 @@ fun AddTaskDialog(
                     Spacer(Modifier.height(20.dp))
 
                     TextButton(onClick = { showMoreOptions = !showMoreOptions }) {
-                        Text(if (showMoreOptions) "Hide extra options" else "More options")
+                        Text(if (showMoreOptions) stringResource(R.string.todo_hide_options) else stringResource(R.string.common_more_options))
                     }
                     AnimatedVisibility(showMoreOptions) {
                         Column {
@@ -433,12 +435,12 @@ fun AddTaskDialog(
                                 palette = palette,
                                 value = description,
                                 onValueChange = { description = it },
-                                label = "Description (optional)",
-                                placeholder = "e.g. Morning stretch routine",
+                                label = stringResource(R.string.cal_description_optional),
+                                placeholder = stringResource(R.string.todo_description_hint),
                                 imeAction = ImeAction.Done,
                             )
                             Spacer(Modifier.height(18.dp))
-                            SectionLabel(palette, "Color")
+                            SectionLabel(palette, stringResource(R.string.cal_color))
                             Spacer(Modifier.height(10.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                                 ColorOption(palette.taskRed, selectedColor == "red") { selectedColor = "red" }
@@ -455,7 +457,7 @@ fun AddTaskDialog(
                             palette = palette,
                             targets = shareTargets,
                             selected = alsoAddFor,
-                            heading = "Also add to",
+                            heading = stringResource(R.string.cal_also_add_to),
                             required = false,
                             addToMyList = true,
                             showMineToggle = false,
@@ -484,7 +486,7 @@ fun AddTaskDialog(
                             shape = RoundedCornerShape(16.dp)
                         ) {
                             Text(
-                                "Cancel",
+                                stringResource(R.string.common_cancel),
                                 color = palette.muted,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 15.sp
@@ -519,12 +521,12 @@ fun AddTaskDialog(
                                 .firstOrNull { it.userId in alsoAddFor }?.name
                             Text(
                                 when {
-                                    alsoAddFor.isEmpty() -> "Add Task"
+                                    alsoAddFor.isEmpty() -> stringResource(R.string.todo_add_task_btn)
                                     !addToMyList && alsoAddFor.size == 1 && targetName != null ->
-                                        "Add for $targetName"
-                                    !addToMyList -> "Add for ${alsoAddFor.size} people"
-                                    alsoAddFor.size == 1 -> "Add for us both"
-                                    else -> "Add for ${alsoAddFor.size + 1} lists"
+                                        stringResource(R.string.cal_add_for, targetName)
+                                    !addToMyList -> stringResource(R.string.cal_add_for_people, alsoAddFor.size)
+                                    alsoAddFor.size == 1 -> stringResource(R.string.cal_add_for_both)
+                                    else -> stringResource(R.string.todo_add_for_lists, alsoAddFor.size + 1)
                                 },
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
@@ -542,7 +544,7 @@ fun AddTaskDialog(
         // forgotten, and made a five-minute correction mean dialling the whole way round again
         val (h0, m0) = parseHourMinute(startTime) ?: (9 to 0)
         TimePickerDialog(
-            title = "Select start time",
+            title = stringResource(R.string.cal_select_start),
             initialHour = h0,
             initialMinute = m0,
             onConfirm = { h, m ->
@@ -559,7 +561,7 @@ fun AddTaskDialog(
             ?: parseHourMinute(startTime)?.let { ((it.first + 1).coerceAtMost(23)) to it.second }
             ?: (10 to 0)
         TimePickerDialog(
-            title = "Select end time",
+            title = stringResource(R.string.cal_select_end),
             initialHour = h0,
             initialMinute = m0,
             onConfirm = { h, m ->
@@ -684,7 +686,7 @@ fun EditTaskDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Edit Task",
+                                text = stringResource(R.string.todo_edit_task),
                                 color = palette.ink,
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold
@@ -699,7 +701,7 @@ fun EditTaskDialog(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Outlined.Delete,
-                                        contentDescription = "Delete task",
+                                        contentDescription = stringResource(R.string.todo_delete_task),
                                         tint = palette.flagRed,
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -713,7 +715,7 @@ fun EditTaskDialog(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Rounded.Close,
-                                        contentDescription = "Close",
+                                        contentDescription = stringResource(R.string.common_close),
                                         tint = palette.muted,
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -733,24 +735,24 @@ fun EditTaskDialog(
                             palette = palette,
                             value = title,
                             onValueChange = { title = it },
-                            label = "Task name",
-                            placeholder = "e.g. Yoga practice",
+                            label = stringResource(R.string.todo_task_name),
+                            placeholder = stringResource(R.string.todo_task_name_hint),
                             imeAction = ImeAction.Next
                         )
                     }
 
                     Spacer(Modifier.height(20.dp))
 
-                    SectionLabel(palette, "Date")
+                    SectionLabel(palette, stringResource(R.string.todo_date))
                     Spacer(Modifier.height(10.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        item { CategoryChip(palette, "Today", selectedDate == LocalDate.now()) { selectedDate = LocalDate.now() } }
-                        item { CategoryChip(palette, "Tomorrow", selectedDate == LocalDate.now().plusDays(1)) { selectedDate = LocalDate.now().plusDays(1) } }
+                        item { CategoryChip(palette, stringResource(R.string.common_today), selectedDate == LocalDate.now()) { selectedDate = LocalDate.now() } }
+                        item { CategoryChip(palette, stringResource(R.string.common_tomorrow), selectedDate == LocalDate.now().plusDays(1)) { selectedDate = LocalDate.now().plusDays(1) } }
                         item {
                             CategoryChip(
                                 palette,
                                 if (selectedDate in listOf(LocalDate.now(), LocalDate.now().plusDays(1)))
-                                    "Pick date" else selectedDate.format(DateTimeFormatter.ofPattern("d MMM")),
+                                    stringResource(R.string.todo_pick_date) else selectedDate.format(DateTimeFormatter.ofPattern("d MMM")),
                                 selectedDate > LocalDate.now().plusDays(1) || selectedDate < LocalDate.now(),
                             ) {
                                 android.app.DatePickerDialog(
@@ -765,7 +767,7 @@ fun EditTaskDialog(
                     }
 
                     Spacer(Modifier.height(20.dp))
-                    SectionLabel(palette, "Priority")
+                    SectionLabel(palette, stringResource(R.string.common_priority))
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         TodoPriority.entries.forEach { priority ->
@@ -784,12 +786,12 @@ fun EditTaskDialog(
                         modifier = Modifier
                             .staggerAnim(sectionAlphas[2].value, sectionOffsets[2].value)
                     ) {
-                        SectionLabel(palette, "Time")
+                        SectionLabel(palette, stringResource(R.string.cal_time))
                         Spacer(Modifier.height(10.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             TimePickerField(
                                 value = startTime,
-                                label = "Start",
+                                label = stringResource(R.string.common_start),
                                 placeholder = "09:00",
                                 mutedColor = palette.muted,
                                 accentColor = palette.lavender,
@@ -803,7 +805,7 @@ fun EditTaskDialog(
                             )
                             TimePickerField(
                                 value = endTime,
-                                label = "End",
+                                label = stringResource(R.string.cal_end),
                                 placeholder = "10:00",
                                 mutedColor = palette.muted,
                                 accentColor = palette.lavender,
@@ -820,7 +822,7 @@ fun EditTaskDialog(
 
                     Spacer(Modifier.height(20.dp))
 
-                    SectionLabel(palette, "Category")
+                    SectionLabel(palette, stringResource(R.string.todo_category))
                     Spacer(Modifier.height(10.dp))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(listOf("work", "education", "personal", "sport", "health")) { category ->
@@ -835,7 +837,7 @@ fun EditTaskDialog(
                     Spacer(Modifier.height(12.dp))
 
                     TextButton(onClick = { showMoreOptions = !showMoreOptions }) {
-                        Text(if (showMoreOptions) "Hide extra options" else "More options")
+                        Text(if (showMoreOptions) stringResource(R.string.todo_hide_options) else stringResource(R.string.common_more_options))
                     }
                     AnimatedVisibility(showMoreOptions) {
                         Column {
@@ -843,12 +845,12 @@ fun EditTaskDialog(
                                 palette = palette,
                                 value = description,
                                 onValueChange = { description = it },
-                                label = "Description (optional)",
-                                placeholder = "e.g. Morning stretch routine",
+                                label = stringResource(R.string.cal_description_optional),
+                                placeholder = stringResource(R.string.todo_description_hint),
                                 imeAction = ImeAction.Done,
                             )
                             Spacer(Modifier.height(18.dp))
-                            SectionLabel(palette, "Color")
+                            SectionLabel(palette, stringResource(R.string.cal_color))
                             Spacer(Modifier.height(10.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                                 ColorOption(palette.taskRed, selectedColor == "red") { selectedColor = "red" }
@@ -875,7 +877,7 @@ fun EditTaskDialog(
                             shape = RoundedCornerShape(16.dp)
                         ) {
                             Text(
-                                "Cancel",
+                                stringResource(R.string.common_cancel),
                                 color = palette.muted,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 15.sp
@@ -901,7 +903,7 @@ fun EditTaskDialog(
                             enabled = title.isNotBlank()
                         ) {
                             Text(
-                                "Save",
+                                stringResource(R.string.common_save),
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp
@@ -918,7 +920,7 @@ fun EditTaskDialog(
         // forgotten, and made a five-minute correction mean dialling the whole way round again
         val (h0, m0) = parseHourMinute(startTime) ?: (9 to 0)
         TimePickerDialog(
-            title = "Select start time",
+            title = stringResource(R.string.cal_select_start),
             initialHour = h0,
             initialMinute = m0,
             onConfirm = { h, m ->
@@ -935,7 +937,7 @@ fun EditTaskDialog(
             ?: parseHourMinute(startTime)?.let { ((it.first + 1).coerceAtMost(23)) to it.second }
             ?: (10 to 0)
         TimePickerDialog(
-            title = "Select end time",
+            title = stringResource(R.string.cal_select_end),
             initialHour = h0,
             initialMinute = m0,
             onConfirm = { h, m ->
@@ -1099,7 +1101,7 @@ private fun TodoAudienceSwitcher(
     ) {
         TodoAudienceSegment(
             palette = palette,
-            label = "For myself",
+            label = stringResource(R.string.cal_for_myself),
             icon = Icons.Rounded.Person,
             selected = audience == TodoAudience.Mine,
             modifier = Modifier.weight(1f),
@@ -1107,7 +1109,7 @@ private fun TodoAudienceSwitcher(
         )
         TodoAudienceSegment(
             palette = palette,
-            label = "For someone",
+            label = stringResource(R.string.cal_for_someone),
             icon = Icons.Rounded.Diversity3,
             selected = audience == TodoAudience.Together,
             modifier = Modifier.weight(1f),
@@ -1259,7 +1261,7 @@ private fun TodoAudiencePicker(
         if (required && selected.isEmpty()) {
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Pick at least one person.",
+                text = stringResource(R.string.cal_pick_person),
                 color = palette.muted,
                 fontSize = 11.sp,
             )
@@ -1300,7 +1302,7 @@ private fun TodoAudiencePicker(
                 Spacer(Modifier.width(11.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = "Add to my list too",
+                        text = stringResource(R.string.todo_add_mine_too),
                         color = palette.ink,
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -1308,9 +1310,9 @@ private fun TodoAudiencePicker(
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = if (addToMyList) {
-                            "It'll be on your list as well"
+                            stringResource(R.string.todo_on_your_list)
                         } else {
-                            "Only they will get this task"
+                            stringResource(R.string.todo_only_they)
                         },
                         color = palette.muted,
                         fontSize = 11.sp,
@@ -1322,8 +1324,7 @@ private fun TodoAudiencePicker(
         if (selected.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "They'll see this task on their list. They still can't see " +
-                    "anything else of yours.",
+                text = stringResource(R.string.todo_they_see),
                 color = palette.muted,
                 fontSize = 11.sp,
                 lineHeight = 15.sp,

@@ -4,39 +4,47 @@ import com.muradgalayev.brainbuddy.data.local.FontMode
 import com.muradgalayev.brainbuddy.data.local.FontSize
 import com.muradgalayev.brainbuddy.data.local.TextSpacing
 import com.muradgalayev.brainbuddy.data.local.ThemeMode
+import com.muradgalayev.brainbuddy.data.local.labelRes
 import com.muradgalayev.brainbuddy.domain.model.AiTone
 import com.muradgalayev.brainbuddy.domain.model.ProductiveTime
 import java.time.LocalTime
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.muradgalayev.brainbuddy.R
 
 // everything the assistant can do offline, and the order to offer it in. option lists are
 // built from the app's own enums rather than typed out, so adding a font or a tone shows up
 // here automatically instead of quietly going missing
 @Singleton
-class OfflineActionCatalog @Inject constructor() {
+class OfflineActionCatalog @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
+) {
 
-    val actions: List<OfflineAction> = listOf(
+    // a getter, not a stored list: the copy is read from resources, and a list built once would stay
+    // in whatever language the app had when this singleton was made
+    val actions: List<OfflineAction>
+        get() = listOf(
         // capture. the reason offline mode exists: a thought you can't write down is a thought you
         // lose, and 'no connection' is not an acceptable reason to lose it
         OfflineAction(
             id = "capture_todo",
-            title = "Add a to-do",
-            subtitle = "Saves on this device, syncs when you're back",
+            confirmation = context.getString(R.string.offline_done_todo),
+            title = context.getString(R.string.offline_add_todo),
+            subtitle = context.getString(R.string.offline_add_todo_sub),
             group = OfflineActionGroup.Capture,
             icon = OfflineActionIcon.Todo,
             toolName = "create_todo",
             slots = listOf(
-                OfflineSlot.FreeText("title", "What is it?", hint = "e.g. Call the pharmacy"),
-                OfflineSlot.DayPick("date", "When?"),
-                OfflineSlot.TimePick("start_time", "Time (optional)"),
+                OfflineSlot.FreeText("title", context.getString(R.string.together_what_is_it), hint = context.getString(R.string.offline_hint_pharmacy)),
+                OfflineSlot.DayPick("date", context.getString(R.string.med_when)),
+                OfflineSlot.TimePick("start_time", context.getString(R.string.offline_time_optional)),
                 OfflineSlot.Choice(
                     key = "priority",
-                    label = "Priority",
+                    label = context.getString(R.string.common_priority),
                     options = listOf(
-                        OfflineOption("MEDIUM", "Normal"),
-                        OfflineOption("HIGH", "Important"),
-                        OfflineOption("LOW", "Whenever"),
+                        OfflineOption("MEDIUM", context.getString(R.string.priority_normal)),
+                        OfflineOption("HIGH", context.getString(R.string.priority_important)),
+                        OfflineOption("LOW", context.getString(R.string.priority_whenever)),
                     ),
                     defaultValue = "MEDIUM",
                 ),
@@ -44,23 +52,24 @@ class OfflineActionCatalog @Inject constructor() {
         ),
         OfflineAction(
             id = "capture_event",
-            title = "Add a calendar event",
-            subtitle = "Goes straight into your day, syncs later",
+            confirmation = context.getString(R.string.offline_done_event),
+            title = context.getString(R.string.offline_add_event),
+            subtitle = context.getString(R.string.offline_add_event_sub),
             group = OfflineActionGroup.Capture,
             icon = OfflineActionIcon.Event,
             toolName = "create_calendar_event",
             slots = listOf(
-                OfflineSlot.FreeText("title", "What is it?", hint = "e.g. Dentist"),
-                OfflineSlot.DayPick("date", "When?"),
+                OfflineSlot.FreeText("title", context.getString(R.string.together_what_is_it), hint = context.getString(R.string.offline_hint_dentist)),
+                OfflineSlot.DayPick("date", context.getString(R.string.med_when)),
                 // create_calendar_event requires a start time, so this one isn't optional
-                OfflineSlot.TimePick("start_time", "Starts at", optional = false),
+                OfflineSlot.TimePick("start_time", context.getString(R.string.offline_starts_at), optional = false),
                 OfflineSlot.Choice(
                     key = "color",
-                    label = "Colour",
+                    label = context.getString(R.string.common_colour),
                     options = listOf(
-                        OfflineOption("blue", "Blue"),
-                        OfflineOption("red", "Red"),
-                        OfflineOption("yellow", "Yellow"),
+                        OfflineOption("blue", context.getString(R.string.color_blue)),
+                        OfflineOption("red", context.getString(R.string.color_red)),
+                        OfflineOption("yellow", context.getString(R.string.color_yellow)),
                     ),
                     defaultValue = "blue",
                 ),
@@ -71,15 +80,16 @@ class OfflineActionCatalog @Inject constructor() {
         // don't: the write lands locally and is queued for Supabase
         OfflineAction(
             id = "set_font",
-            title = "Change the font",
-            subtitle = "Including OpenDyslexic",
+            confirmation = context.getString(R.string.offline_done_font),
+            title = context.getString(R.string.offline_change_font),
+            subtitle = context.getString(R.string.offline_change_font_sub),
             group = OfflineActionGroup.Appearance,
             icon = OfflineActionIcon.Font,
             toolName = "update_appearance",
             slots = listOf(
                 OfflineSlot.Choice(
                     key = "font",
-                    label = "Typeface",
+                    label = context.getString(R.string.setup_typeface),
                     options = FontMode.entries.map {
                         OfflineOption(it.name, if (it == FontMode.OpenDyslexic) "OpenDyslexic" else it.name)
                     },
@@ -88,46 +98,49 @@ class OfflineActionCatalog @Inject constructor() {
         ),
         OfflineAction(
             id = "set_font_size",
-            title = "Change text size",
-            subtitle = "Smaller or bigger everywhere",
+            confirmation = context.getString(R.string.offline_done_size),
+            title = context.getString(R.string.offline_change_size),
+            subtitle = context.getString(R.string.offline_change_size_sub),
             group = OfflineActionGroup.Appearance,
             icon = OfflineActionIcon.TextSize,
             toolName = "update_appearance",
             slots = listOf(
                 OfflineSlot.Choice(
                     key = "font_size",
-                    label = "Text size",
-                    options = FontSize.entries.map { OfflineOption(it.name, it.name) },
+                    label = context.getString(R.string.setup_text_size),
+                    options = FontSize.entries.map { OfflineOption(it.name, context.getString(it.labelRes)) },
                 ),
             ),
         ),
         OfflineAction(
             id = "set_text_spacing",
-            title = "Change text spacing",
-            subtitle = "More room between lines and letters",
+            confirmation = context.getString(R.string.offline_done_spacing),
+            title = context.getString(R.string.offline_change_spacing),
+            subtitle = context.getString(R.string.offline_change_spacing_sub),
             group = OfflineActionGroup.Appearance,
             icon = OfflineActionIcon.TextSpacing,
             toolName = "update_appearance",
             slots = listOf(
                 OfflineSlot.Choice(
                     key = "text_spacing",
-                    label = "Spacing",
-                    options = TextSpacing.entries.map { OfflineOption(it.name, it.name) },
+                    label = context.getString(R.string.common_spacing),
+                    options = TextSpacing.entries.map { OfflineOption(it.name, context.getString(it.labelRes)) },
                 ),
             ),
         ),
         OfflineAction(
             id = "set_theme",
-            title = "Switch theme",
-            subtitle = "Light, dark, or follow the system",
+            confirmation = context.getString(R.string.offline_done_theme),
+            title = context.getString(R.string.offline_switch_theme),
+            subtitle = context.getString(R.string.offline_switch_theme_sub),
             group = OfflineActionGroup.Appearance,
             icon = OfflineActionIcon.Theme,
             toolName = "update_appearance",
             slots = listOf(
                 OfflineSlot.Choice(
                     key = "theme",
-                    label = "Theme",
-                    options = ThemeMode.entries.map { OfflineOption(it.name, it.name) },
+                    label = context.getString(R.string.common_theme),
+                    options = ThemeMode.entries.map { OfflineOption(it.name, context.getString(it.labelRes)) },
                 ),
             ),
         ),
@@ -135,17 +148,18 @@ class OfflineActionCatalog @Inject constructor() {
         // profile
         OfflineAction(
             id = "profile_focus_length",
-            title = "Set my focus length",
-            subtitle = "How long a block feels doable right now",
+            confirmation = context.getString(R.string.offline_done_focus_length),
+            title = context.getString(R.string.offline_focus_length),
+            subtitle = context.getString(R.string.offline_focus_length_sub),
             group = OfflineActionGroup.Profile,
             icon = OfflineActionIcon.Clock,
             toolName = "update_adhd_profile",
             slots = listOf(
                 OfflineSlot.Choice(
                     key = "focus_duration_minutes",
-                    label = "Focus block",
+                    label = context.getString(R.string.offline_focus_block),
                     options = listOf(10, 15, 25, 45, 60).map {
-                        OfflineOption(it.toString(), "$it min")
+                        OfflineOption(it.toString(), context.getString(R.string.common_minutes_short, it))
                     },
                     defaultValue = "25",
                 ),
@@ -153,46 +167,49 @@ class OfflineActionCatalog @Inject constructor() {
         ),
         OfflineAction(
             id = "profile_productive_time",
-            title = "Change my best time of day",
-            subtitle = "When your focus is actually there",
+            confirmation = context.getString(R.string.offline_done_best_time),
+            title = context.getString(R.string.offline_best_time),
+            subtitle = context.getString(R.string.offline_best_time_sub),
             group = OfflineActionGroup.Profile,
             icon = OfflineActionIcon.Clock,
             toolName = "update_adhd_profile",
             slots = listOf(
                 OfflineSlot.Choice(
                     key = "productive_time",
-                    label = "Peak time",
-                    options = ProductiveTime.entries.map { OfflineOption(it.key, it.label) },
+                    label = context.getString(R.string.offline_peak_time),
+                    options = ProductiveTime.entries.map { OfflineOption(it.key, context.getString(it.labelRes)) },
                 ),
             ),
         ),
         OfflineAction(
             id = "profile_tone",
-            title = "Change how I talk to you",
-            subtitle = "Applies once you're back online too",
+            confirmation = context.getString(R.string.offline_done_tone),
+            title = context.getString(R.string.offline_tone),
+            subtitle = context.getString(R.string.offline_tone_sub),
             group = OfflineActionGroup.Profile,
             icon = OfflineActionIcon.Tone,
             toolName = "update_adhd_profile",
             slots = listOf(
                 OfflineSlot.Choice(
                     key = "ai_tone",
-                    label = "Tone",
-                    options = AiTone.entries.map { OfflineOption(it.key, it.label) },
+                    label = context.getString(R.string.common_tone),
+                    options = AiTone.entries.map { OfflineOption(it.key, context.getString(it.labelRes)) },
                 ),
             ),
         ),
         OfflineAction(
             id = "profile_pain_point",
-            title = "Note what's hard right now",
-            subtitle = "I'll use it to personalise once we reconnect",
+            confirmation = context.getString(R.string.offline_done_note),
+            title = context.getString(R.string.offline_note_hard),
+            subtitle = context.getString(R.string.offline_note_hard_sub),
             group = OfflineActionGroup.Profile,
             icon = OfflineActionIcon.Note,
             toolName = "update_adhd_profile",
             slots = listOf(
                 OfflineSlot.FreeText(
                     key = "pain_point",
-                    label = "What's getting in the way?",
-                    hint = "e.g. Can't start anything in the mornings",
+                    label = context.getString(R.string.offline_in_the_way),
+                    hint = context.getString(R.string.offline_hint_mornings),
                 ),
             ),
         ),
@@ -200,16 +217,17 @@ class OfflineActionCatalog @Inject constructor() {
         // focus
         OfflineAction(
             id = "start_focus",
-            title = "Start a focus timer",
-            subtitle = "Runs entirely on the device",
+            confirmation = context.getString(R.string.offline_done_focus),
+            title = context.getString(R.string.offline_start_focus),
+            subtitle = context.getString(R.string.offline_start_focus_sub),
             group = OfflineActionGroup.Focus,
             icon = OfflineActionIcon.FocusTimer,
             toolName = "start_pomodoro",
             slots = listOf(
                 OfflineSlot.Choice(
                     key = "minutes",
-                    label = "Length",
-                    options = listOf(10, 15, 25, 45).map { OfflineOption(it.toString(), "$it min") },
+                    label = context.getString(R.string.common_length),
+                    options = listOf(10, 15, 25, 45).map { OfflineOption(it.toString(), context.getString(R.string.common_minutes_short, it)) },
                     defaultValue = "25",
                 ),
             ),
@@ -220,20 +238,20 @@ class OfflineActionCatalog @Inject constructor() {
         // to read, see suggest()
         OfflineAction(
             id = "find_care",
-            title = "Look up care nearby",
-            subtitle = "From what's already saved on this device",
+            title = context.getString(R.string.offline_care),
+            subtitle = context.getString(R.string.offline_care_sub),
             group = OfflineActionGroup.Care,
             icon = OfflineActionIcon.Care,
             toolName = "find_care_nearby",
             slots = listOf(
                 OfflineSlot.Choice(
                     key = "category",
-                    label = "What do you need?",
+                    label = context.getString(R.string.offline_what_need),
                     options = listOf(
-                        OfflineOption("pharmacy", "Pharmacy"),
-                        OfflineOption("hospital", "Hospital"),
-                        OfflineOption("specialist", "Specialist / dentist"),
-                        OfflineOption("support_group", "Support group"),
+                        OfflineOption("pharmacy", context.getString(R.string.care_pharmacy)),
+                        OfflineOption("hospital", context.getString(R.string.care_hospital)),
+                        OfflineOption("specialist", context.getString(R.string.care_specialist)),
+                        OfflineOption("support_group", context.getString(R.string.care_support_group)),
                     ),
                 ),
             ),

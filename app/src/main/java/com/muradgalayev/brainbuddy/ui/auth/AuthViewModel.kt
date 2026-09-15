@@ -18,6 +18,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.muradgalayev.brainbuddy.R
+import com.muradgalayev.brainbuddy.ui.utils.UiText
+import com.muradgalayev.brainbuddy.ui.utils.uiText
 
 data class AuthUiState(
     val firstName: String = "",
@@ -27,16 +30,19 @@ data class AuthUiState(
     val password: String = "",
     val isLoginMode: Boolean = true,
     val isLoading: Boolean = false,
-    val error: String? = null,
-    val infoMessage: String? = null,
+    // Google runs in the browser, so it has its own flag: the Sign in button's spinner belongs to email
+    val isGoogleLoading: Boolean = false,
+    val error: UiText? = null,
+    val infoMessage: UiText? = null,
     val isSuccess: Boolean = false,
     val forgotPasswordOpen: Boolean = false,
     val forgotPasswordEmail: String = "",
     val forgotPasswordSending: Boolean = false,
-    val forgotPasswordError: String? = null,
+    val forgotPasswordError: UiText? = null,
     val newPasswordOpen: Boolean = false,
     val newPasswordSaving: Boolean = false,
-    val newPasswordError: String? = null,
+    val newPasswordError: UiText? = null,
+    val passwordResetComplete: Boolean = false,
 )
 
 @HiltViewModel
@@ -47,7 +53,9 @@ class AuthViewModel @Inject constructor(
     private val passwordRecoveryState: PasswordRecoveryState,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AuthUiState())
+    private val _uiState = MutableStateFlow(
+        AuthUiState(newPasswordOpen = passwordRecoveryState.active.value),
+    )
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     private var awaitingExternalAuth = false
@@ -65,12 +73,13 @@ class AuthViewModel @Inject constructor(
                     when {
                         authenticated && recovery -> {
                             _uiState.update {
-                                it.copy(isLoading = false, newPasswordOpen = true)
+                                it.copy(isLoading = false, isGoogleLoading = false, newPasswordOpen = true)
                             }
                         }
                         authenticated && awaitingExternalAuth -> {
                             awaitingExternalAuth = false
-                            _uiState.update { it.copy(isLoading = false, isSuccess = true) }
+                            authRepository.reactivateIfDeactivated()
+                            _uiState.update { it.copy(isLoading = false, isGoogleLoading = false, isSuccess = true) }
                             syncCoordinator.syncAll()
                         }
                     }
@@ -138,7 +147,7 @@ class AuthViewModel @Inject constructor(
     fun sendPasswordReset() {
         val email = _uiState.value.forgotPasswordEmail.trim()
         if (email.isBlank() || !email.contains("@")) {
-            _uiState.update { it.copy(forgotPasswordError = "Please enter a valid email") }
+            _uiState.update { it.copy(forgotPasswordError = uiText(R.string.auth_error_invalid_email)) }
             return
         }
         _uiState.update { it.copy(forgotPasswordSending = true, forgotPasswordError = null) }
@@ -147,7 +156,7 @@ class AuthViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         forgotPasswordSending = false,
-                        forgotPasswordError = "No internet connection",
+                        forgotPasswordError = uiText(R.string.common_no_internet),
                     )
                 }
                 return@launch
@@ -158,7 +167,7 @@ class AuthViewModel @Inject constructor(
                     it.copy(
                         forgotPasswordSending = false,
                         forgotPasswordOpen = false,
-                        infoMessage = "Reset link sent to $email. Check your email to continue.",
+                        infoMessage = uiText(R.string.auth_reset_link_sent, email),
                     )
                 }
             } catch (e: Exception) {
@@ -177,7 +186,7 @@ class AuthViewModel @Inject constructor(
     fun submitNewPassword(newPassword: String) {
         if (newPassword.length < 6) {
             _uiState.update {
-                it.copy(newPasswordError = "Password must be at least 6 characters")
+                it.copy(newPasswordError = uiText(R.string.auth_error_password_length))
             }
             return
         }
@@ -187,7 +196,7 @@ class AuthViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         newPasswordSaving = false,
-                        newPasswordError = "No internet connection",
+                        newPasswordError = uiText(R.string.common_no_internet),
                     )
                 }
                 return@launch
@@ -199,7 +208,7 @@ class AuthViewModel @Inject constructor(
                     it.copy(
                         newPasswordSaving = false,
                         newPasswordOpen = false,
-                        isSuccess = true,
+                        passwordResetComplete = true,
                         infoMessage = null,
                     )
                 }
@@ -215,6 +224,28 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    fun continueAfterPasswordReset() {
+        _uiState.update { it.copy(passwordResetComplete = false, isSuccess = true) }
+    }
+
+    fun cancelPasswordReset() {
+        if (_uiState.value.newPasswordSaving) return
+        viewModelScope.launch {
+            // A recovery link creates an authenticated recovery session. Clear it before returning
+            // to sign-in so Back can never accidentally admit the user with an unchanged password.
+            authRepository.signOut()
+            passwordRecoveryState.clear()
+            _uiState.update {
+                it.copy(
+                    newPasswordOpen = false,
+                    newPasswordError = null,
+                    passwordResetComplete = false,
+                    isLoginMode = true,
+                )
+            }
+        }
+    }
+
     // called when the Auth screen comes back to the foreground. catches the case where the user
     // tapped Google, landed in a Chrome Custom Tab, and hit Back without finishing: no deep link
     // fires on that path, so isLoading would otherwise spin forever. the grace period covers slow
@@ -225,17 +256,18 @@ class AuthViewModel @Inject constructor(
             delay(800)
             if (awaitingExternalAuth && authRepository.getCurrentUserId() == null) {
                 awaitingExternalAuth = false
-                _uiState.update { it.copy(isLoading = false) }
+                _uiState.update { it.copy(isGoogleLoading = false) }
             }
         }
     }
 
     fun signInWithGoogle() {
-        _uiState.update { it.copy(isLoading = true, error = null, infoMessage = null) }
+        if (_uiState.value.isLoading || _uiState.value.isGoogleLoading) return
+        _uiState.update { it.copy(isGoogleLoading = true, error = null, infoMessage = null) }
         viewModelScope.launch {
             if (!networkObserver.isOnline.first()) {
                 _uiState.update {
-                    it.copy(isLoading = false, error = "No internet connection")
+                    it.copy(isGoogleLoading = false, error = uiText(R.string.common_no_internet))
                 }
                 return@launch
             }
@@ -247,7 +279,7 @@ class AuthViewModel @Inject constructor(
             } catch (e: Exception) {
                 awaitingExternalAuth = false
                 _uiState.update {
-                    it.copy(isLoading = false, error = mapAuthError(e))
+                    it.copy(isGoogleLoading = false, error = mapAuthError(e))
                 }
             }
         }
@@ -256,17 +288,19 @@ class AuthViewModel @Inject constructor(
     fun submit() {
         val state = _uiState.value
         if (state.email.isBlank() || state.password.isBlank()) {
-            _uiState.update { it.copy(error = "Please fill in all fields") }
+            _uiState.update { it.copy(error = uiText(R.string.auth_error_fill_all)) }
             return
         }
         if (!state.isLoginMode && (state.firstName.isBlank() || state.lastName.isBlank())) {
-            _uiState.update { it.copy(error = "Please enter your name") }
+            _uiState.update { it.copy(error = uiText(R.string.auth_error_enter_name)) }
             return
         }
         if (state.password.length < 6) {
-            _uiState.update { it.copy(error = "Password must be at least 6 characters") }
+            _uiState.update { it.copy(error = uiText(R.string.auth_error_password_length)) }
             return
         }
+        // a Google sign-in is already under way in the browser
+        if (state.isGoogleLoading) return
 
         _uiState.update { it.copy(isLoading = true, error = null, infoMessage = null) }
 
@@ -274,7 +308,7 @@ class AuthViewModel @Inject constructor(
             // fail fast when offline, otherwise Ktor sits through the full 30s timeout
             if (!networkObserver.isOnline.first()) {
                 _uiState.update {
-                    it.copy(isLoading = false, error = "No internet connection")
+                    it.copy(isLoading = false, error = uiText(R.string.common_no_internet))
                 }
                 return@launch
             }
@@ -282,6 +316,7 @@ class AuthViewModel @Inject constructor(
             try {
                 if (state.isLoginMode) {
                     authRepository.signIn(state.email.trim(), state.password)
+                    authRepository.reactivateIfDeactivated()
                     _uiState.update { it.copy(isLoading = false, isSuccess = true) }
                     syncCoordinator.syncAll()
                 } else {
@@ -299,7 +334,7 @@ class AuthViewModel @Inject constructor(
                             isLoading = false,
                             isLoginMode = true,
                             password = "",
-                            infoMessage = "Account created. Check your email to confirm, then sign in."
+                            infoMessage = uiText(R.string.auth_account_created)
                         )
                     }
                 }
@@ -311,5 +346,5 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    private fun mapAuthError(e: Throwable): String = authErrorMessage(e)
+    private fun mapAuthError(e: Throwable): UiText = authErrorMessage(e)
 }

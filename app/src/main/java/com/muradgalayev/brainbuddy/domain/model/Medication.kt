@@ -1,5 +1,8 @@
 package com.muradgalayev.brainbuddy.domain.model
 
+import android.content.res.Resources
+import androidx.annotation.StringRes
+import com.muradgalayev.brainbuddy.R
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.UUID
@@ -38,6 +41,15 @@ data class Medication(
             return "$amount ${unit.label}"
         }
 
+    // doseLabel in the app's language, for anything on screen. doseLabel itself stays English: it
+    // goes into the assistant's context, where a stable unit reads better than a translated one
+    fun doseLabel(resources: Resources): String {
+        val amount = dose.trim()
+        if (amount.isEmpty()) return ""
+        val unit = MedicationUnit.fromKey(doseUnit) ?: return amount
+        return "$amount ${resources.getString(unit.labelRes)}"
+    }
+
     fun isScheduledOn(day: java.time.DayOfWeek): Boolean =
         daysOfWeek.isEmpty() || day.value in daysOfWeek
 
@@ -54,15 +66,15 @@ data class Medication(
 // in once, not a pharmacological reference, and every extra option is another decision to
 // make. the long tail (puffs, units, sachets) is rare enough that the free amount field plus a
 // sensible neighbour covers it. ordered by how often they come up for ADHD medication
-enum class MedicationUnit(val key: String, val label: String) {
-    Mg("mg", "mg"),
-    Mcg("mcg", "mcg"),
-    G("g", "g"),
-    Tablets("tablets", "tablets"),
-    Capsules("capsules", "capsules"),
-    Pieces("pieces", "pieces"),
-    Ml("ml", "ml"),
-    Drops("drops", "drops");
+enum class MedicationUnit(val key: String, val label: String, @StringRes val labelRes: Int) {
+    Mg("mg", "mg", R.string.med_unit_mg),
+    Mcg("mcg", "mcg", R.string.med_unit_mcg),
+    G("g", "g", R.string.med_unit_g),
+    Tablets("tablets", "tablets", R.string.med_unit_tablets),
+    Capsules("capsules", "capsules", R.string.med_unit_capsules),
+    Pieces("pieces", "pieces", R.string.med_unit_pieces),
+    Ml("ml", "ml", R.string.med_unit_ml),
+    Drops("drops", "drops", R.string.med_unit_drops);
 
     companion object {
         val DEFAULT = Mg
@@ -89,13 +101,14 @@ enum class MedicationUnit(val key: String, val label: String) {
 enum class MedicationSlot(
     val key: String,
     val label: String,
+    @StringRes val labelRes: Int,
     // middle of the window, used when no exact time was given
     val approximateTime: String,
 ) {
-    Morning("morning", "Morning", "08:00"),
-    Afternoon("afternoon", "Afternoon", "14:00"),
-    Evening("evening", "Evening", "19:00"),
-    Night("night", "Night", "22:00");
+    Morning("morning", "Morning", R.string.intake_time_morning, "08:00"),
+    Afternoon("afternoon", "Afternoon", R.string.intake_time_afternoon, "14:00"),
+    Evening("evening", "Evening", R.string.intake_time_evening, "19:00"),
+    Night("night", "Night", R.string.intake_time_night, "22:00");
 
     companion object {
         fun fromKey(key: String): MedicationSlot? = entries.firstOrNull { it.key == key }

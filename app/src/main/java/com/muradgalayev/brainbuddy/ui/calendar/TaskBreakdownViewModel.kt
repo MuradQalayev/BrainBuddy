@@ -22,6 +22,7 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.util.UUID
 import javax.inject.Inject
+import com.muradgalayev.brainbuddy.R
 
 // where the plan stands relative to the database. PENDING only ever means a debounced rename
 // hasn't landed yet, every other edit writes straight through. JUST_SAVED is the
@@ -64,6 +65,7 @@ data class BreakdownUiState(
 // immediately, typing debounces so a rename isn't one write per keystroke
 @HiltViewModel
 class TaskBreakdownViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val calendarRepository: CalendarRepository,
     private val pomodoroTimerManager: PomodoroTimerManager,
     savedStateHandle: SavedStateHandle,
@@ -144,7 +146,7 @@ class TaskBreakdownViewModel @Inject constructor(
                 id = UUID.randomUUID().toString(),
                 // a real title rather than an empty string, so what we hold locally matches what we write.
                 // see the note in persist() about echo clobbering
-                title = "New step",
+                title = context.getString(R.string.bd_new_step),
                 durationMinutes = minutes,
                 completed = false,
                 kind = SubtaskKind.FOCUS,
@@ -282,7 +284,7 @@ class TaskBreakdownViewModel @Inject constructor(
                 items = listOf(
                     PomodoroQueueItem(
                         subtaskId = station.id,
-                        title = station.title.ifBlank { "Focus" },
+                        title = station.title.ifBlank { context.getString(R.string.home_focus_widget) },
                         durationMs = station.durationMinutes * 60_000L,
                         isFocus = station.kind == SubtaskKind.FOCUS,
                     )
@@ -332,7 +334,7 @@ class TaskBreakdownViewModel @Inject constructor(
         return (0 until parts).map { i ->
             CalendarSubtaskUi(
                 id = UUID.randomUUID().toString(),
-                title = "Part ${i + 1}",
+                title = context.getString(R.string.bd_part, i + 1),
                 durationMinutes = each + if (i < remainder) 1 else 0,
                 completed = false,
                 kind = SubtaskKind.FOCUS,
@@ -348,7 +350,7 @@ class TaskBreakdownViewModel @Inject constructor(
             val focus = minOf(POMODORO_FOCUS_MINUTES, remaining)
             out += CalendarSubtaskUi(
                 id = UUID.randomUUID().toString(),
-                title = "Focus $focusIndex",
+                title = context.getString(R.string.bd_focus_n, focusIndex),
                 durationMinutes = focus,
                 completed = false,
                 kind = SubtaskKind.FOCUS,
@@ -359,7 +361,7 @@ class TaskBreakdownViewModel @Inject constructor(
             val brk = minOf(POMODORO_BREAK_MINUTES, remaining)
             out += CalendarSubtaskUi(
                 id = UUID.randomUUID().toString(),
-                title = "Break",
+                title = context.getString(R.string.bd_break),
                 durationMinutes = brk,
                 completed = false,
                 kind = SubtaskKind.BREAK,

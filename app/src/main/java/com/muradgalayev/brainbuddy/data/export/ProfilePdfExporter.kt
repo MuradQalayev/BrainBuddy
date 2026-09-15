@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.data.export
 
+import com.muradgalayev.brainbuddy.R
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Canvas
@@ -48,32 +49,31 @@ class ProfilePdfExporter @Inject constructor(
             val doc = PdfDocument()
             val renderer = PageRenderer(doc)
 
-            renderer.heading("Myndora — My Profile")
-            renderer.caption("Generated ${LocalDate.now().format(DATE)}")
+            renderer.heading(context.getString(R.string.pdf_heading))
+            renderer.caption(context.getString(R.string.pdf_generated, LocalDate.now().format(DATE)))
             renderer.gap()
 
-            renderer.section("Who this belongs to")
-            renderer.field("Name", displayName?.takeIf { it.isNotBlank() } ?: "Not set")
-            renderer.field("Email", email?.takeIf { it.isNotBlank() } ?: "Not set")
+            renderer.section(context.getString(R.string.pdf_who))
+            renderer.field(context.getString(R.string.med_name), displayName?.takeIf { it.isNotBlank() } ?: context.getString(R.string.common_not_set))
+            renderer.field(context.getString(R.string.common_email), email?.takeIf { it.isNotBlank() } ?: context.getString(R.string.common_not_set))
             renderer.gap()
 
-            renderer.section("ADHD profile")
+            renderer.section(context.getString(R.string.pdf_adhd_profile))
             if (profile == null || !profile.surveyCompleted) {
-                renderer.body("The survey hasn't been completed yet.")
+                renderer.body(context.getString(R.string.pdf_survey_incomplete))
             } else {
                 surveyRows(profile).forEach { (label, value) -> renderer.field(label, value) }
             }
             renderer.gap()
 
-            renderer.section("Weekly wellness log")
+            renderer.section(context.getString(R.string.pdf_weekly_log))
             renderer.caption(
-                "${report.from.format(DATE)} – ${report.to.format(DATE)} · " +
-                    "${report.daysWithAnyData} of 7 days with data"
+                context.getString(R.string.pdf_range, report.from.format(DATE), report.to.format(DATE), report.daysWithAnyData)
             )
             renderer.gap(6f)
 
             if (report.daysWithAnyData == 0) {
-                renderer.body("No wellness data was recorded in this period.")
+                renderer.body(context.getString(R.string.pdf_no_data))
             } else {
                 renderer.tableHeader(COLUMNS)
                 report.days.forEach { day ->
@@ -90,25 +90,24 @@ class ProfilePdfExporter @Inject constructor(
                     )
                 }
                 renderer.gap()
-                renderer.section("Averages over the week")
-                renderer.field("Steps per day", report.averageSteps?.toString() ?: "—")
-                renderer.field("Heart rate", report.averageHeartRate?.let { "$it bpm" } ?: "—")
+                renderer.section(context.getString(R.string.pdf_averages))
+                renderer.field(context.getString(R.string.pdf_steps_day), report.averageSteps?.toString() ?: "—")
+                renderer.field(context.getString(R.string.health_heart_rate), report.averageHeartRate?.let { "$it bpm" } ?: "—")
                 renderer.field(
-                    "Resting heart rate",
+                    context.getString(R.string.wellness_resting_hr),
                     report.averageRestingHeartRate?.let { "$it bpm" } ?: "—",
                 )
                 renderer.field(
-                    "Sleep per night",
+                    context.getString(R.string.pdf_sleep_night),
                     report.averageSleepHours?.let { "%.1f h".format(it) } ?: "—",
                 )
-                renderer.field("Exercise total", "${report.totalExerciseMinutes} min")
-                renderer.field("Calories total", "${report.totalCalories} kcal")
+                renderer.field(context.getString(R.string.pdf_exercise_total), context.getString(R.string.common_minutes_short, report.totalExerciseMinutes))
+                renderer.field(context.getString(R.string.pdf_calories_total), "${report.totalCalories} kcal")
             }
 
             renderer.gap()
             renderer.caption(
-                "This document is a personal record. It is not a medical assessment " +
-                    "and must not be used to diagnose any condition."
+                context.getString(R.string.pdf_disclaimer)
             )
             renderer.finish()
 
@@ -116,7 +115,7 @@ class ProfilePdfExporter @Inject constructor(
             val result = writeDocument(doc, name)
             doc.close()
             result
-        }.getOrElse { PdfExportResult.Failed(it.message ?: "Could not create the PDF") }
+        }.getOrElse { PdfExportResult.Failed(it.message ?: context.getString(R.string.pdf_create_failed)) }
     }
 
     // Q and above write straight into the public Downloads collection, which needs no permission
@@ -131,9 +130,9 @@ class ProfilePdfExporter @Inject constructor(
             }
             val resolver = context.contentResolver
             val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                ?: return PdfExportResult.Failed("Couldn't open Downloads")
+                ?: return PdfExportResult.Failed(context.getString(R.string.pdf_open_downloads_failed))
             resolver.openOutputStream(uri).use { out ->
-                if (out == null) return PdfExportResult.Failed("Couldn't write to Downloads")
+                if (out == null) return PdfExportResult.Failed(context.getString(R.string.pdf_write_downloads_failed))
                 doc.writeTo(out)
             }
             values.clear()
@@ -143,7 +142,7 @@ class ProfilePdfExporter @Inject constructor(
         }
 
         val dir = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
-            ?: return PdfExportResult.Failed("No storage available")
+            ?: return PdfExportResult.Failed(context.getString(R.string.pdf_no_storage))
         if (!dir.exists()) dir.mkdirs()
         val file = File(dir, fileName)
         file.outputStream().use { doc.writeTo(it) }
@@ -151,63 +150,66 @@ class ProfilePdfExporter @Inject constructor(
     }
 
     private fun surveyRows(p: AdhdProfile): List<Pair<String, String>> = buildList {
-        p.diagnosisStatus?.let { add("Diagnosis" to it.label) }
-        if (p.ageRange.isNotBlank()) add("Age range" to p.ageRange)
+        p.diagnosisStatus?.let { add(context.getString(R.string.onboarding_diagnosis) to context.getString(it.labelRes)) }
+        if (p.ageRange.isNotBlank()) add(context.getString(R.string.pdf_age_range) to if (p.ageRange == "Under 18") context.getString(R.string.age_under_18) else p.ageRange)
         if (p.topGoals.isNotEmpty()) {
             add(
-                (if (p.topGoals.size == 1) "Main goal" else "Main goals")
-                    to p.topGoals.joinToString(", ") { it.label },
+                (if (p.topGoals.size == 1) context.getString(R.string.pdf_main_goal) else context.getString(R.string.pdf_main_goals))
+                    to p.topGoals.joinToString(", ") { context.getString(it.labelRes) },
             )
         }
         if (p.primarySymptoms.isNotEmpty()) {
-            add("Main struggles" to p.primarySymptoms.joinToString(", ") { it.label })
+            add(context.getString(R.string.pdf_struggles) to p.primarySymptoms.joinToString(", ") { context.getString(it.labelRes) })
         }
-        p.productiveTime?.let { add("Most productive" to it.label) }
-        p.focusDurationMinutes?.takeIf { it > 0 }?.let { add("Focus block" to "$it minutes") }
+        p.productiveTime?.let { add(context.getString(R.string.pdf_most_productive) to context.getString(it.labelRes)) }
+        p.focusDurationMinutes?.takeIf { it > 0 }?.let { add(context.getString(R.string.offline_focus_block) to context.getString(R.string.pdf_n_minutes, it)) }
         if (p.sleepBedtime.isNotBlank() && p.sleepWakeTime.isNotBlank()) {
-            add("Usual sleep" to "${p.sleepBedtime} → ${p.sleepWakeTime}")
+            add(context.getString(R.string.pdf_usual_sleep) to "${p.sleepBedtime} → ${p.sleepWakeTime}")
         }
-        p.chronotype?.let { add("Chronotype" to it.label) }
-        p.sleepScheduleOrigin?.let { add("Sleep schedule" to it.label) }
-        p.presentation?.let { add("Presentation" to it.label) }
+        p.chronotype?.let { add(context.getString(R.string.pdf_chronotype) to context.getString(it.labelRes)) }
+        p.sleepScheduleOrigin?.let { add(context.getString(R.string.pdf_sleep_schedule) to context.getString(it.labelRes)) }
+        p.presentation?.let { add(context.getString(R.string.pdf_presentation) to context.getString(it.labelRes)) }
         if (p.coOccurring.isNotEmpty()) {
-            add("Also applies" to p.coOccurring.joinToString(", ") { it.label })
+            add(context.getString(R.string.pdf_also_applies) to p.coOccurring.joinToString(", ") { context.getString(it.labelRes) })
         }
-        p.interruptionRecall?.let { add("Loses track when interrupted" to it.label) }
-        p.captureNeed?.let { add("Needs to write things down" to it.label) }
-        p.planChangeImpact?.let { add("When plans change" to it.label) }
-        p.taskReturnEffort?.let { add("Returning to a task" to it.label) }
+        p.interruptionRecall?.let { add(context.getString(R.string.pdf_loses_track) to context.getString(it.labelRes)) }
+        p.captureNeed?.let { add(context.getString(R.string.pdf_write_down) to context.getString(it.labelRes)) }
+        p.planChangeImpact?.let { add(context.getString(R.string.pdf_plans_change) to context.getString(it.labelRes)) }
+        p.taskReturnEffort?.let { add(context.getString(R.string.pdf_returning) to context.getString(it.labelRes)) }
         if (p.impulseAreas.isNotEmpty()) {
-            add("Hardest to regulate" to p.impulseAreas.joinToString(", ") { it.label })
+            add(context.getString(R.string.pdf_hardest_regulate) to p.impulseAreas.joinToString(", ") { context.getString(it.labelRes) })
         }
-        p.nudgeTone?.let { add("Preferred reminder tone" to it.label) }
-        p.checkInCeiling?.let { add("Check-in limit" to it.label) }
-        p.missedTaskResponse?.let { add("When something is missed" to it.label) }
-        p.workEnvironment?.let { add("Usual work setting" to it.label) }
+        p.nudgeTone?.let { add(context.getString(R.string.pdf_reminder_tone) to context.getString(it.labelRes)) }
+        p.checkInCeiling?.let { add(context.getString(R.string.pdf_checkin_limit) to context.getString(it.labelRes)) }
+        p.missedTaskResponse?.let { add(context.getString(R.string.pdf_when_missed) to context.getString(it.labelRes)) }
+        p.workEnvironment?.let { add(context.getString(R.string.pdf_work_setting) to context.getString(it.labelRes)) }
         if (p.pastStrategies.isNotEmpty()) {
-            add("Already tried" to p.pastStrategies.joinToString(", ") { it.label })
+            add(context.getString(R.string.pdf_already_tried) to p.pastStrategies.joinToString(", ") { context.getString(it.labelRes) })
         }
-        p.bodyDoublingInterest?.let { add("Body doubling" to it.label) }
-        p.medicationStatus?.let { add("Medication status" to it.label) }
+        p.bodyDoublingInterest?.let { add(context.getString(R.string.intake_body_doubling) to context.getString(it.labelRes)) }
+        p.medicationStatus?.let { add(context.getString(R.string.pdf_med_status) to context.getString(it.labelRes)) }
         if (p.medications.isNotEmpty()) {
             add(
-                "Medications" to p.medications.joinToString(", ") { m ->
-                    if (m.doseLabel.isBlank()) m.name else "${m.name} ${m.doseLabel}"
+                context.getString(R.string.ws_medications) to p.medications.joinToString(", ") { m ->
+                    m.doseLabel(context.resources).let { dose -> if (dose.isBlank()) m.name else "${m.name} $dose" }
                 },
             )
         }
         if (p.copingStrategies.isNotEmpty()) {
-            add("What helps" to p.copingStrategies.joinToString(", ") { it.label })
+            add(context.getString(R.string.pdf_what_helps) to p.copingStrategies.joinToString(", ") { context.getString(it.labelRes) })
         }
-        if (p.painPoint.isNotBlank()) add("Hardest part" to p.painPoint.trim())
-        p.aiTonePreference?.let { add("Preferred tone" to it.label) }
+        if (p.painPoint.isNotBlank()) add(context.getString(R.string.pdf_hardest_part) to p.painPoint.trim())
+        p.aiTonePreference?.let { add(context.getString(R.string.pdf_preferred_tone) to context.getString(it.labelRes)) }
     }
 
-    private companion object {
-        val DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM yyyy")
-        val SHORT_DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM")
-        val COLUMNS = listOf("Date", "Steps", "HR", "Rest HR", "kcal", "Sleep", "Exer.")
-    }
+    // getters, not stored values, so month and day names follow the language at export time
+    private val DATE: DateTimeFormatter get() = DateTimeFormatter.ofPattern("d MMM yyyy")
+    private val SHORT_DATE: DateTimeFormatter get() = DateTimeFormatter.ofPattern("EEE d MMM")
+    private val COLUMNS: List<String>
+        get() = listOf(
+            R.string.pdf_col_date, R.string.pdf_col_steps, R.string.pdf_col_hr, R.string.pdf_col_rest_hr,
+            R.string.pdf_col_kcal, R.string.pdf_col_sleep, R.string.pdf_col_exercise,
+        ).map(context::getString)
 }
 
 // minimal top-down text layout over PdfDocument, starting a new page whenever the cursor runs

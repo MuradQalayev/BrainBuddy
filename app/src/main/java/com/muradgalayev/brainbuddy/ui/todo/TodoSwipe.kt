@@ -25,6 +25,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.muradgalayev.brainbuddy.ui.accessibility.speaking
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,7 +83,7 @@ fun SwipeableTaskCard(
                     SwipeToDismissBoxValue.StartToEnd -> {
                         Icon(
                             imageVector = Icons.Rounded.Edit,
-                            contentDescription = "Edit task",
+                            contentDescription = stringResource(R.string.todo_edit_task_cd),
                             tint = Color.White,
                             modifier = Modifier.size(24.dp)
                         )
@@ -92,7 +94,7 @@ fun SwipeableTaskCard(
                         Box(modifier = Modifier.size(24.dp))
                         Icon(
                             imageVector = Icons.Rounded.Delete,
-                            contentDescription = "Delete task",
+                            contentDescription = stringResource(R.string.todo_delete_task),
                             tint = Color.White,
                             modifier = Modifier.size(24.dp)
                         )

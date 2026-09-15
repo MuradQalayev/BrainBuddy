@@ -456,6 +456,8 @@ class PreferencesManager @Inject constructor(
     }
 
     private val calendarVoiceTipDismissedKey = booleanPreferencesKey("calendar_voice_tip_dismissed")
+    private val modesIntroSeenKey = booleanPreferencesKey("modes_intro_seen")
+    private val dndStartPromptsShownKey = intPreferencesKey("dnd_start_prompts_shown")
     private val calendarVoiceHandlePositionKey = floatPreferencesKey("calendar_voice_handle_position")
     private val aiSpokenResponsesKey = booleanPreferencesKey("ai_spoken_responses")
     private val aiChatReadAloudKey = booleanPreferencesKey("ai_chat_read_aloud")
@@ -469,6 +471,12 @@ class PreferencesManager @Inject constructor(
     private val readAloudTapsKey = booleanPreferencesKey("read_aloud_taps")
     private val aiHealthPersonalizationKey = booleanPreferencesKey("ai_health_personalization")
     private val reduceMotionKey = booleanPreferencesKey("reduce_motion")
+
+    // how many times Home has been opened, and whether the motion tip has had its answer.
+    // 'this moves on its own, you can stop it' means nothing to someone who hasn't watched it
+    // move yet, so the tip waits for a handful of visits and is never asked twice
+    private val homeOpensKey = intPreferencesKey("home_opens")
+    private val motionTipDoneKey = booleanPreferencesKey("motion_tip_done")
 
     // AI consent bookkeeping. the flag above is the runtime gate, these two are what make it a
     // record. see AiConsentRepository
@@ -536,6 +544,23 @@ class PreferencesManager @Inject constructor(
 
     suspend fun setReduceMotion(enabled: Boolean) {
         context.dataStore.edit { it[reduceMotionKey] = enabled }
+    }
+
+    val homeOpens: Flow<Int> = context.dataStore.data.map { it[homeOpensKey] ?: 0 }
+
+    val motionTipDone: Flow<Boolean> = context.dataStore.data.map { it[motionTipDoneKey] ?: false }
+
+    // capped, so a long-running install isn't writing a bigger number to disk every visit for
+    // the rest of its life. nothing above the threshold means anything
+    suspend fun noteHomeOpened() {
+        context.dataStore.edit {
+            val seen = it[homeOpensKey] ?: 0
+            if (seen <= HOME_OPENS_CAP) it[homeOpensKey] = seen + 1
+        }
+    }
+
+    suspend fun setMotionTipDone() {
+        context.dataStore.edit { it[motionTipDoneKey] = true }
     }
 
     suspend fun setAiVoiceName(name: String?) {
@@ -620,6 +645,21 @@ class PreferencesManager @Inject constructor(
 
     suspend fun dismissCalendarVoiceTip() {
         context.dataStore.edit { it[calendarVoiceTipDismissedKey] = true }
+    }
+
+    // the one-time 'what is a mode' card on the home tile
+    val modesIntroSeen: Flow<Boolean> = context.dataStore.data.map { it[modesIntroSeenKey] ?: false }
+
+    suspend fun setModesIntroSeen() {
+        context.dataStore.edit { it[modesIntroSeenKey] = true }
+    }
+
+    // how many times Pomodoro has asked about Do Not Disturb before a session
+    suspend fun dndStartPromptsShown(): Int =
+        context.dataStore.data.first()[dndStartPromptsShownKey] ?: 0
+
+    suspend fun incrementDndStartPrompts() {
+        context.dataStore.edit { it[dndStartPromptsShownKey] = (it[dndStartPromptsShownKey] ?: 0) + 1 }
     }
 
     // google calendar sync cadence
@@ -790,6 +830,10 @@ class PreferencesManager @Inject constructor(
     }
 
     companion object {
+        // visits before the motion tip is allowed to appear, and where the counter stops
+        const val MOTION_TIP_AFTER_OPENS = 6
+        private const val HOME_OPENS_CAP = MOTION_TIP_AFTER_OPENS
+
         const val DEFAULT_NUDGE_TIME = "10:00"
         // 'medications' is deliberately absent: it moved to its own page under Health, and a saved
         // order containing it is filtered against this list on read, so existing users lose the

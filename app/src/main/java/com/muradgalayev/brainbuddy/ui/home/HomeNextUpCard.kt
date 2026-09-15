@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.ui.home
 
+import com.muradgalayev.brainbuddy.ui.utils.resolve
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.CalendarMonth
@@ -40,6 +42,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -54,6 +59,8 @@ import com.muradgalayev.brainbuddy.ui.theme.myndoraAccents
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // the one thing that's next, and the button that starts it. deciding what to do is its own
 // task, and the one that most often doesn't happen, so this card refuses to be a list: whatever
@@ -67,12 +74,27 @@ fun HomeNextUpCard(
     onDone: (HomeAgendaItem) -> Unit,
     onSnooze: (HomeAgendaItem) -> Unit,
     modifier: Modifier = Modifier,
+    // while the motion tip is asking, the empty card reports where it is and where its breathing
+    // bolt is, so the tip can hang off it and ring the bolt. off by default, because these fire
+    // on every frame the page scrolls
+    reportMotionAnchor: Boolean = false,
+    onMotionCard: (Rect) -> Unit = {},
+    onMotionSpot: (Rect) -> Unit = {},
 ) {
     val accents = MaterialTheme.myndoraAccents
     val haptics = LocalHapticFeedback.current
 
     if (item == null) {
-        HomeCard(modifier = modifier, accent = accents.accent) { EmptyNextUp() }
+        HomeCard(
+            modifier = if (reportMotionAnchor) {
+                modifier.onGloballyPositioned { onMotionCard(it.boundsInRoot()) }
+            } else {
+                modifier
+            },
+            accent = accents.accent,
+        ) {
+            EmptyNextUp(onBoltBounds = if (reportMotionAnchor) onMotionSpot else null)
+        }
         return
     }
 
@@ -92,7 +114,15 @@ fun HomeNextUpCard(
                 )
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    HomeSectionLabel(if (running) "HAPPENING NOW" else "NEXT UP", accent)
+                    if (running) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            LiveDot(accent)
+                            Spacer(Modifier.width(7.dp))
+                            HomeSectionLabel(stringResource(R.string.home_happening_now), accent)
+                        }
+                    } else {
+                        HomeSectionLabel(stringResource(R.string.home_next_up_caps), accent)
+                    }
                     if (clock != null) {
                         Text(
                             clock,
@@ -131,12 +161,12 @@ fun HomeNextUpCard(
                         onStart(item)
                     },
                 )
-                GhostAction(Icons.Rounded.Check, "Mark done") {
+                GhostAction(Icons.Rounded.Check, stringResource(R.string.home_mark_done)) {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     onDone(item)
                 }
                 if (item.kind == AgendaKind.Task) {
-                    GhostAction(Icons.Rounded.Snooze, "Snooze 30 minutes") {
+                    GhostAction(Icons.Rounded.Snooze, stringResource(R.string.home_snooze_30)) {
                         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onSnooze(item)
                     }
@@ -157,7 +187,7 @@ private fun CountdownPill(item: HomeAgendaItem, now: LocalDateTime, accent: Colo
             .padding(horizontal = 12.dp, vertical = 7.dp),
     ) {
         AnimatedContent(
-            targetState = countdownLabel(item, now),
+            targetState = countdownLabel(item, now).resolve(),
             transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) },
             label = "next_up_countdown",
         ) { label ->
@@ -187,27 +217,49 @@ private fun TintedIcon(icon: ImageVector, accent: Color) {
 }
 
 @Composable
-private fun EmptyNextUp() {
+private fun EmptyNextUp(onBoltBounds: ((Rect) -> Unit)? = null) {
     val accents = MaterialTheme.myndoraAccents
     Row(
         Modifier.fillMaxWidth().padding(18.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        TintedIcon(Icons.Rounded.Bolt, accents.accent)
+        // a free moment still looks alive: the bolt breathes and a ring drifts out from it
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = if (onBoltBounds != null) {
+                Modifier.onGloballyPositioned { onBoltBounds(it.boundsInRoot()) }
+            } else {
+                Modifier
+            },
+        ) {
+            PulseRing(accents.accent, HomeInnerShape, Modifier.matchParentSize(), periodMs = 2600)
+            Box(Modifier.breathing()) {
+                TintedIcon(Icons.Rounded.Bolt, accents.accent)
+            }
+        }
         Spacer(Modifier.width(14.dp))
         Column {
             Text(
-                "Nothing next",
+                stringResource(R.string.home_nothing_next),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                "The rest of today is yours. Quick add if something lands.",
+                stringResource(R.string.home_nothing_next_body),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+// the 'on air' dot beside Happening now
+@Composable
+private fun LiveDot(accent: Color) {
+    Box(Modifier.size(8.dp), contentAlignment = Alignment.Center) {
+        PulseRing(accent, CircleShape, Modifier.matchParentSize(), grow = 1.4f, periodMs = 1400)
+        Box(Modifier.size(8.dp).clip(CircleShape).background(accent))
     }
 }
 
@@ -264,7 +316,7 @@ private fun StartButton(accent: Color, modifier: Modifier = Modifier, onClick: (
         Icon(Icons.Rounded.PlayArrow, null, tint = Color.White, modifier = Modifier.size(21.dp))
         Spacer(Modifier.width(7.dp))
         Text(
-            "Start focus",
+            stringResource(R.string.home_start_focus),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = Color.White,

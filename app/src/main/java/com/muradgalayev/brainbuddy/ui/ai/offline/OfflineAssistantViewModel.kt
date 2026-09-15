@@ -44,6 +44,7 @@ data class OfflineAssistantUiState(
 // so swapping that for an on-device model later changes nothing here
 @HiltViewModel
 class OfflineAssistantViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val catalog: OfflineActionCatalog,
     private val runner: OfflineActionRunner,
     private val placesRepository: PlacesRepository,
@@ -97,11 +98,11 @@ class OfflineAssistantViewModel @Inject constructor(
                     when (slot) {
                         is OfflineSlot.Choice -> slot.defaultValue?.let { v -> slot.key to v }
                         // 'Today' is right far more often than not
-                        is OfflineSlot.DayPick -> slot.key to OfflineSlotOptions.days().first().value
+                        is OfflineSlot.DayPick -> slot.key to dayOptions().first().value
                         else -> null
                     }
                 }.toMap(),
-                dayOptions = OfflineSlotOptions.days(),
+                dayOptions = dayOptions(),
                 timeOptions = OfflineSlotOptions.times(),
                 result = null,
             )
@@ -147,4 +148,9 @@ class OfflineAssistantViewModel @Inject constructor(
     private companion object {
         const val MAX_RECENTS = 3
     }
+
+    private fun dayOptions() = OfflineSlotOptions.days(
+        todayLabel = context.getString(com.muradgalayev.brainbuddy.R.string.common_today),
+        tomorrowLabel = context.getString(com.muradgalayev.brainbuddy.R.string.common_tomorrow),
+    )
 }

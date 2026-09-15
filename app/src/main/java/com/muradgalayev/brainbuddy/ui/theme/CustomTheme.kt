@@ -3,15 +3,16 @@ package com.muradgalayev.brainbuddy.ui.theme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.core.graphics.ColorUtils
+import com.muradgalayev.brainbuddy.R
 
 // how saturated a custom theme's accents are. three steps rather than a free slider because
 // saturation is the control that decides how stimulating the result is, and that's the one
 // thing worth being deliberate about. a continuous slider invites picking the most intense
 // value by default, whereas naming the steps makes Soft an obvious, equally valid choice
-enum class Vividness(val id: String, val label: String, val saturation: Float) {
-    Soft("soft", "Soft", 0.40f),
-    Balanced("balanced", "Balanced", 0.58f),
-    Vivid("vivid", "Vivid", 0.76f);
+enum class Vividness(val id: String, @androidx.annotation.StringRes val labelRes: Int, val saturation: Float) {
+    Soft("soft", R.string.vivid_soft, 0.40f),
+    Balanced("balanced", R.string.vivid_balanced, 0.58f),
+    Vivid("vivid", R.string.vivid_vivid, 0.76f);
 
     companion object {
         val DEFAULT = Balanced

@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.data.notifications
 
+import com.muradgalayev.brainbuddy.testing.TestStrings
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import org.junit.Assert.assertEquals
@@ -41,7 +42,7 @@ class QuestionnaireReminderTest {
 
     @Test
     fun `notification copy shares progress but no questionnaire answers`() {
-        val (title, body) = questionnaireReminderCopy(answered = 5, total = 25)
+        val (title, body) = questionnaireReminderCopy(answered = 5, total = 25, lookup = TestStrings.en)
 
         assertTrue(title.contains("min"))
         assertTrue(body.contains("5 of 25"))
@@ -50,7 +51,7 @@ class QuestionnaireReminderTest {
 
     @Test
     fun `fully answered draft is reminded to finish submission`() {
-        val (title, body) = questionnaireReminderCopy(answered = 25, total = 25)
+        val (title, body) = questionnaireReminderCopy(answered = 25, total = 25, lookup = TestStrings.en)
 
         assertEquals("Your profile is ready to finish", title)
         assertTrue(body.contains("finish your profile"))

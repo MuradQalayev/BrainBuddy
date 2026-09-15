@@ -96,7 +96,7 @@ class QuestionnaireReminderReceiver : BroadcastReceiver() {
             Intent(context, QuestionnaireReminderReceiver::class.java).apply { action = ACTION_SNOOZE },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val (title, body) = questionnaireReminderCopy(progress.answered, progress.total)
+        val (title, body) = questionnaireReminderCopy(progress.answered, progress.total, context::getString)
         val notification = NotificationCompat.Builder(
             context,
             NotificationChannels.QUESTIONNAIRE_REMINDERS,
@@ -106,8 +106,8 @@ class QuestionnaireReminderReceiver : BroadcastReceiver() {
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setContentIntent(openPendingIntent)
-            .addAction(0, "Continue", openPendingIntent)
-            .addAction(0, "Remind me in 3 days", snoozePendingIntent)
+            .addAction(0, context.getString(R.string.common_continue), openPendingIntent)
+            .addAction(0, context.getString(R.string.qr_remind_3_days), snoozePendingIntent)
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -133,21 +133,24 @@ class QuestionnaireReminderReceiver : BroadcastReceiver() {
     }
 }
 
-internal fun questionnaireReminderCopy(answered: Int, total: Int): Pair<String, String> {
+// lookup is Context::getString in the receiver and strings.xml in the tests
+internal fun questionnaireReminderCopy(
+    answered: Int,
+    total: Int,
+    lookup: (Int) -> String,
+): Pair<String, String> {
     val safeTotal = total.coerceAtLeast(0)
     val safeAnswered = answered.coerceIn(0, safeTotal)
     val remaining = safeTotal - safeAnswered
     val minutes = TimeUnit.SECONDS.toMinutes((remaining * 12L) + 59L).coerceIn(1, 6)
+    fun text(id: Int, vararg args: Any) = if (args.isEmpty()) lookup(id) else lookup(id).format(*args)
     return when {
-        remaining == 0 -> "Your profile is ready to finish" to
-            "All $safeTotal steps are saved. Open Myndora and finish your profile when you’re ready."
-        safeAnswered == 0 -> "A small start still counts" to
-            "Begin your Myndora profile a few questions at a time."
-        remaining == 1 -> "You’re one answer away" to
-            "$safeAnswered answers are safely saved. Continue with the final question."
-        remaining <= 3 -> "Your profile is nearly ready" to
-            "$safeAnswered of $safeTotal answers are saved. Only $remaining left."
-        else -> "Continue when you have $minutes min" to
-            "$safeAnswered of $safeTotal answers are safely saved. Pick up at the next one."
+        remaining == 0 -> text(R.string.qr_ready_title) to text(R.string.qr_ready_body, safeTotal)
+        safeAnswered == 0 -> text(R.string.qr_start_title) to text(R.string.qr_start_body)
+        remaining == 1 -> text(R.string.qr_one_title) to text(R.string.qr_one_body, safeAnswered)
+        remaining <= 3 ->
+            text(R.string.qr_nearly_title) to text(R.string.qr_nearly_body, safeAnswered, safeTotal, remaining)
+        else ->
+            text(R.string.qr_minutes_title, minutes) to text(R.string.qr_minutes_body, safeAnswered, safeTotal)
     }
 }

@@ -3,7 +3,14 @@ package com.muradgalayev.brainbuddy.ui.together
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.muradgalayev.brainbuddy.BuildConfig
+import android.content.Context
+import androidx.annotation.StringRes
 import com.muradgalayev.brainbuddy.data.auth.authErrorMessage
+import com.muradgalayev.brainbuddy.ui.utils.UiText
+import com.muradgalayev.brainbuddy.ui.utils.asUiText
+import com.muradgalayev.brainbuddy.ui.utils.resolve
+import com.muradgalayev.brainbuddy.ui.utils.uiText
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.muradgalayev.brainbuddy.data.repository.AuthRepository
 import com.muradgalayev.brainbuddy.data.repository.TogetherRepository
 import com.muradgalayev.brainbuddy.domain.model.ChallengeResult
@@ -17,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.muradgalayev.brainbuddy.R
 
 // state of the 'share an invite link' card
 data class InviteLinkState(
@@ -67,6 +75,7 @@ data class ContactDiscoveryState(
 
 @HiltViewModel
 class TogetherViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: TogetherRepository,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
@@ -76,6 +85,10 @@ class TogetherViewModel @Inject constructor(
     val contactDemoAvailable: Boolean = BuildConfig.DEBUG
 
     val connections = repository.connections
+    // someone accepted an invite this user sent
+    val newlyConnected = repository.newlyConnected
+    // a sign-in just brought this user's own deactivated account back
+    val reactivated = authRepository.reactivated
     val incomingRequests = repository.incomingRequests
     val outgoingRequests = repository.outgoingRequests
 
@@ -152,7 +165,7 @@ class TogetherViewModel @Inject constructor(
         val phone = normalizeVerificationPhone(current.phoneInput)
         if (phone == null) {
             _phoneVerification.value = current.copy(
-                error = "Enter the full phone number with country code, for example +39 333 123 4567.",
+                error = context.getString(R.string.together_phone_format),
             )
             return
         }
@@ -177,8 +190,8 @@ class TogetherViewModel @Inject constructor(
                         sendingCode = false,
                         error = authErrorMessage(
                             error,
-                            "Couldn't send a verification code. Please try again.",
-                        ),
+                            R.string.together_code_send_failed,
+                        ).resolve(context),
                     )
                 }
         }
@@ -196,7 +209,7 @@ class TogetherViewModel @Inject constructor(
         val phone = current.pendingPhone ?: return
         if (current.verifying || current.code.length != 6) {
             if (current.code.length != 6) {
-                _phoneVerification.value = current.copy(error = "Enter the 6-digit SMS code.")
+                _phoneVerification.value = current.copy(error = context.getString(R.string.together_enter_code))
             }
             return
         }
@@ -204,7 +217,7 @@ class TogetherViewModel @Inject constructor(
         if (current.isDemo) {
             if (current.code != DEMO_OTP) {
                 _phoneVerification.value = current.copy(
-                    error = "For the development preview, enter $DEMO_OTP.",
+                    error = context.getString(R.string.together_demo_code, DEMO_OTP),
                 )
                 return
             }
@@ -230,7 +243,7 @@ class TogetherViewModel @Inject constructor(
                     } else {
                         _phoneVerification.value.copy(
                             verifying = false,
-                            error = "Supabase did not confirm that phone number. Request a new code.",
+                            error = context.getString(R.string.together_phone_not_confirmed),
                         )
                     }
                 }
@@ -239,8 +252,8 @@ class TogetherViewModel @Inject constructor(
                         verifying = false,
                         error = authErrorMessage(
                             error,
-                            "Couldn't verify that code. Please try again.",
-                        ),
+                            R.string.together_code_verify_failed,
+                        ).resolve(context),
                     )
                 }
         }
@@ -273,7 +286,7 @@ class TogetherViewModel @Inject constructor(
                     _contactDiscovery.value = current.copy(
                         loading = false,
                         loaded = true,
-                        error = error.friendlyMessage("Couldn't match your contacts right now."),
+                        error = error.friendlyMessage(context, R.string.together_contacts_failed),
                     )
                 }
         }
@@ -317,6 +330,8 @@ class TogetherViewModel @Inject constructor(
     // a tapped invite link waiting to be shown. same singleton across instances
     val incomingInviteToken = repository.incomingInviteToken
 
+    fun openPastedInvite(text: String): Boolean = repository.openPastedInvite(text)
+
     fun setInviteRelation(relation: ConnectionRelation) {
         // a link already minted was labelled with the old relation, so drop it rather than let the
         // card show a link that means something else now
@@ -333,7 +348,7 @@ class TogetherViewModel @Inject constructor(
                 .onFailure {
                     _invite.value = _invite.value.copy(
                         creating = false,
-                        error = it.friendlyMessage("Couldn't create an invite link"),
+                        error = it.friendlyMessage(context, R.string.together_invite_create_failed),
                     )
                 }
         }
@@ -345,9 +360,9 @@ class TogetherViewModel @Inject constructor(
             repository.revokeInviteLinks()
                 .onSuccess {
                     _invite.value = _invite.value.copy(link = null)
-                    _message.value = "Invite links turned off"
+                    _message.value = context.getString(R.string.together_invites_off)
                 }
-                .onFailure { _message.value = it.friendlyMessage("Couldn't revoke those links") }
+                .onFailure { _message.value = it.friendlyMessage(context, R.string.together_revoke_failed) }
         }
     }
 
@@ -371,7 +386,7 @@ class TogetherViewModel @Inject constructor(
                     _pendingInvite.value = PendingInvite(
                         token = token,
                         loading = false,
-                        error = it.friendlyMessage("Couldn't open that invite"),
+                        error = it.friendlyMessage(context, R.string.together_invite_open_failed),
                     )
                 }
         }
@@ -385,12 +400,12 @@ class TogetherViewModel @Inject constructor(
             repository.redeemInvite(pending.token)
                 .onSuccess {
                     _pendingInvite.value = null
-                    _message.value = "You're connected with ${pending.preview.name}"
+                    _message.value = context.getString(R.string.together_connected_with, pending.preview.name)
                 }
                 .onFailure {
                     _pendingInvite.value = _pendingInvite.value?.copy(
                         accepting = false,
-                        error = it.friendlyMessage("Couldn't accept that invite"),
+                        error = it.friendlyMessage(context, R.string.together_accept_failed),
                     )
                 }
         }
@@ -422,24 +437,23 @@ class TogetherViewModel @Inject constructor(
                     when (result) {
                         ChallengeResult.Accepted -> {
                             _answers.value = _answers.value - requestId
-                            _message.value = "You're connected"
+                            _message.value = context.getString(R.string.together_connected)
                         }
                         is ChallengeResult.Wrong -> {
                             _answers.value = _answers.value + (requestId to state.copy(
                                 checking = false,
                                 error = if (result.attemptsLeft > 0) {
-                                    "That's not it — ${result.attemptsLeft} ${
-                                        if (result.attemptsLeft == 1) "try" else "tries"
-                                    } left"
+                                    if (result.attemptsLeft == 1) context.getString(R.string.together_wrong_one)
+                                    else context.getString(R.string.together_wrong_many, result.attemptsLeft)
                                 } else {
-                                    "Too many wrong answers. Ask them to send a new request."
+                                    context.getString(R.string.together_too_many_wrong)
                                 },
                             ))
                         }
                         ChallengeResult.Locked -> {
                             _answers.value = _answers.value + (requestId to state.copy(
                                 checking = false,
-                                error = "Locked after too many tries. Ask them to send a new request.",
+                                error = context.getString(R.string.together_locked),
                             ))
                         }
                     }
@@ -447,7 +461,7 @@ class TogetherViewModel @Inject constructor(
                 .onFailure { error ->
                     _answers.value = _answers.value + (requestId to state.copy(
                         checking = false,
-                        error = error.friendlyMessage("Couldn't check that answer"),
+                        error = error.friendlyMessage(context, R.string.together_check_failed),
                     ))
                 }
         }
@@ -456,16 +470,16 @@ class TogetherViewModel @Inject constructor(
     fun declineRequest(requestId: String) {
         viewModelScope.launch {
             repository.declineRequest(requestId)
-                .onSuccess { _message.value = "Request declined" }
-                .onFailure { _message.value = it.friendlyMessage("Couldn't decline that request") }
+                .onSuccess { _message.value = context.getString(R.string.together_request_declined) }
+                .onFailure { _message.value = it.friendlyMessage(context, R.string.together_decline_failed) }
         }
     }
 
     fun cancelOutgoing(requestId: String) {
         viewModelScope.launch {
             repository.cancelRequest(requestId)
-                .onSuccess { _message.value = "Request withdrawn" }
-                .onFailure { _message.value = it.friendlyMessage("Couldn't withdraw that request") }
+                .onSuccess { _message.value = context.getString(R.string.together_request_withdrawn) }
+                .onFailure { _message.value = it.friendlyMessage(context, R.string.together_withdraw_failed) }
         }
     }
 
@@ -485,7 +499,13 @@ internal fun normalizeVerificationPhone(raw: String): String? {
 // once already: a missing function means the migration hasn't been run, and a missing gen_salt
 // or crypt means it ran but pgcrypto isn't on the function's search_path. Transport details are
 // never logged because Ktor can place live Authorization headers inside exception messages.
-internal fun Throwable.friendlyMessage(fallback: String): String {
+internal fun Throwable.friendlyMessage(context: Context, @StringRes fallback: Int): String =
+    friendlyMessage(fallback).resolve(context)
+
+// guard-clause text raised by our own RPCs passes through as written, which means in English:
+// the server has no idea which language the app is in
+internal fun Throwable.friendlyMessage(@StringRes fallbackRes: Int): UiText {
+    val fallback = uiText(fallbackRes)
     val raw = message?.trim().orEmpty()
     // Ktor exceptions can embed the full URL and request headers, including a live Bearer token.
     // Log only the exception type and never pass raw transport text or the Throwable itself.
@@ -513,27 +533,24 @@ internal fun Throwable.friendlyMessage(fallback: String): String {
     return when {
         // schema cache couldn't find the function at all
         raw.contains("PGRST202") || extracted.contains("Could not find the function") ->
-            "Myndora Together isn't set up on the server yet. Run the SQL migration " +
-                "in Supabase, then try again."
+            uiText(R.string.together_err_not_setup)
 
         // pgcrypto lives in the extensions schema on Supabase, so a function pinned to
         // search_path=public can't see crypt() or gen_salt()
         extracted.contains("gen_salt") || extracted.contains("crypt(") ->
-            "The server can't hash the answer yet — pgcrypto isn't on the search " +
-                "path. Re-run the latest SQL migration in Supabase."
+            uiText(R.string.together_err_pgcrypto)
 
         raw.contains("Unable to resolve host") || raw.contains("UnknownHost") ->
-            "You're offline. Try again once you're connected."
+            uiText(R.string.together_err_offline)
 
         // a SQL defect, not something the user did. say so plainly rather than implying they typed
         // something wrong, and keep the detail for the report
         extracted.contains("is ambiguous") || extracted.contains("does not exist") ->
-            "Myndora's database needs updating — re-run the latest SQL migration " +
-                "in Supabase. ($extracted)"
+            uiText(R.string.together_err_db_update, extracted)
 
         // a raise from our own guard clauses: short, prose, already user-facing
         extracted.length <= 200 && !extracted.startsWith("{") && !extracted.contains("SQLSTATE") ->
-            extracted
+            extracted.asUiText()
 
         else -> fallback
     }

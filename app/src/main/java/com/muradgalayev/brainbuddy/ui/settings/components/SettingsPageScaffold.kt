@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // shared shell for a settings sub-page: back button, title, scrolling body. every page reached
 // from Settings uses this, so the back arrow, the title and the rhythm of the content never
@@ -58,7 +60,7 @@ fun SettingsSubScaffold(
             IconButton(onClick = onBack) {
                 Icon(
                     Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.common_back),
                     tint = colors.onSurface,
                 )
             }
@@ -89,7 +91,7 @@ fun SettingsSubScaffold(
 fun SettingsDetailHero(
     icon: ImageVector,
     title: String,
-    description: String,
+    description: String? = null,
     accent: Color,
 ) {
     Surface(
@@ -135,12 +137,14 @@ fun SettingsDetailHero(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (description != null) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

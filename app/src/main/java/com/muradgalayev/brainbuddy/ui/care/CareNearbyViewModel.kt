@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.muradgalayev.brainbuddy.R
 
 data class CareNearbyState(
     val isLoading: Boolean = true,
@@ -39,6 +40,7 @@ data class CareNearbyState(
 
 @HiltViewModel
 class CareNearbyViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val placesRepository: PlacesRepository,
     private val adhdProfileRepository: AdhdProfileRepository,
     private val locationResolver: LocationCityResolver,
@@ -147,7 +149,7 @@ class CareNearbyViewModel @Inject constructor(
                         it.copy(
                             isLoading = false,
                             medicationName = formatMeds(profile?.medications),
-                            errorMessage = e.message ?: "Couldn't load cities",
+                            errorMessage = e.message ?: context.getString(R.string.care_load_cities_failed),
                         )
                     }
                 }
@@ -216,7 +218,7 @@ class CareNearbyViewModel @Inject constructor(
                         _state.update {
                             it.copy(
                                 isLoading = false,
-                                errorMessage = e.message ?: "Couldn't load places",
+                                errorMessage = e.message ?: context.getString(R.string.care_load_places_failed),
                             )
                         }
                     }

@@ -75,6 +75,8 @@ import com.muradgalayev.brainbuddy.ui.sharedcomponents.SuccessPopup
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun ReservationScreen(
@@ -123,8 +125,8 @@ fun ReservationScreen(
                     ) {
                         BookingSection(
                             number = "1",
-                            title = "Choose a place",
-                            subtitle = "Healthcare near ${state.cityName.ifBlank { "you" }}",
+                            title = stringResource(R.string.res_choose_place),
+                            subtitle = stringResource(R.string.res_near, state.cityName.ifBlank { stringResource(R.string.res_you) }),
                             complete = selectedPlace != null,
                         ) {
                             LazyRow(
@@ -143,8 +145,8 @@ fun ReservationScreen(
 
                         BookingSection(
                             number = "2",
-                            title = "Pick a day",
-                            subtitle = "Choose within the next two weeks",
+                            title = stringResource(R.string.res_pick_day),
+                            subtitle = stringResource(R.string.res_two_weeks),
                             complete = state.date != null,
                         ) {
                             LazyRow(
@@ -162,8 +164,8 @@ fun ReservationScreen(
                         RevealStep(visible = state.date != null) {
                             BookingSection(
                                 number = "3",
-                                title = "Choose a time",
-                                subtitle = "30-minute appointment",
+                                title = stringResource(R.string.res_choose_time),
+                                subtitle = stringResource(R.string.res_30_min),
                                 complete = state.time != null,
                             ) {
                                 FlowRow(
@@ -234,7 +236,7 @@ fun ReservationScreen(
                     } else {
                         Icon(Icons.Rounded.CalendarMonth, null, Modifier.size(20.dp))
                         Text(
-                            if (state.isOnline) "Reserve appointment" else "Internet required to book",
+                            if (state.isOnline) stringResource(R.string.res_reserve) else stringResource(R.string.res_need_internet),
                             Modifier.padding(start = 9.dp),
                             fontWeight = FontWeight.Bold,
                         )
@@ -245,8 +247,8 @@ fun ReservationScreen(
 
         if (showSuccess) {
             SuccessPopup(
-                title = "Reservation confirmed",
-                message = "Your appointment was added to the calendar.",
+                title = stringResource(R.string.res_confirmed),
+                message = stringResource(R.string.res_added_calendar),
                 onDismiss = { showSuccess = false },
             )
         }
@@ -277,14 +279,14 @@ private fun BookingHero(
                 IconButton(onClick = onBack) {
                     Icon(
                         Icons.AutoMirrored.Rounded.ArrowBack,
-                        "Back",
+                        stringResource(R.string.common_back),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
                 IconButton(onClick = onHistory) {
                     Icon(
                         Icons.Rounded.History,
-                        "Reservation history",
+                        stringResource(R.string.res_history),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
@@ -297,7 +299,7 @@ private fun BookingHero(
                 }
                 Column(Modifier.padding(start = 14.dp)) {
                     Text(
-                        "Book an appointment",
+                        stringResource(R.string.res_book_an),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -310,7 +312,7 @@ private fun BookingHero(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            city.ifBlank { "Your profile city" },
+                            city.ifBlank { stringResource(R.string.res_profile_city) },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodyMedium,
                         )
@@ -384,7 +386,7 @@ private fun BookingSection(
                         if (done) {
                             Icon(
                                 Icons.Rounded.Check,
-                                contentDescription = "Step complete",
+                                contentDescription = stringResource(R.string.res_step_complete),
                                 tint = Color.White,
                                 modifier = Modifier.size(17.dp),
                             )
@@ -448,14 +450,14 @@ private fun PlaceCard(place: Place, selected: Boolean, onClick: () -> Unit) {
                 Surface(Modifier.size(38.dp), RoundedCornerShape(12.dp), color = Color.White.copy(alpha = if (selected) .2f else .8f)) {
                     Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.LocalHospital, null, tint = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary) }
                 }
-                Text(place.category.label, Modifier.padding(start = 9.dp), color = if (selected) Color.White.copy(.82f) else MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+                Text(stringResource(place.category.labelRes), Modifier.padding(start = 9.dp), color = if (selected) Color.White.copy(.82f) else MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
                 Spacer(Modifier.weight(1f))
                 AnimatedVisibility(
                     visible = selected,
                     enter = scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)) + fadeIn(),
                     exit = scaleOut(tween(140)) + fadeOut(tween(140)),
                 ) {
-                    Icon(Icons.Rounded.Check, "Selected", tint = Color.White, modifier = Modifier.size(19.dp))
+                    Icon(Icons.Rounded.Check, stringResource(R.string.common_selected), tint = Color.White, modifier = Modifier.size(19.dp))
                 }
             }
             Text(place.name, color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)

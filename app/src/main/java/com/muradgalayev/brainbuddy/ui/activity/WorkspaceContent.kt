@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.ui.activity
 
+import com.muradgalayev.brainbuddy.ui.utils.resolve
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -136,6 +137,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.muradgalayev.brainbuddy.ui.accessibility.animationsOn
 import com.muradgalayev.brainbuddy.ui.accessibility.speaking
+import androidx.compose.ui.res.stringResource
 
 // dark mode helper
 @Composable
@@ -190,13 +192,14 @@ fun WorkspaceOverviewTab(
             .fillMaxSize()
             .then(if (wash != null) Modifier.background(wash) else Modifier)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 24.dp)
+            .padding(horizontal = 20.dp)
+            .padding(top = 24.dp, bottom = 24.dp + com.muradgalayev.brainbuddy.ui.navigation.LocalNavBarInset.current)
             .animateContentSize(animationSpec = tween(300))
     ) {
         // header. simplify lives in Settings now, with the rest of the display preferences.
         // isSimplified still drives the ambient wash, hero photos and the encouragement banner
         Text(
-            text = "Workspace",
+            text = stringResource(R.string.ws_title),
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
             color = colorScheme.onSurface,
@@ -217,8 +220,8 @@ fun WorkspaceOverviewTab(
         // primary actions. todo and pomodoro are what someone actually does, so they keep the accent
         // and the full card weight. everything below recedes on purpose
         WorkspaceSectionHeading(
-            title = "Choose your next move",
-            subtitle = "One thing is enough",
+            title = stringResource(R.string.ws_next_move),
+            subtitle = stringResource(R.string.ws_one_thing),
         )
         Spacer(Modifier.height(12.dp))
 
@@ -232,7 +235,7 @@ fun WorkspaceOverviewTab(
                     isGrid = true,
                     onClick = { onNavigate(todo.route) },
                     modifier = Modifier.weight(1f),
-                    overrideStatus = "${uiState.todoTasksLeft} tasks left",
+                    overrideStatus = stringResource(R.string.ws_tasks_left, uiState.todoTasksLeft),
                     todoProgress = uiState.todoProgress
                 )
             }
@@ -242,7 +245,7 @@ fun WorkspaceOverviewTab(
                     isGrid = true,
                     onClick = { onNavigate(pomodoro.route) },
                     modifier = Modifier.weight(1f),
-                    overrideStatus = uiState.pomodoroStatusText,
+                    overrideStatus = uiState.pomodoroStatusText.resolve(),
                     pomodoroTimeText = uiState.pomodoroTimeText,
                     pomodoroProgress = uiState.pomodoroProgress,
                     badgeCount = focusInviteCount,
@@ -256,15 +259,15 @@ fun WorkspaceOverviewTab(
                 feature = calendar,
                 isGrid = false,
                 onClick = { onNavigate(calendar.route) },
-                overrideStatus = uiState.nextMeetingText ?: "Your calendar is open",
+                overrideStatus = uiState.nextMeetingText?.resolve() ?: stringResource(R.string.ws_calendar_open),
             )
         }
 
         // support, quieter on purpose
         Spacer(modifier = Modifier.height(28.dp))
         WorkspaceSectionHeading(
-            title = "Keep yourself supported",
-            subtitle = "Wellness and care, close by",
+            title = stringResource(R.string.ws_supported),
+            subtitle = stringResource(R.string.ws_supported_sub),
         )
         Spacer(Modifier.height(12.dp))
         WellnessSummaryEntryCard(
@@ -286,8 +289,8 @@ fun WorkspaceOverviewTab(
 
         Spacer(modifier = Modifier.height(28.dp))
         WorkspaceSectionHeading(
-            title = "Take a tiny reset",
-            subtitle = "A playful pause before your next thing",
+            title = stringResource(R.string.ws_tiny_reset),
+            subtitle = stringResource(R.string.ws_tiny_reset_sub),
         )
         Spacer(Modifier.height(12.dp))
         ShapeFlowEntryCard(onClick = { onNavigate("shape_flow") })
@@ -301,8 +304,8 @@ fun WorkspaceOverviewTab(
             Column {
                 Spacer(modifier = Modifier.height(20.dp))
                 ActivityBannerCard(
-                    title = uiState.activityBannerTitle,
-                    message = uiState.activityBannerMessage
+                    title = uiState.activityBannerTitle.resolve(),
+                    message = uiState.activityBannerMessage.resolve()
                 )
             }
         }
@@ -332,7 +335,7 @@ private fun WellnessSummaryEntryCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         color = colorScheme.surfaceContainer,
-        onClick = speaking("Health", onClick),
+        onClick = speaking(stringResource(R.string.widget_health), onClick),
         shadowElevation = if (dark) 0.dp else 1.dp,
         tonalElevation = 0.dp,
     ) {
@@ -359,7 +362,7 @@ private fun WellnessSummaryEntryCard(
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Health",
+                    text = stringResource(R.string.widget_health),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.onSurface,
@@ -368,25 +371,14 @@ private fun WellnessSummaryEntryCard(
                 Text(
                     text = when {
                         healthConnected && medicationCount > 0 ->
-                            "Connected · $medicationCount ${if (medicationCount == 1) "medication" else "medications"}"
-                        healthConnected -> "Connected"
-                        medicationCount > 0 ->
-                            "$medicationCount ${if (medicationCount == 1) "medication" else "medications"}"
-                        else -> "Not connected"
+                            stringResource(R.string.ws_connected_meds, medicationCountLabel(medicationCount))
+                        healthConnected -> stringResource(R.string.ws_connected)
+                        medicationCount > 0 -> medicationCountLabel(medicationCount)
+                        else -> stringResource(R.string.settings_not_connected)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.height(3.dp))
-                Text(
-                    text = when {
-                        healthConnected -> "Activity, sleep and body signals"
-                        medicationCount > 0 -> "Medications and health setup"
-                        else -> "Connect health data to see your daily picture"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -445,21 +437,21 @@ fun WellnessSummaryScreen(
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             WellnessBackButton(onBack)
-            Text("Health Connect", Modifier.weight(1f).padding(start = 14.dp), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = wellnessPrimaryText())
+            Text(stringResource(R.string.settings_health_connect), Modifier.weight(1f).padding(start = 14.dp), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = wellnessPrimaryText())
             Surface(modifier = Modifier.size(46.dp), shape = CircleShape, color = wellnessCardColor(.72f)) {
                 if (!avatarUrl.isNullOrBlank()) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.Person, "Profile", tint = wellnessSecondaryText())
+                        Icon(Icons.Rounded.Person, stringResource(R.string.settings_profile_cd), tint = wellnessSecondaryText())
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current).data(avatarUrl).crossfade(false).build(),
-                            contentDescription = "Profile photo",
+                            contentDescription = stringResource(R.string.ws_profile_photo),
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
                 } else {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.Person, "Profile", tint = wellnessSecondaryText())
+                        Icon(Icons.Rounded.Person, stringResource(R.string.settings_profile_cd), tint = wellnessSecondaryText())
                     }
                 }
             }
@@ -508,27 +500,27 @@ private fun WellnessSummary(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("Pinned", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = wellnessPrimaryText())
-                Text("Today, at a glance", style = MaterialTheme.typography.bodySmall, color = wellnessSecondaryText())
+                Text(stringResource(R.string.ws_pinned), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = wellnessPrimaryText())
+                Text(stringResource(R.string.ws_glance), style = MaterialTheme.typography.bodySmall, color = wellnessSecondaryText())
             }
             TextButton(onClick = onEdit) {
-                Text("Edit", color = Color(0xFF1687F8), fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.common_edit), color = Color(0xFF1687F8), fontWeight = FontWeight.Bold)
             }
         }
         cardOrder.filter { it in pinnedCards }.forEach { card ->
         when (card) {
         "activity" -> if (healthState.connected) {
             SummaryFeedCard(
-                title = "Activity",
+                title = stringResource(R.string.ws_activity),
                 titleColor = Color(0xFFFF5A1F),
                 icon = Icons.Rounded.DirectionsWalk,
                 onClick = { if (!activityOpening) activityOpening = true },
             ) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        ActivityStat("Steps", healthState.todaySteps?.toInt(), Color(0xFFFF2D55), Modifier.weight(1f))
-                        ActivityStat("Exercise", healthState.exerciseMinutesThisWeek?.toInt(), Color(0xFF22C733), Modifier.weight(1f), "min")
-                        ActivityStat("Energy", healthState.caloriesBurnedToday?.toInt(), Color(0xFF00AEEA), Modifier.weight(1f), "cal")
+                        ActivityStat(stringResource(R.string.health_steps), healthState.todaySteps?.toInt(), Color(0xFFFF2D55), Modifier.weight(1f))
+                        ActivityStat(stringResource(R.string.health_exercise), healthState.exerciseMinutesThisWeek?.toInt(), Color(0xFF22C733), Modifier.weight(1f), "min")
+                        ActivityStat(stringResource(R.string.ws_energy), healthState.caloriesBurnedToday?.toInt(), Color(0xFF00AEEA), Modifier.weight(1f), "cal")
                     }
                     Spacer(Modifier.width(12.dp))
                     ActivityRings(
@@ -542,29 +534,29 @@ private fun WellnessSummary(
 
         } else {
             SummaryFeedCard(
-                title = "Health Connect",
+                title = stringResource(R.string.settings_health_connect),
                 titleColor = Color(0xFF2477D4),
                 icon = Icons.Rounded.MonitorHeart,
                 onClick = onConnectHealth,
             ) {
-                Text("Connect your health data", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = wellnessPrimaryText())
-                Text("Tap to connect steps, sleep, activity and heart rate.", color = wellnessSecondaryText(), style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.ws_connect_health), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = wellnessPrimaryText())
+                Text(stringResource(R.string.ws_connect_health_sub), color = wellnessSecondaryText(), style = MaterialTheme.typography.bodyMedium)
             }
         }
         "sleep" -> if (healthState.connected) SummaryFeedCard(
-                title = "Sleep",
+                title = stringResource(R.string.health_sleep),
                 titleColor = Color(0xFF7367F0),
                 icon = Icons.Rounded.Bed,
             ) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(
-                            healthState.lastSleepHours?.let { "${"%.1f".format(it)} hours" } ?: "No sleep reading yet",
+                            healthState.lastSleepHours?.let { stringResource(R.string.ws_sleep_hours, "%.1f".format(it)) } ?: stringResource(R.string.ws_no_sleep),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = wellnessPrimaryText(),
                         )
-                        Text("Latest sleep session", color = wellnessSecondaryText(), style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.ws_latest_sleep), color = wellnessSecondaryText(), style = MaterialTheme.typography.bodyMedium)
                     }
                     SleepScoreRing(healthState.lastSleepHours)
                 }
@@ -573,7 +565,7 @@ private fun WellnessSummary(
             }
 
             "body" -> if (healthState.connected) SummaryFeedCard(
-                title = "Body signals",
+                title = stringResource(R.string.ws_body_signals),
                 titleColor = Color(0xFF00A98F),
                 icon = Icons.Rounded.MonitorHeart,
             ) {
@@ -582,14 +574,14 @@ private fun WellnessSummary(
                         // today's mean, not the most recent sample. a watch takes several readings a day and they
                         // swing widely, so the last one is an arbitrary pick rather than a summary
                         SummaryStat(
-                            "AVG TODAY",
+                            stringResource(R.string.ws_avg_today),
                             healthState.todayAverageHeartRateBpm?.let { "$it bpm" }
                                 ?: healthState.weekAverageHeartRateBpm?.let { "$it bpm" }
                                 ?: "—",
                         )
-                        SummaryStat("RESTING", healthState.restingHeartRateBpm?.let { "$it bpm" } ?: "—")
+                        SummaryStat(stringResource(R.string.ws_resting), healthState.restingHeartRateBpm?.let { "$it bpm" } ?: "—")
                         SummaryStat(
-                            "WEEK AVG",
+                            stringResource(R.string.ws_week_avg),
                             healthState.weekAverageHeartRateBpm?.let { "$it bpm" } ?: "—",
                         )
                     }
@@ -598,9 +590,9 @@ private fun WellnessSummary(
                     if (samples > 0 || healthState.weekAverageHeartRateBpm != null) {
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            text = if (samples > 0)
-                                "From $samples reading${if (samples == 1) "" else "s"} today"
-                            else "No readings today — showing the weekly average",
+                            text = if (samples == 1) stringResource(R.string.ws_one_reading)
+                            else if (samples > 0) stringResource(R.string.ws_n_readings, samples)
+                            else stringResource(R.string.ws_no_readings),
                             style = MaterialTheme.typography.labelSmall,
                             color = wellnessSecondaryText(),
                         )
@@ -616,8 +608,8 @@ private fun WellnessSummary(
         ) {
             Column {
                 Spacer(Modifier.height(10.dp))
-                Text("Suggestions for you", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = wellnessPrimaryText())
-                Text("Small ideas based on your wellness space", style = MaterialTheme.typography.bodySmall, color = wellnessSecondaryText())
+                Text(stringResource(R.string.ws_suggestions), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = wellnessPrimaryText())
+                Text(stringResource(R.string.ws_suggestions_sub), style = MaterialTheme.typography.bodySmall, color = wellnessSecondaryText())
                 Spacer(Modifier.height(2.dp))
             }
         }
@@ -627,8 +619,8 @@ private fun WellnessSummary(
             exit = shrinkVertically(animationSpec = tween(380)) + fadeOut(tween(240)),
         ) {
             WellnessVideoSuggestion(
-                title = "A gentle walking reset",
-                subtitle = "10 min · Guided walk",
+                title = stringResource(R.string.ws_walk),
+                subtitle = stringResource(R.string.ws_walk_sub),
                 imageRes = R.drawable.wellness_walk_suggestion,
                 onDismiss = { showWalkSuggestion = false },
                 onOpen = {
@@ -642,8 +634,8 @@ private fun WellnessSummary(
             exit = shrinkVertically(animationSpec = tween(380)) + fadeOut(tween(240)),
         ) {
             WellnessVideoSuggestion(
-                title = "ADHD-friendly movement break",
-                subtitle = "Quick reset · Low pressure",
+                title = stringResource(R.string.ws_movement),
+                subtitle = stringResource(R.string.ws_movement_sub),
                 imageRes = R.drawable.wellness_movement_suggestion,
                 onDismiss = { showMovementSuggestion = false },
                 onOpen = {
@@ -669,7 +661,7 @@ private fun SleepScoreRing(hours: Double?) {
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("$rawScore%", fontWeight = FontWeight.Bold, color = wellnessPrimaryText(), style = MaterialTheme.typography.titleMedium)
-            Text("8h goal", color = wellnessSecondaryText(), style = MaterialTheme.typography.labelSmall)
+            Text(stringResource(R.string.ws_8h_goal), color = wellnessSecondaryText(), style = MaterialTheme.typography.labelSmall)
         }
     }
 }
@@ -689,14 +681,14 @@ private fun WeeklySleepChart(days: List<com.muradgalayev.brainbuddy.data.health.
             ) {
                 Row(Modifier.padding(horizontal = 13.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        day?.date?.format(java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM")) ?: "Select a day",
+                        day?.date?.format(java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM")) ?: stringResource(R.string.ws_select_day),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF5E55D6),
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        day?.let { if (it.hours > 0) "${"%.1f".format(it.hours)} hours total" else "No sleep recorded" }.orEmpty(),
+                        day?.let { if (it.hours > 0) stringResource(R.string.ws_hours_total, "%.1f".format(it.hours)) else stringResource(R.string.ws_no_sleep_recorded) }.orEmpty(),
                         style = MaterialTheme.typography.labelMedium,
                         color = wellnessSecondaryText(),
                     )
@@ -779,9 +771,9 @@ private fun SummaryFeedCard(
                     }
                 }
                 Text(title, Modifier.weight(1f).padding(start = 9.dp), fontWeight = FontWeight.Bold, color = titleColor, style = MaterialTheme.typography.titleMedium)
-                Text("Today", color = wellnessSecondaryText(), style = MaterialTheme.typography.labelMedium)
+                Text(stringResource(R.string.common_today), color = wellnessSecondaryText(), style = MaterialTheme.typography.labelMedium)
                 if (onClick != null) {
-                    Icon(Icons.Rounded.ChevronRight, "Open", tint = wellnessSecondaryText(), modifier = Modifier.padding(start = 5.dp).size(18.dp))
+                    Icon(Icons.Rounded.ChevronRight, stringResource(R.string.common_open), tint = wellnessSecondaryText(), modifier = Modifier.padding(start = 5.dp).size(18.dp))
                 }
             }
             Spacer(Modifier.height(20.dp))
@@ -837,21 +829,21 @@ private fun MedicationWellnessRow(medication: Medication, index: Int) {
                 }
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                     Text(
-                        medication.name.ifBlank { "Medication" },
+                        medication.name.ifBlank { stringResource(R.string.deep_medication) },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = wellnessPrimaryText(),
                     )
                     Text(
-                        if (medication.slots.size == 1) "Once a day" else "${medication.slots.size} times a day",
+                        if (medication.slots.size == 1) stringResource(R.string.sync_daily) else stringResource(R.string.ws_times_a_day, medication.slots.size),
                         style = MaterialTheme.typography.bodySmall,
                         color = wellnessSecondaryText(),
                     )
                 }
-                if (medication.doseLabel.isNotBlank()) {
+                if (medication.doseLabel(androidx.compose.ui.platform.LocalContext.current.resources).isNotBlank()) {
                     Surface(shape = RoundedCornerShape(50), color = wellnessCardColor(.86f)) {
                         Text(
-                            medication.doseLabel,
+                            medication.doseLabel(androidx.compose.ui.platform.LocalContext.current.resources),
                             Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
@@ -862,7 +854,7 @@ private fun MedicationWellnessRow(medication: Medication, index: Int) {
             }
             Spacer(Modifier.height(11.dp))
             if (medication.slots.isEmpty()) {
-                Text("No timing selected", style = MaterialTheme.typography.labelMedium, color = wellnessSecondaryText())
+                Text(stringResource(R.string.ws_no_timing), style = MaterialTheme.typography.labelMedium, color = wellnessSecondaryText())
             } else {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     medication.slots.forEach { slot ->
@@ -904,17 +896,17 @@ private fun MedicationAdherenceTracker(
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                "Today's doses",
+                stringResource(R.string.ws_todays_doses),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = wellnessPrimaryText(),
             )
             Text(
-                if (scheduled == 0) "Not scheduled" else "$completed of $scheduled",
+                if (scheduled == 0) stringResource(R.string.med_not_scheduled) else stringResource(R.string.count_of, completed, scheduled),
                 style = MaterialTheme.typography.bodyMedium,
                 color = wellnessSecondaryText(),
             )
-            Text("Tap to view and log doses", style = MaterialTheme.typography.labelMedium, color = Color(0xFF18A9D1))
+            Text(stringResource(R.string.ws_tap_log), style = MaterialTheme.typography.labelMedium, color = Color(0xFF18A9D1))
         }
         Box(Modifier.size(88.dp), contentAlignment = Alignment.Center) {
             Canvas(Modifier.fillMaxSize()) {
@@ -1072,16 +1064,16 @@ fun ActivityGoalsScreen(
     val valid = listOf(steps, exercise, energy).all { (it.toIntOrNull() ?: 0) > 0 }
 
     WellnessPageBackground {
-        WellnessPageHeader("Activity goals", onBack)
+        WellnessPageHeader(stringResource(R.string.ws_activity_goals), onBack)
         Spacer(Modifier.height(24.dp))
-        Text("Build your rings", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = wellnessPrimaryText())
-        Text("Pick goals that support your day—not goals that add pressure.", style = MaterialTheme.typography.bodyMedium, color = wellnessSecondaryText())
+        Text(stringResource(R.string.ws_build_rings), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = wellnessPrimaryText())
+        Text(stringResource(R.string.ws_goals_body), style = MaterialTheme.typography.bodyMedium, color = wellnessSecondaryText())
         Spacer(Modifier.height(18.dp))
         Surface(shape = RoundedCornerShape(28.dp), color = wellnessCardColor()) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
-                GoalField("Steps", steps, { steps = it.filter(Char::isDigit) }, Color(0xFFFF2D55), "steps")
-                GoalField("Exercise", exercise, { exercise = it.filter(Char::isDigit) }, Color(0xFF22C733), "minutes")
-                GoalField("Energy", energy, { energy = it.filter(Char::isDigit) }, Color(0xFF00AEEA), "kcal")
+                GoalField(stringResource(R.string.health_steps), steps, { steps = it.filter(Char::isDigit) }, Color(0xFFFF2D55), stringResource(R.string.goal_suffix_steps))
+                GoalField(stringResource(R.string.health_exercise), exercise, { exercise = it.filter(Char::isDigit) }, Color(0xFF22C733), stringResource(R.string.goal_suffix_minutes))
+                GoalField(stringResource(R.string.ws_energy), energy, { energy = it.filter(Char::isDigit) }, Color(0xFF00AEEA), "kcal")
                 Button(
                     enabled = valid,
                     onClick = {
@@ -1090,7 +1082,7 @@ fun ActivityGoalsScreen(
                     },
                     modifier = Modifier.fillMaxWidth().height(54.dp),
                     shape = RoundedCornerShape(17.dp),
-                ) { Text("Save goals", fontWeight = FontWeight.Bold) }
+                ) { Text(stringResource(R.string.ws_save_goals), fontWeight = FontWeight.Bold) }
             }
         }
         Spacer(Modifier.height(32.dp))
@@ -1125,26 +1117,26 @@ fun WellnessEditScreen(
 
     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(wellnessGradient()))) {
         Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp)) {
-            WellnessPageHeader("Edit Summary", onBack)
+            WellnessPageHeader(stringResource(R.string.ws_edit_summary), onBack)
             Spacer(Modifier.height(24.dp))
 
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "Pinned cards",
+                        stringResource(R.string.ws_pinned_cards),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = wellnessPrimaryText(),
                     )
                     Text(
-                        "Hold a card, then place it exactly where you want.",
+                        stringResource(R.string.ws_hold_card),
                         style = MaterialTheme.typography.bodyMedium,
                         color = wellnessSecondaryText(),
                     )
                 }
                 Surface(shape = RoundedCornerShape(999.dp), color = wellnessCardColor(.78f)) {
                     Text(
-                        "${pinned.size} pinned",
+                        stringResource(R.string.ws_n_pinned, pinned.size),
                         Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF2477D4),
@@ -1244,7 +1236,7 @@ fun WellnessEditScreen(
 
                             Icon(
                                 Icons.Rounded.DragHandle,
-                                contentDescription = "Hold to reorder $label",
+                                contentDescription = stringResource(R.string.ws_hold_reorder, label),
                                 tint = wellnessSecondaryText().copy(alpha = .5f),
                                 modifier = Modifier.size(20.dp),
                             )
@@ -1293,7 +1285,7 @@ internal fun WellnessBackButton(onClick: () -> Unit) {
         Box(contentAlignment = Alignment.Center) {
             Icon(
                 Icons.Rounded.ArrowBackIosNew,
-                "Back",
+                stringResource(R.string.common_back),
                 tint = colorScheme.onSurface,
                 modifier = Modifier.size(19.dp),
             )
@@ -1331,12 +1323,12 @@ private fun WellnessVideoSuggestion(
             )
             IconButton(onClick = onDismiss, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
                 Surface(shape = CircleShape, color = Color.Black.copy(alpha = .38f)) {
-                    Icon(Icons.Rounded.Close, "Dismiss suggestion", tint = Color.White, modifier = Modifier.padding(7.dp).size(18.dp))
+                    Icon(Icons.Rounded.Close, stringResource(R.string.ws_dismiss_suggestion), tint = Color.White, modifier = Modifier.padding(7.dp).size(18.dp))
                 }
             }
             Column(Modifier.align(Alignment.BottomStart).padding(18.dp).fillMaxWidth(.72f)) {
                 Surface(shape = RoundedCornerShape(999.dp), color = Color.White.copy(alpha = .18f)) {
-                    Text("FOR YOU", Modifier.padding(horizontal = 9.dp, vertical = 5.dp), color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                    Text(stringResource(R.string.ws_for_you), Modifier.padding(horizontal = 9.dp, vertical = 5.dp), color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
                 }
                 Spacer(Modifier.height(9.dp))
                 Text(title, fontWeight = FontWeight.Bold, color = Color.White, style = MaterialTheme.typography.titleLarge)
@@ -1352,11 +1344,12 @@ private fun WellnessVideoSuggestion(
     }
 }
 
+@Composable
 private fun wellnessCardInfo(card: String): Pair<String, Color> = when (card) {
-    "activity" -> "Activity" to Color(0xFFFF5A1F)
-    "sleep" -> "Sleep" to Color(0xFF7367F0)
-    "body" -> "Body signals" to Color(0xFF00A98F)
-    else -> "Medications" to Color(0xFF18A9D1)
+    "activity" -> stringResource(R.string.ws_activity) to Color(0xFFFF5A1F)
+    "sleep" -> stringResource(R.string.health_sleep) to Color(0xFF7367F0)
+    "body" -> stringResource(R.string.ws_body_signals) to Color(0xFF00A98F)
+    else -> stringResource(R.string.ws_medications) to Color(0xFF18A9D1)
 }
 
 @Composable
@@ -1385,15 +1378,15 @@ private fun ActivityGoalsDialog(
         containerColor = colorScheme.surfaceContainerHigh,
         title = {
             Column {
-                Text("Your activity goals", fontWeight = FontWeight.Bold, color = wellnessPrimaryText())
-                Text("Choose limits that feel motivating, not demanding.", style = MaterialTheme.typography.bodySmall, color = wellnessSecondaryText())
+                Text(stringResource(R.string.ws_your_goals), fontWeight = FontWeight.Bold, color = wellnessPrimaryText())
+                Text(stringResource(R.string.ws_goals_limits), style = MaterialTheme.typography.bodySmall, color = wellnessSecondaryText())
             }
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                GoalField("Steps", steps, { steps = it.filter(Char::isDigit) }, Color(0xFFFF2D55), "steps")
-                GoalField("Exercise", exercise, { exercise = it.filter(Char::isDigit) }, Color(0xFF22C733), "minutes")
-                GoalField("Energy", energy, { energy = it.filter(Char::isDigit) }, Color(0xFF00AEEA), "kcal")
+                GoalField(stringResource(R.string.health_steps), steps, { steps = it.filter(Char::isDigit) }, Color(0xFFFF2D55), stringResource(R.string.goal_suffix_steps))
+                GoalField(stringResource(R.string.health_exercise), exercise, { exercise = it.filter(Char::isDigit) }, Color(0xFF22C733), stringResource(R.string.goal_suffix_minutes))
+                GoalField(stringResource(R.string.ws_energy), energy, { energy = it.filter(Char::isDigit) }, Color(0xFF00AEEA), "kcal")
             }
         },
         confirmButton = {
@@ -1401,9 +1394,9 @@ private fun ActivityGoalsDialog(
                 enabled = valid,
                 onClick = { onSave(steps.toInt(), exercise.toInt(), energy.toInt()) },
                 shape = RoundedCornerShape(16.dp),
-            ) { Text("Save goals") }
+            ) { Text(stringResource(R.string.ws_save_goals)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     )
 }
 
@@ -1438,17 +1431,16 @@ private fun SummaryStat(label: String, value: String, modifier: Modifier = Modif
 // data classes
 
 private data class FeatureCard(
-    val title: String,
-    val subtitle: String,
+    @androidx.annotation.StringRes val titleRes: Int,
     val icon: Int,
     val route: String,
     val status: String? = null
 )
 
 private val features = listOf(
-    FeatureCard("Calendar", "Plan your schedule", R.drawable.ic_calendar, "calendar"),
-    FeatureCard("To-Do", "Manage tasks", R.drawable.ic_todo, "todo"),
-    FeatureCard("Pomodoro", "Focus timer", R.drawable.ic_timer, "pomodoro")
+    FeatureCard(R.string.together_scope_calendar, R.drawable.ic_calendar, "calendar"),
+    FeatureCard(R.string.ws_feature_todo, R.drawable.ic_todo, "todo"),
+    FeatureCard(R.string.intake_coping_pomodoro, R.drawable.ic_timer, "pomodoro")
 )
 
 @Composable
@@ -1496,7 +1488,7 @@ private fun FeatureCardItem(
         color = containerColor,
         // reads the tile's title plus what it's showing: 'To-Do, 3 tasks left' is the useful sentence
         onClick = speaking(
-            listOfNotNull(feature.title, displayStatus?.takeIf { it.isNotBlank() })
+            listOfNotNull(stringResource(feature.titleRes), displayStatus?.takeIf { it.isNotBlank() })
                 .joinToString(", "),
             onClick,
         ),
@@ -1578,7 +1570,7 @@ private fun FeatureCardItem(
                 // bottom text
                 Column {
                     Text(
-                        text = feature.title,
+                        text = stringResource(feature.titleRes),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colorScheme.onSurface
@@ -1592,12 +1584,6 @@ private fun FeatureCardItem(
                             color = accentColor
                         )
                     }
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = feature.subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colorScheme.onSurfaceVariant
-                    )
                 }
             }
         } else {
@@ -1616,7 +1602,7 @@ private fun FeatureCardItem(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = feature.title,
+                        text = stringResource(feature.titleRes),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = colorScheme.onSurface
@@ -1630,12 +1616,6 @@ private fun FeatureCardItem(
                             color = accentColor
                         )
                     }
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Text(
-                        text = feature.subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colorScheme.onSurfaceVariant
-                    )
                 }
             }
         }
@@ -1814,7 +1794,7 @@ private fun TogetherEntryCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         color = colorScheme.surfaceContainer,
-        onClick = speaking("Myndora Together", onClick),
+        onClick = speaking(stringResource(R.string.together_title), onClick),
         shadowElevation = if (dark) 0.dp else 1.dp,
         tonalElevation = 0.dp,
         border = if (needsAttention) {
@@ -1849,7 +1829,7 @@ private fun TogetherEntryCard(
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Myndora Together",
+                    text = stringResource(R.string.together_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.onSurface,
@@ -1858,25 +1838,16 @@ private fun TogetherEntryCard(
                 Text(
                     text = when {
                         needsAttention ->
-                            "$pendingRequests ${if (pendingRequests == 1) "request" else "requests"} waiting"
+                            if (pendingRequests == 1) stringResource(R.string.ws_one_request)
+                            else stringResource(R.string.ws_n_requests, pendingRequests)
                         connections.isNotEmpty() ->
                             connections.take(2).joinToString(" & ") { it.name } +
                                 if (connections.size > 2) " +${connections.size - 2}" else ""
-                        else -> "Nobody yet"
+                        else -> stringResource(R.string.ws_nobody_yet)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = if (needsAttention) colorScheme.tertiary else colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.height(3.dp))
-                Text(
-                    text = if (connections.isEmpty()) {
-                        "Add a partner, family or friend"
-                    } else {
-                        "Share a calendar, a list, or a check-in"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colorScheme.onSurfaceVariant,
                 )
             }
             if (needsAttention) {
@@ -1980,7 +1951,7 @@ private fun CareNearbyCard(onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         color = colorScheme.surfaceContainer,
-        onClick = speaking("Care nearby", onClick),
+        onClick = speaking(stringResource(R.string.ws_care_nearby), onClick),
         shadowElevation = if (dark) 0.dp else 1.dp,
         tonalElevation = 0.dp
     ) {
@@ -2002,23 +1973,17 @@ private fun CareNearbyCard(onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Find Care",
+                    text = stringResource(R.string.ws_find_care),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Healthcare near you",
+                    text = stringResource(R.string.ws_healthcare_near),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(3.dp))
-                Text(
-                    text = "Locate services around you",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -2076,3 +2041,8 @@ fun CircularTaskProgress(
         )
     }
 }
+
+@Composable
+private fun medicationCountLabel(count: Int): String =
+    if (count == 1) stringResource(R.string.ws_one_medication)
+    else stringResource(R.string.ws_n_medications, count)

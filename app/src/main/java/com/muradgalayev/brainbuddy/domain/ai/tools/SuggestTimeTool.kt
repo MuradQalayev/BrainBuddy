@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.domain.ai.tools
 
+import com.muradgalayev.brainbuddy.ui.utils.resolve
 import com.muradgalayev.brainbuddy.domain.ai.AiTool
 import com.muradgalayev.brainbuddy.domain.scheduling.SuggestTimeUseCase
 import kotlinx.serialization.json.JsonObject
@@ -21,6 +22,7 @@ import javax.inject.Inject
 // over the user's history, not a fact to be recalled, and it comes back with a stated reason
 // the user can be shown and can argue with
 class SuggestTimeTool @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val suggestTime: SuggestTimeUseCase,
 ) : AiTool {
 
@@ -81,7 +83,7 @@ class SuggestTimeTool @Inject constructor(
         return buildString {
             append("Suggested times for '$title', best first:\n")
             suggestions.take(3).forEach { s ->
-                append("  • ${s.date} ${s.startLabel}–${s.endLabel} — ${s.reasonText}\n")
+                append("  • ${s.date} ${s.startLabel}–${s.endLabel} — ${s.reasonText.resolve(context)}\n")
             }
             append(
                 "Offer the first one in one short sentence with its reason, and " +

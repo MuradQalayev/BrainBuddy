@@ -6,6 +6,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -23,6 +25,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -44,6 +47,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import com.muradgalayev.brainbuddy.ui.accessibility.animationsOn
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +58,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
@@ -59,11 +66,18 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.isSpecified
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -73,6 +87,10 @@ import com.muradgalayev.brainbuddy.R
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import kotlin.math.sin
+import androidx.compose.ui.res.stringResource
+
+// how long a picked answer stays on screen before the next question slides in
+private const val AUTO_ADVANCE_DELAY_MS = 320L
 
 @Composable
 fun SwipeQuestionnaire(
@@ -97,11 +115,26 @@ fun SwipeQuestionnaire(
         animationSpec = spring(dampingRatio = .68f, stiffness = 90f),
         label = "treeGrowth",
     )
+    val animate = animationsOn()
+    // a single-choice answer moves on by itself, after a beat long enough to see the tick land. only
+    // the page on screen can do it, and never off the end: finishing stays a deliberate tap
+    val advanceFrom: (Int) -> (() -> Unit) = { page ->
+        {
+            if (page == pager.currentPage && page < pageCount - 1) {
+                scope.launch {
+                    delay(AUTO_ADVANCE_DELAY_MS)
+                    if (pager.currentPage == page && !pager.isScrollInProgress) {
+                        if (animate) pager.animateScrollToPage(page + 1) else pager.scrollToPage(page + 1)
+                    }
+                }
+            }
+        }
+    }
     Column(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxWidth().height(58.dp).padding(horizontal = 8.dp)) {
             Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text("Question ${pager.currentPage + 1} of $pageCount", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.survey_question_of, pager.currentPage + 1, pageCount), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             // deliberately never disabled by isSubmitting: if a save is hanging on a dead network, that's
             // exactly the moment someone needs to leave
@@ -111,7 +144,7 @@ fun SwipeQuestionnaire(
                     modifier = Modifier.align(Alignment.CenterStart),
                 ) {
                     Text(
-                        "Skip",
+                        stringResource(R.string.common_skip),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium,
                     )
@@ -125,7 +158,7 @@ fun SwipeQuestionnaire(
                 if (isSubmitting) {
                     CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("Save", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_save), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -158,7 +191,9 @@ fun SwipeQuestionnaire(
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f)),
                 shadowElevation = 3.dp,
-            ) { pageContent(page) }
+            ) {
+                CompositionLocalProvider(LocalAdvanceQuestion provides advanceFrom(page)) { pageContent(page) }
+            }
         }
         TreeGrowthCard(
             progress = growth,
@@ -182,12 +217,12 @@ fun SwipeQuestionnaire(
                         else scope.launch { pager.animateScrollToPage(pager.currentPage - 1) }
                     },
                     modifier = Modifier.weight(.42f).height(50.dp),
-                ) { Text("Back") }
+                ) { Text(stringResource(R.string.common_back)) }
                 Button(
                     onClick = { if (pager.currentPage == pageCount - 1) onSubmit() else scope.launch { pager.animateScrollToPage(pager.currentPage + 1) } },
                     modifier = Modifier.weight(1f).height(50.dp),
                 ) {
-                    Text(if (pager.currentPage == pageCount - 1) submitLabel else "Next", fontWeight = FontWeight.Bold)
+                    Text(if (pager.currentPage == pageCount - 1) submitLabel else stringResource(R.string.common_next), fontWeight = FontWeight.Bold)
                     if (pager.currentPage < pageCount - 1) { Spacer(Modifier.size(8.dp)); Icon(Icons.AutoMirrored.Rounded.ArrowForward, null) }
                 }
             }
@@ -207,22 +242,20 @@ fun SwipeQuestionnaire(
                     tint = MaterialTheme.colorScheme.primary,
                 )
             },
-            title = { Text("Finish this later?", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.survey_finish_later_title), fontWeight = FontWeight.Bold) },
             text = {
                 Text(
-                    "Your answers will be saved, and you can pick the survey back up any time from Settings. " +
-                        "Myndora works without it — the assistant just won't be " +
-                        "personalised to you yet."
+                    stringResource(R.string.survey_finish_later_body)
                 )
             },
             confirmButton = {
                 TextButton(onClick = { confirmSkip = false; onSkip() }) {
-                    Text("Skip for now", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.survey_skip_for_now), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { confirmSkip = false }) {
-                    Text("Keep going", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.survey_keep_going), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
         )
@@ -364,14 +397,14 @@ fun TreeGrowthCard(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                GrowingTree(progress, Modifier.fillMaxWidth().height(190.dp))
-                Spacer(Modifier.height(2.dp))
+                GrowingTree(progress, Modifier.fillMaxWidth().height(236.dp))
+                Spacer(Modifier.height(4.dp))
                 Surface(
                     shape = RoundedCornerShape(50),
                     color = MaterialTheme.colorScheme.tertiary.copy(alpha = .14f),
                 ) {
                     Text(
-                        "✓  PROFILE COMPLETE",
+                        stringResource(R.string.survey_profile_complete),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.tertiary,
@@ -380,13 +413,13 @@ fun TreeGrowthCard(
                 }
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "Your tree is thriving",
+                    stringResource(R.string.survey_tree_thriving),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                 )
                 Spacer(Modifier.height(7.dp))
                 Text(
-                    "Myndora knows you better now and can shape support around the way you focus, rest, and grow.",
+                    stringResource(R.string.survey_tree_thriving_body),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -394,29 +427,31 @@ fun TreeGrowthCard(
             }
         } else {
             Row(
-                modifier = Modifier.fillMaxWidth().height(112.dp).padding(horizontal = 18.dp),
+                modifier = Modifier.fillMaxWidth().height(148.dp).padding(start = 18.dp, end = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(Modifier.weight(.78f)) {
-                    Text("Your focus tree", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Column(Modifier.weight(.76f)) {
+                    Text(stringResource(R.string.survey_focus_tree), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(5.dp))
                     Text(
                         when {
-                        invitation && progress < 1f -> "I’d love to know you better · ${(progress * 100).toInt()}%"
-                        progress == 0f -> "Answer a question to bring it to life"
-                        progress < .5f -> "Roots are growing · ${(progress * 100).toInt()}%"
-                        progress < 1f -> "Your canopy is blooming · ${(progress * 100).toInt()}%"
-                        else -> "Fully grown — beautiful work!"
+                        invitation && progress < 1f -> stringResource(R.string.survey_tree_invite, (progress * 100).toInt())
+                        progress == 0f -> stringResource(R.string.survey_tree_empty)
+                        progress < .5f -> stringResource(R.string.survey_tree_roots, (progress * 100).toInt())
+                        progress < 1f -> stringResource(R.string.survey_tree_canopy, (progress * 100).toInt())
+                        else -> stringResource(R.string.survey_tree_full)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     if (invitation && progress < 1f) {
                         Spacer(Modifier.height(8.dp))
-                        Text("Continue profile  →", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.survey_continue_profile), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                     }
+                    Spacer(Modifier.height(11.dp))
+                    TreeProgressBar(progress)
                 }
-                GrowingTree(progress, Modifier.weight(1f).fillMaxSize())
+                GrowingTree(progress, Modifier.weight(1.08f).fillMaxHeight())
             }
         }
     }
@@ -428,43 +463,152 @@ private fun GrowingTree(progress: Float, modifier: Modifier = Modifier) {
     val grayscale = remember {
         ColorMatrix().apply { setToSaturation(0f) }
     }
+    // colour eases up to the new level instead of jumping, so answering a question reads as growth
+    val filled by animateFloatAsState(
+        targetValue = progress.coerceIn(0f, 1f),
+        animationSpec = tween(900, easing = FastOutSlowInEasing),
+        label = "treeGrowth",
+    )
     val waves = rememberInfiniteTransition(label = "treeLiquid")
     val phase by waves.animateFloat(
         initialValue = 0f,
         targetValue = (Math.PI * 2).toFloat(),
-        animationSpec = infiniteRepeatable(tween(2400), RepeatMode.Restart),
+        animationSpec = infiniteRepeatable(tween(2400, easing = LinearEasing), RepeatMode.Restart),
         label = "treeLiquidWave",
     )
-    Box(modifier, contentAlignment = Alignment.Center) {
-        Image(
-            painter = painterResource(R.drawable.onboarding_tree_full),
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            colorFilter = ColorFilter.colorMatrix(grayscale),
-            alpha = .28f,
-            modifier = Modifier.fillMaxSize(),
+    // a slow breath and sway, rooted at the trunk. small enough to feel alive, not animated
+    val breath by waves.animateFloat(
+        initialValue = 0f,
+        targetValue = (Math.PI * 2).toFloat(),
+        animationSpec = infiniteRepeatable(tween(7000, easing = LinearEasing), RepeatMode.Restart),
+        label = "treeBreath",
+    )
+    val leaf = MaterialTheme.colorScheme.tertiary
+    val artwork = painterResource(R.drawable.onboarding_tree_full)
+    // ContentScale.Fit letterboxes the artwork inside whatever slot it gets, so the colour has to
+    // rise through the drawn picture, not through the layout box, or a short wide tile fills empty air
+    fun DrawScope.artworkBounds(): Rect {
+        val intrinsic = artwork.intrinsicSize
+        val ratio = if (intrinsic.isSpecified && intrinsic.height > 0f) {
+            intrinsic.width / intrinsic.height
+        } else 1f
+        val width: Float
+        val height: Float
+        if (size.width / size.height > ratio) {
+            height = size.height
+            width = height * ratio
+        } else {
+            width = size.width
+            height = width / ratio
+        }
+        return Rect(
+            offset = Offset((size.width - width) / 2f, (size.height - height) / 2f),
+            size = Size(width, height),
         )
-        Image(
-            painter = painterResource(R.drawable.onboarding_tree_full),
-            contentDescription = "Your tree is ${kotlin.math.round(progress * 100).toInt()} percent colored",
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxSize().drawWithContent {
-                val waterLine = size.height * (1f - progress)
-                val amplitude = if (progress in .01f..0.99f) 5.dp.toPx() else 0f
-                val liquid = Path().apply {
-                    moveTo(0f, waterLine)
-                    val samples = 32
-                    for (step in 0..samples) {
-                        val x = size.width * step / samples
-                        val y = waterLine + sin(phase + step * .55f) * amplitude
-                        lineTo(x, y)
+    }
+    Box(modifier, contentAlignment = Alignment.Center) {
+        // halo behind the canopy that brightens as the profile fills in
+        Box(
+            Modifier.fillMaxSize().drawBehind {
+                val tree = artworkBounds()
+                val centre = Offset(tree.center.x, tree.top + tree.height * .44f)
+                val radius = tree.minDimension * .70f
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(leaf.copy(alpha = .22f * filled), Color.Transparent),
+                        center = centre,
+                        radius = radius,
+                    ),
+                    radius = radius,
+                    center = centre,
+                )
+            }
+        )
+        Box(
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    val swell = 1f + sin(breath) * .014f
+                    scaleX = swell
+                    scaleY = swell
+                    rotationZ = sin(breath * .5f) * .8f
+                    transformOrigin = TransformOrigin(.5f, 1f)
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = artwork,
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                colorFilter = ColorFilter.colorMatrix(grayscale),
+                alpha = .28f,
+                modifier = Modifier.fillMaxSize(),
+            )
+            Image(
+                painter = artwork,
+                contentDescription = stringResource(R.string.survey_tree_percent_cd, kotlin.math.round(progress * 100).toInt()),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize().drawWithContent {
+                    val tree = artworkBounds()
+                    val waterLine = tree.bottom - tree.height * filled
+                    // keep the ripple proportional, or it swamps the tree in a small home tile
+                    val amplitude =
+                        if (filled in .01f..0.99f) minOf(5.dp.toPx(), tree.height * .035f) else 0f
+                    val samples = 40
+                    // two sines of different speeds, so the surface never repeats visibly
+                    fun crestAt(step: Int): Float {
+                        val ripple = sin(phase + step * .55f) * .7f + sin(phase * 1.7f - step * .21f) * .3f
+                        return waterLine + ripple * amplitude
                     }
-                    lineTo(size.width, size.height)
-                    lineTo(0f, size.height)
-                    close()
-                }
-                clipPath(liquid) { this@drawWithContent.drawContent() }
-            },
+                    fun xAt(step: Int): Float = tree.left + tree.width * step / samples
+                    val liquid = Path().apply {
+                        moveTo(tree.left, crestAt(0))
+                        for (step in 0..samples) lineTo(xAt(step), crestAt(step))
+                        lineTo(tree.right, tree.bottom)
+                        lineTo(tree.left, tree.bottom)
+                        close()
+                    }
+                    clipPath(liquid) { this@drawWithContent.drawContent() }
+                    if (amplitude > 0f) {
+                        // a lit meniscus along the surface, the edge the eye follows as it rises
+                        val crest = Path().apply {
+                            moveTo(tree.left, crestAt(0))
+                            for (step in 0..samples) lineTo(xAt(step), crestAt(step))
+                        }
+                        drawPath(crest, leaf.copy(alpha = .16f), style = Stroke(width = 5.dp.toPx()))
+                        drawPath(crest, leaf.copy(alpha = .55f), style = Stroke(width = 1.5.dp.toPx()))
+                    }
+                },
+            )
+        }
+    }
+}
+
+// how full the profile is, said once more in a way that reads at a glance
+@Composable
+private fun TreeProgressBar(progress: Float, modifier: Modifier = Modifier) {
+    val filled by animateFloatAsState(
+        targetValue = progress.coerceIn(0f, 1f),
+        animationSpec = tween(900, easing = FastOutSlowInEasing),
+        label = "treeBar",
+    )
+    Box(
+        modifier
+            .fillMaxWidth(.94f)
+            .height(6.dp)
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .14f)),
+    ) {
+        Box(
+            Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(filled)
+                .clip(RoundedCornerShape(50))
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary),
+                    ),
+                ),
         )
     }
 }

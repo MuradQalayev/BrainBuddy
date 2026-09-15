@@ -215,11 +215,9 @@ class ReminderScheduler @Inject constructor(
     private fun parseHhMm(raw: String): LocalTime? =
         runCatching { LocalTime.parse(raw) }.getOrNull()
 
-    private fun formatTimeLabel(t: LocalTime): String {
-        val hour12 = ((t.hour % 12).takeIf { it != 0 } ?: 12)
-        val ampm = if (t.hour < 12) "AM" else "PM"
-        return "%d:%02d %s".format(hour12, t.minute, ampm)
-    }
+    // the locale's own clock: 3:00 PM in English, 15:00 in Italian
+    private fun formatTimeLabel(t: LocalTime): String =
+        t.format(java.time.format.DateTimeFormatter.ofLocalizedTime(java.time.format.FormatStyle.SHORT))
 
     companion object {
         const val EXTRA_ITEM_ID = "item_id"

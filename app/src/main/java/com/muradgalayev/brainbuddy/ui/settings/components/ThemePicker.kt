@@ -34,6 +34,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -68,6 +69,8 @@ import com.muradgalayev.brainbuddy.ui.theme.Vividness
 import com.muradgalayev.brainbuddy.ui.theme.customPalette
 import com.muradgalayev.brainbuddy.ui.theme.hslColor
 import kotlinx.coroutines.delay
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // roughly the editor's height, so how far below the preview also has to be on screen
 private val EditorReach = 300.dp
@@ -84,6 +87,11 @@ fun ThemePicker(
     onSelectBuiltIn: (AppTheme) -> Unit,
     onCustomChange: (CustomThemeSpec) -> Unit,
     modifier: Modifier = Modifier,
+    // building your own palette is a Plus feature. the built-ins stay free, and a locked row opens
+    // the plan screen rather than doing nothing, so the lock explains itself in one tap.
+    // defaults to unlocked for callers with no plan to consult, like onboarding
+    customUnlocked: Boolean = true,
+    onCustomLocked: () -> Unit = {},
 ) {
     // the preview resolves light/dark exactly the way the app does, or it wouldn't match
     val systemDark = isSystemInDarkTheme()
@@ -94,7 +102,9 @@ fun ThemePicker(
     }
 
     val customSelected = selected.id == ThemeSelection.CUSTOM_ID
-    var customExpanded by remember { mutableStateOf(customSelected) }
+    var customExpanded by remember { mutableStateOf(customSelected && customUnlocked) }
+    // losing Plus mid-session must not leave the editor open over a theme that can't be edited
+    LaunchedEffect(customUnlocked) { if (!customUnlocked) customExpanded = false }
 
     // the editor sits directly under the preview, and opening it scrolls the preview to the top:
     // otherwise every hue drag happens with the thing being previewed off-screen above, and you
@@ -138,15 +148,14 @@ fun ThemePicker(
     ) {
         Column(Modifier.fillMaxWidth().padding(18.dp)) {
             Text(
-                text = "Color theme",
+                text = stringResource(R.string.theme_color_theme),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Spacer(Modifier.height(3.dp))
             Text(
-                text = "Ordered from calmest to boldest. Pick whichever suits today — " +
-                    "it changes color only, never where anything is.",
+                text = stringResource(R.string.theme_color_theme_desc),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -184,8 +193,8 @@ fun ThemePicker(
                 AppTheme.entries.forEach { theme ->
                     ThemeRow(
                         palette = theme.palette(previewDark),
-                        label = theme.label,
-                        blurb = theme.blurb,
+                        label = stringResource(theme.labelRes),
+                        blurb = stringResource(theme.blurbRes),
                         selected = selected.id == theme.id,
                         onClick = {
                             // collapsing the editor pulls the whole list upward, so follow it with the preview rather than
@@ -208,11 +217,19 @@ fun ThemePicker(
 
                 ThemeRow(
                     palette = customPreview,
-                    label = "Yours",
-                    blurb = if (customSelected) "Tap to adjust your colors."
-                    else "Build a palette from two colors you pick.",
+                    label = stringResource(R.string.theme_yours),
+                    blurb = when {
+                        !customUnlocked -> stringResource(R.string.plan_colors_locked)
+                        customSelected -> stringResource(R.string.theme_yours_adjust)
+                        else -> stringResource(R.string.theme_yours_build)
+                    },
                     selected = customSelected,
+                    locked = !customUnlocked,
                     onClick = {
+                        if (!customUnlocked) {
+                            onCustomLocked()
+                            return@ThemeRow
+                        }
                         customExpanded = true
                         openRequests++
                         onCustomChange(draft)
@@ -231,7 +248,7 @@ private fun CustomThemeEditor(
 ) {
     Column(Modifier.padding(top = 16.dp)) {
         Text(
-            text = "Your colors",
+            text = stringResource(R.string.theme_your_colors),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -240,8 +257,7 @@ private fun CustomThemeEditor(
         Text(
             // worth saying plainly: people expect a picker that lets them make something unreadable, and
             // are otherwise surprised when their exact colour shifts
-            text = "Pick two hues. Brightness is adjusted automatically so text stays " +
-                "readable on both light and dark.",
+            text = stringResource(R.string.theme_your_colors_desc),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -249,27 +265,27 @@ private fun CustomThemeEditor(
         Spacer(Modifier.height(14.dp))
 
         HueRow(
-            label = "Main color",
+            label = stringResource(R.string.theme_main_color),
             hue = spec.accentHue,
             vividness = spec.vividness,
             onHueChange = { onDraft(spec.copy(accentHue = it)) },
-            onCommit = { onCommit(spec) },
+            onCommit = { onCommit(spec.copy(accentHue = it)) },
         )
 
         Spacer(Modifier.height(14.dp))
 
         HueRow(
-            label = "Second color",
+            label = stringResource(R.string.theme_second_color),
             hue = spec.supportHue,
             vividness = spec.vividness,
             onHueChange = { onDraft(spec.copy(supportHue = it)) },
-            onCommit = { onCommit(spec) },
+            onCommit = { onCommit(spec.copy(supportHue = it)) },
         )
 
         Spacer(Modifier.height(16.dp))
 
         Text(
-            text = "Intensity",
+            text = stringResource(R.string.theme_intensity),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -289,7 +305,7 @@ private fun CustomThemeEditor(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = option.label,
+                            text = stringResource(option.labelRes),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             color = if (isSelected) MaterialTheme.colorScheme.primary
@@ -308,7 +324,7 @@ private fun HueRow(
     hue: Float,
     vividness: Vividness,
     onHueChange: (Float) -> Unit,
-    onCommit: () -> Unit,
+    onCommit: (Float) -> Unit,
 ) {
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -338,7 +354,7 @@ private val ThumbSize = 22.dp
 private fun HueSlider(
     hue: Float,
     onHueChange: (Float) -> Unit,
-    onCommit: () -> Unit,
+    onCommit: (Float) -> Unit,
 ) {
     val density = LocalDensity.current
     var trackWidthPx by remember { mutableStateOf(1f) }
@@ -346,6 +362,7 @@ private fun HueSlider(
     // pointerInput(Unit) builds its gesture handlers once and keeps them, so the lambdas captured
     // there never see a later recomposition's values. without this, dragging the second hue would
     // commit a spec still carrying the old first hue, silently undoing the previous adjustment
+    val currentHue by rememberUpdatedState(hue)
     val currentOnHueChange by rememberUpdatedState(onHueChange)
     val currentOnCommit by rememberUpdatedState(onCommit)
 
@@ -355,8 +372,10 @@ private fun HueSlider(
         Brush.horizontalGradient((0..12).map { hslColor(it * 30f, 0.72f, 0.5f) })
     }
 
-    fun report(x: Float) {
-        currentOnHueChange(((x / trackWidthPx).coerceIn(0f, 1f)) * 360f)
+    fun report(x: Float): Float {
+        val next = ((x / trackWidthPx).coerceIn(0f, 1f)) * 360f
+        currentOnHueChange(next)
+        return next
     }
 
     Box(
@@ -366,17 +385,18 @@ private fun HueSlider(
             .onSizeChanged { trackWidthPx = it.width.toFloat() }
             .pointerInput(Unit) {
                 detectTapGestures {
-                    report(it.x)
-                    currentOnCommit()
+                    currentOnCommit(report(it.x))
                 }
             }
             .pointerInput(Unit) {
+                var latestGestureHue = currentHue
                 detectHorizontalDragGestures(
-                    onDragEnd = { currentOnCommit() },
-                    onDragCancel = { currentOnCommit() },
+                    onDragStart = { latestGestureHue = currentHue },
+                    onDragEnd = { currentOnCommit(latestGestureHue) },
+                    onDragCancel = { currentOnCommit(latestGestureHue) },
                 ) { change, _ ->
                     change.consume()
-                    report(change.position.x)
+                    latestGestureHue = report(change.position.x)
                 }
             },
         contentAlignment = Alignment.CenterStart,
@@ -414,6 +434,7 @@ private fun ThemeRow(
     blurb: String,
     selected: Boolean,
     onClick: () -> Unit,
+    locked: Boolean = false,
 ) {
     val borderColor by animateColorAsState(
         targetValue = if (selected) palette.accent else palette.outlineVariant,
@@ -470,18 +491,30 @@ private fun ThemeRow(
                 modifier = Modifier
                     .size(22.dp)
                     .clip(CircleShape)
-                    .background(if (selected) palette.accent else Color.Transparent)
+                    .background(
+                        when {
+                            locked -> palette.accent.copy(alpha = 0.16f)
+                            selected -> palette.accent
+                            else -> Color.Transparent
+                        },
+                    )
                     .border(
-                        width = if (selected) 0.dp else 1.5.dp,
+                        width = if (selected || locked) 0.dp else 1.5.dp,
                         color = palette.onSurfaceVariant.copy(alpha = 0.35f),
                         shape = CircleShape,
                     ),
                 contentAlignment = Alignment.Center,
             ) {
-                if (selected) {
-                    Icon(
+                when {
+                    locked -> Icon(
+                        imageVector = Icons.Rounded.Lock,
+                        contentDescription = stringResource(R.string.plan_locked_cd),
+                        tint = palette.accent,
+                        modifier = Modifier.size(13.dp),
+                    )
+                    selected -> Icon(
                         imageVector = Icons.Rounded.Check,
-                        contentDescription = "Selected",
+                        contentDescription = stringResource(R.string.common_selected),
                         tint = palette.onAccent,
                         modifier = Modifier.size(14.dp),
                     )

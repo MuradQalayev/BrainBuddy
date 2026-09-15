@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.muradgalayev.brainbuddy.ui.theme.ThemePalette
 import kotlinx.coroutines.delay
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // a living miniature of the workspace, painted in whichever palette it's handed. swatch rows
 // answer 'what colour is this theme', which isn't the question people actually have, namely
@@ -178,9 +180,9 @@ fun ThemePreviewCard(
             // header
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    MiniText("Good morning", ink, 11f, FontWeight.Bold)
+                    MiniText(stringResource(R.string.preview_good_morning), ink, 11f, FontWeight.Bold)
                     Spacer(Modifier.height(2.dp))
-                    MiniText("3 things today", muted, 8.5f)
+                    MiniText(stringResource(R.string.preview_three_things), muted, 8.5f)
                 }
                 Box(
                     Modifier
@@ -246,8 +248,8 @@ fun ThemePreviewCard(
                     Modifier.fillMaxHeight().weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    MiniCard(accentContainer, accent, "Calendar", ink, Modifier.weight(1f))
-                    MiniCard(supportContainer, support, "Tasks", ink, Modifier.weight(1f))
+                    MiniCard(accentContainer, accent, stringResource(R.string.together_scope_calendar), ink, Modifier.weight(1f))
+                    MiniCard(supportContainer, support, stringResource(R.string.preview_tasks), ink, Modifier.weight(1f))
                 }
             }
 
@@ -287,7 +289,7 @@ fun ThemePreviewCard(
                 Spacer(Modifier.width(8.dp))
 
                 MiniText(
-                    "Read one chapter",
+                    stringResource(R.string.preview_read_chapter),
                     ink,
                     9f,
                     modifier = Modifier.alpha(1f - 0.45f * checkFill),
@@ -301,7 +303,7 @@ fun ThemePreviewCard(
                         .background(Brush.horizontalGradient(listOf(accent, accentEnd)))
                         .padding(horizontal = 9.dp, vertical = 3.5.dp),
                 ) {
-                    MiniText("Start", onAccent, 8f, FontWeight.Bold)
+                    MiniText(stringResource(R.string.common_start), onAccent, 8f, FontWeight.Bold)
                 }
             }
 

@@ -7,6 +7,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.muradgalayev.brainbuddy.R
 
 // executes a filled-in OfflineAction by calling the very same AiTool the online assistant would
 // have called. no model in this path and no network call: the user has already made every
@@ -15,6 +16,7 @@ import javax.inject.Singleton
 // tool and its arguments, and a short list of taps chooses them exactly
 @Singleton
 class OfflineActionRunner @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val tools: Set<@JvmSuppressWildcards AiTool>,
 ) {
     private val toolByName by lazy { tools.associateBy { it.name } }
@@ -28,12 +30,12 @@ class OfflineActionRunner @Inject constructor(
             .filter { values[it.key].isNullOrBlank() }
         if (missing.isNotEmpty()) {
             return OfflineActionResult.Failed(
-                "Still need: ${missing.joinToString { it.label.lowercase() }}."
+                context.getString(R.string.offline_still_need, missing.joinToString { it.label.lowercase() })
             )
         }
 
         val tool = toolByName[action.toolName]
-            ?: return OfflineActionResult.Failed("That action isn't available on this build.")
+            ?: return OfflineActionResult.Failed(context.getString(R.string.offline_unavailable))
 
         val args = buildArgs(action, values)
         return runCatching { tool.execute(args) }
@@ -44,13 +46,13 @@ class OfflineActionRunner @Inject constructor(
                     if (message.startsWith("Failed", ignoreCase = true)) {
                         OfflineActionResult.Failed(message.removePrefix("Failed:").trim())
                     } else {
-                        OfflineActionResult.Done(message, queuedForSync = action.syncs)
+                        OfflineActionResult.Done(action.confirmation ?: message, queuedForSync = action.syncs)
                     }
                 },
                 onFailure = {
                     Log.w(TAG, "offline action ${action.id} failed", it)
                     OfflineActionResult.Failed(
-                        it.message ?: "Something went wrong running that."
+                        it.message ?: context.getString(R.string.offline_failed_generic)
                     )
                 },
             )

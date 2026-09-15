@@ -52,17 +52,21 @@ import androidx.compose.ui.unit.sp
 import com.muradgalayev.brainbuddy.data.notifications.PomodoroNudgeFrequency
 import com.muradgalayev.brainbuddy.ui.accessibility.speakingWith
 import com.muradgalayev.brainbuddy.data.notifications.ReminderKind
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
+@Composable
 private fun kindLabel(kind: ReminderKind): String = when (kind) {
-    ReminderKind.DAY_BEFORE -> "Day before"
-    ReminderKind.MIN_30_BEFORE -> "30 minutes before"
-    ReminderKind.AT_START -> "At start time"
+    ReminderKind.DAY_BEFORE -> stringResource(R.string.notif_kind_day_before)
+    ReminderKind.MIN_30_BEFORE -> stringResource(R.string.notif_kind_30min)
+    ReminderKind.AT_START -> stringResource(R.string.notif_kind_start)
 }
 
+@Composable
 private fun kindSubtitle(kind: ReminderKind): String = when (kind) {
-    ReminderKind.DAY_BEFORE -> "A heads-up the day ahead"
-    ReminderKind.MIN_30_BEFORE -> "Time to wrap up and head over"
-    ReminderKind.AT_START -> "A nudge right as it begins"
+    ReminderKind.DAY_BEFORE -> stringResource(R.string.notif_kind_day_before_sub)
+    ReminderKind.MIN_30_BEFORE -> stringResource(R.string.notif_kind_30min_sub)
+    ReminderKind.AT_START -> stringResource(R.string.notif_kind_start_sub)
 }
 
 // order the toggles from earliest lead time to latest
@@ -76,9 +80,9 @@ private fun formatTimeLabel(hhmm: String): String {
     val parts = hhmm.split(":")
     val hour = parts.getOrNull(0)?.toIntOrNull() ?: 10
     val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
-    val hour12 = ((hour % 12).takeIf { it != 0 } ?: 12)
-    val ampm = if (hour < 12) "AM" else "PM"
-    return "%d:%02d %s".format(hour12, minute, ampm)
+    // the locale's own clock: 10:00 AM in English, 10:00 in Italian
+    return java.time.LocalTime.of(hour.coerceIn(0, 23), minute.coerceIn(0, 59))
+        .format(java.time.format.DateTimeFormatter.ofLocalizedTime(java.time.format.FormatStyle.SHORT))
 }
 
 @Composable
@@ -172,14 +176,14 @@ fun NotificationsSection(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Notifications",
+                        text = stringResource(R.string.settings_notifications),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.size(2.dp))
                     Text(
-                        text = "$activeCount active — reminders, summary & focus",
+                        text = stringResource(R.string.notif_active_count, activeCount),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -218,7 +222,7 @@ fun NotificationsSection(
                     modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    GroupHeader("To-do reminders")
+                    GroupHeader(stringResource(R.string.notif_todo_reminders))
                     KIND_ORDER.forEach { kind ->
                         ToggleRow(
                             title = kindLabel(kind),
@@ -228,7 +232,7 @@ fun NotificationsSection(
                         )
                     }
 
-                    GroupHeader("Calendar reminders")
+                    GroupHeader(stringResource(R.string.notif_calendar_reminders))
                     KIND_ORDER.forEach { kind ->
                         ToggleRow(
                             title = kindLabel(kind),
@@ -238,15 +242,15 @@ fun NotificationsSection(
                         )
                     }
 
-                    GroupHeader("Daily summary")
+                    GroupHeader(stringResource(R.string.notif_daily_summary))
                     ToggleRow(
-                        title = "Morning rundown",
-                        subtitle = "A gentle recap of your day, each morning",
+                        title = stringResource(R.string.notif_morning_rundown),
+                        subtitle = stringResource(R.string.notif_morning_rundown_sub),
                         checked = dailySummaryEnabled,
                         onCheckedChange = onDailySummaryChange
                     )
 
-                    GroupHeader("Pomodoro")
+                    GroupHeader(stringResource(R.string.intake_coping_pomodoro))
                     FrequencySelector(
                         selected = nudgeFrequency,
                         onSelect = onNudgeFrequencyChange
@@ -258,8 +262,8 @@ fun NotificationsSection(
                         )
                     }
                     ToggleRow(
-                        title = "Break reminders",
-                        subtitle = "Alert me when a focus session or break ends",
+                        title = stringResource(R.string.notif_break_reminders),
+                        subtitle = stringResource(R.string.notif_break_reminders_sub),
                         checked = breakReminders,
                         onCheckedChange = onBreakRemindersChange
                     )
@@ -286,8 +290,8 @@ private fun EmbeddedNotificationsContent(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         NotificationSettingsCard(
-            title = "To-do reminders",
-            subtitle = "Choose when Myndora should nudge you",
+            title = stringResource(R.string.notif_todo_reminders),
+            subtitle = stringResource(R.string.notif_todo_reminders_sub),
         ) {
             KIND_ORDER.forEach { kind ->
                 ToggleRow(
@@ -300,8 +304,8 @@ private fun EmbeddedNotificationsContent(
         }
 
         NotificationSettingsCard(
-            title = "Calendar reminders",
-            subtitle = "Stay ahead of events without the noise",
+            title = stringResource(R.string.notif_calendar_reminders),
+            subtitle = stringResource(R.string.notif_calendar_reminders_sub),
         ) {
             KIND_ORDER.forEach { kind ->
                 ToggleRow(
@@ -314,20 +318,20 @@ private fun EmbeddedNotificationsContent(
         }
 
         NotificationSettingsCard(
-            title = "Daily rhythm",
-            subtitle = "A calm overview when your day begins",
+            title = stringResource(R.string.notif_daily_rhythm),
+            subtitle = stringResource(R.string.notif_daily_rhythm_sub),
         ) {
             ToggleRow(
-                title = "Morning rundown",
-                subtitle = "A gentle recap of your day, each morning",
+                title = stringResource(R.string.notif_morning_rundown),
+                subtitle = stringResource(R.string.notif_morning_rundown_sub),
                 checked = dailySummaryEnabled,
                 onCheckedChange = onDailySummaryChange,
             )
         }
 
         NotificationSettingsCard(
-            title = "Focus & Pomodoro",
-            subtitle = "Helpful prompts while you work and recharge",
+            title = stringResource(R.string.notif_focus_pomodoro),
+            subtitle = stringResource(R.string.notif_focus_pomodoro_sub),
         ) {
             FrequencySelector(
                 selected = nudgeFrequency,
@@ -337,8 +341,8 @@ private fun EmbeddedNotificationsContent(
                 NudgeTimeRow(timeHhmm = nudgeTime, onTimeChange = onNudgeTimeChange)
             }
             ToggleRow(
-                title = "Break reminders",
-                subtitle = "Tell me when a focus session or break ends",
+                title = stringResource(R.string.notif_break_reminders),
+                subtitle = stringResource(R.string.notif_break_tell_me),
                 checked = breakReminders,
                 onCheckedChange = onBreakRemindersChange,
             )
@@ -391,7 +395,7 @@ private fun NotificationSettingsCard(
                 }
                 Icon(
                     Icons.Rounded.KeyboardArrowDown,
-                    contentDescription = if (expanded) "Collapse $title" else "Expand $title",
+                    contentDescription = if (expanded) stringResource(R.string.notif_collapse, title) else stringResource(R.string.notif_expand, title),
                     modifier = Modifier.size(22.dp).rotate(chevronRotation),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -428,7 +432,9 @@ private fun ToggleRow(
     subtitle: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-) {
+) {    val onWord = stringResource(R.string.common_on)
+    val offWord = stringResource(R.string.common_off)
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
@@ -451,7 +457,7 @@ private fun ToggleRow(
             checked = checked,
             // reads the state it's moving to, not the one it left, so the sentence matches what the switch
             // now shows
-            onCheckedChange = speakingWith({ now: Boolean -> "$title, ${if (now) "on" else "off"}" }, onCheckedChange),
+            onCheckedChange = speakingWith({ now: Boolean -> "$title, ${if (now) onWord else offWord}" }, onCheckedChange),
             colors = SwitchDefaults.colors(
                 checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
                 checkedTrackColor = MaterialTheme.colorScheme.primary,
@@ -468,23 +474,23 @@ private fun FrequencySelector(
 ) {
     Column {
         Text(
-            text = "Focus nudges",
+            text = stringResource(R.string.notif_focus_nudges),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.size(2.dp))
         Text(
-            text = "Prompt me to start a Pomodoro session",
+            text = stringResource(R.string.notif_focus_nudges_sub),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.size(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val options = listOf(
-                PomodoroNudgeFrequency.OFF to "Off",
-                PomodoroNudgeFrequency.ONCE to "Once a day",
-                PomodoroNudgeFrequency.TWICE to "Twice",
+                PomodoroNudgeFrequency.OFF to stringResource(R.string.common_off),
+                PomodoroNudgeFrequency.ONCE to stringResource(R.string.sync_daily),
+                PomodoroNudgeFrequency.TWICE to stringResource(R.string.notif_twice),
             )
             options.forEach { (freq, label) ->
                 SegmentChip(
@@ -567,7 +573,7 @@ private fun NudgeTimeRow(
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-                text = "First nudge at",
+                text = stringResource(R.string.notif_first_nudge),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)

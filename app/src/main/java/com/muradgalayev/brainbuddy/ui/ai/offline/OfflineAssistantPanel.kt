@@ -90,6 +90,8 @@ import com.muradgalayev.brainbuddy.domain.ai.offline.OfflineOption
 import com.muradgalayev.brainbuddy.domain.ai.offline.OfflineSlot
 import com.muradgalayev.brainbuddy.domain.ai.offline.OfflineSlotOptions
 import com.muradgalayev.brainbuddy.ui.theme.MyndoraTheme
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // the assistant with no connection: a short list of things it can still do, each one a few
 // taps from done. deliberately not a chat window with the input greyed out. offline the useful
@@ -226,7 +228,7 @@ private fun PanelHeader(
             Icon(
                 imageVector = if (selected != null) Icons.AutoMirrored.Rounded.ArrowBack
                 else Icons.Rounded.CloudOff,
-                contentDescription = if (selected != null) "Back to actions" else null,
+                contentDescription = if (selected != null) stringResource(R.string.offline_back_to_actions) else null,
                 tint = if (isOnline) MaterialTheme.colorScheme.onPrimaryContainer
                 else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp),
@@ -235,7 +237,7 @@ private fun PanelHeader(
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                text = selected?.title ?: "Offline assistant",
+                text = selected?.title ?: stringResource(R.string.offline_assistant),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -248,8 +250,8 @@ private fun PanelHeader(
                 Text(
                     // the moment the connection returns, say so: the full assistant is one dismissal away and the
                     // user shouldn't have to guess
-                    text = if (isOnline) "Back online — close for the full assistant"
-                    else "On device · syncs when you reconnect",
+                    text = if (isOnline) stringResource(R.string.offline_back_online)
+                    else stringResource(R.string.offline_on_device),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -267,7 +269,7 @@ private fun PanelHeader(
         ) {
             Icon(
                 Icons.Rounded.Close,
-                contentDescription = "Close",
+                contentDescription = stringResource(R.string.common_close),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp),
             )
@@ -315,7 +317,7 @@ private fun BrowseBody(
             .heightIn(max = 440.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        SectionLabel("Suggested")
+        SectionLabel(stringResource(R.string.offline_suggested))
         Spacer(Modifier.height(10.dp))
         // two per row, hand-laid rather than a LazyVerticalGrid: a lazy grid inside a scrolling
         // column is an infinite-height crash waiting to happen
@@ -336,7 +338,7 @@ private fun BrowseBody(
 
         rest.forEach { (group, actions) ->
             Spacer(Modifier.height(8.dp))
-            SectionLabel(group.label)
+            SectionLabel(stringResource(group.labelRes))
             Spacer(Modifier.height(6.dp))
             actions.forEach { action ->
                 CompactActionRow(action = action, onClick = { onSelect(action) })
@@ -532,7 +534,7 @@ private fun ActionBody(
                     color = MaterialTheme.colorScheme.onPrimary,
                 )
             } else {
-                Text("Do it", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.offline_do_it), fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -746,7 +748,7 @@ private fun ResultBody(
                 )
                 Spacer(Modifier.width(7.dp))
                 Text(
-                    text = "Saved here — syncs itself later",
+                    text = stringResource(R.string.offline_saved_here),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -760,10 +762,10 @@ private fun ResultBody(
                 .height(48.dp),
             shape = RoundedCornerShape(16.dp),
         ) {
-            Text("Do something else", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.offline_do_else), fontWeight = FontWeight.SemiBold)
         }
         TextButton(onClick = onClose) {
-            Text("Close", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.common_close), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -786,18 +788,19 @@ private fun OfflineActionIcon.vector(): ImageVector = when (this) {
 // previews. stateless body plus hand-built state, so the three screens can be designed in
 // Studio without a device, a Hilt graph, or actually turning the wifi off
 
+@Composable
 private fun previewState(
     selectedId: String? = null,
     values: Map<String, String> = emptyMap(),
     result: OfflineActionResult? = null,
 ): OfflineAssistantUiState {
-    val catalog = OfflineActionCatalog()
+    val catalog = OfflineActionCatalog(androidx.compose.ui.platform.LocalContext.current)
     return OfflineAssistantUiState(
         suggestions = catalog.suggest(careAvailable = true),
         browse = catalog.actions,
         selected = selectedId?.let(catalog::byId),
         values = values,
-        dayOptions = OfflineSlotOptions.days(),
+        dayOptions = OfflineSlotOptions.days("Today", "Tomorrow"),
         timeOptions = OfflineSlotOptions.times(),
         result = result,
     )
@@ -827,7 +830,7 @@ private fun OfflineAssistantActionPreview() {
                 selectedId = "capture_todo",
                 values = mapOf(
                     "title" to "Call the pharmacy",
-                    "date" to OfflineSlotOptions.days().first().value,
+                    "date" to java.time.LocalDate.now().toString(),
                     "priority" to "MEDIUM",
                 ),
             ),
