@@ -11,14 +11,15 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.muradgalayev.brainbuddy.R
 
 // how often background Google Calendar sync runs. chosen by the user
-enum class CalendarSyncFrequency(val label: String, val intervalHours: Long?) {
-    MANUAL("Manual only", null),
-    WEEKLY("Once a week", 24 * 7),
-    DAILY("Once a day", 24),
-    TWICE_DAILY("Twice a day", 12),
-    EVERY_6H("Every 6 hours", 6);
+enum class CalendarSyncFrequency(@androidx.annotation.StringRes val labelRes: Int, val intervalHours: Long?) {
+    MANUAL(R.string.sync_manual, null),
+    WEEKLY(R.string.sync_weekly, 24 * 7),
+    DAILY(R.string.sync_daily, 24),
+    TWICE_DAILY(R.string.sync_twice, 12),
+    EVERY_6H(R.string.sync_6h, 6);
 
     companion object {
         val DEFAULT = TWICE_DAILY

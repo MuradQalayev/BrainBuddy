@@ -7,7 +7,7 @@ package com.muradgalayev.brainbuddy.ui.onboarding
 data class SurveyError(
     val kind: Kind,
     // the specific detail, when there is one worth showing
-    val detail: String? = null,
+    val detail: com.muradgalayev.brainbuddy.ui.utils.UiText? = null,
 ) {
     enum class Kind {
         // required answers are missing, and detail says which

@@ -1,6 +1,7 @@
 package com.muradgalayev.brainbuddy.domain.model
 
 import kotlinx.serialization.Serializable
+import com.muradgalayev.brainbuddy.R
 
 @Serializable
 data class City(
@@ -27,14 +28,14 @@ data class Place(
 )
 
 @Serializable
-enum class PlaceCategory(val key: String, val label: String) {
-    Hospital("hospital", "Hospital"),
-    Specialist("specialist", "Specialist"),
-    Pharmacy("pharmacy", "Pharmacy"),
-    Asl("asl", "ASL"),
-    CentroAscolto("centro_ascolto", "Centro di ascolto"),
-    SupportGroup("support_group", "Support group"),
-    Other("other", "Other");
+enum class PlaceCategory(val key: String, val label: String, @androidx.annotation.StringRes val labelRes: Int) {
+    Hospital("hospital", "Hospital", R.string.care_hospital),
+    Specialist("specialist", "Specialist", R.string.place_specialist),
+    Pharmacy("pharmacy", "Pharmacy", R.string.care_pharmacy),
+    Asl("asl", "ASL", R.string.place_asl),
+    CentroAscolto("centro_ascolto", "Centro di ascolto", R.string.place_centro),
+    SupportGroup("support_group", "Support group", R.string.care_support_group),
+    Other("other", "Other", R.string.place_other);
 
     companion object {
         fun fromKey(key: String): PlaceCategory =

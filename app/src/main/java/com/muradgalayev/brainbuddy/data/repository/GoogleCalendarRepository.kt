@@ -2,6 +2,8 @@ package com.muradgalayev.brainbuddy.data.repository
 
 import android.util.Log
 import com.muradgalayev.brainbuddy.data.google.GoogleCalendarAuthClient
+import com.muradgalayev.brainbuddy.data.google.GoogleCalendarDeleter
+import com.muradgalayev.brainbuddy.data.google.googleCalendarEventId
 import com.muradgalayev.brainbuddy.data.google.GoogleCalendarTokenStore
 import com.muradgalayev.brainbuddy.domain.model.CalendarEvent
 import kotlinx.coroutines.Dispatchers
@@ -16,17 +18,22 @@ import java.net.URL
 import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.muradgalayev.brainbuddy.R
 
 private const val TAG = "GCalExport"
 
 @Singleton
 class GoogleCalendarRepository @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val tokenStore: GoogleCalendarTokenStore,
     private val authClient: GoogleCalendarAuthClient,
-    private val calendarRepository: CalendarRepository
+    private val calendarRepository: CalendarRepository,
+    private val deleter: GoogleCalendarDeleter,
 ) {
 
     suspend fun exportAllEvents(): ExportResult = withContext(Dispatchers.IO) {
+        // deletes first: anything removed in the app while offline comes off Google before we push
+        deleter.flushPending()
         var token = ensureAccessToken()
             ?: return@withContext ExportResult.NeedsGoogleSignIn
 
@@ -143,7 +150,7 @@ class GoogleCalendarRepository @Inject constructor(
         }
         val json = buildJsonObject {
             put("id", googleCalendarEventId(event.id))
-            put("summary", event.title.ifBlank { "Untitled event" })
+            put("summary", event.title.ifBlank { context.getString(R.string.cal_untitled_event) })
             if (description.isNotBlank()) put("description", description)
             if (event.location.isNotBlank()) put("location", event.location)
             put("start", buildJsonObject {
@@ -157,11 +164,6 @@ class GoogleCalendarRepository @Inject constructor(
         }
         return Json.encodeToString(JsonObject.serializer(), json)
     }
-
-    // Google Calendar event ids must match [a-v0-9]{5,1024}. a UUID without hyphens is hex, so
-    // it's valid and stable per event
-    private fun googleCalendarEventId(eventId: String): String =
-        eventId.lowercase().replace("-", "").take(1024).padEnd(5, '0')
 
     private fun parseLocalDateTime(raw: String): LocalDateTime? =
         runCatching { LocalDateTime.parse(normalizeIso(raw)) }.getOrNull()

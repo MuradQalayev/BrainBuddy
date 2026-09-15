@@ -53,6 +53,8 @@ import com.muradgalayev.brainbuddy.domain.model.MedicationUnit
 import androidx.compose.ui.text.input.KeyboardType
 import com.muradgalayev.brainbuddy.ui.sharedcomponents.TimePickerDialog
 import com.muradgalayev.brainbuddy.ui.sharedcomponents.TimePickerField
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun MedicationListSection(
@@ -137,7 +139,7 @@ private fun MedicationCard(
                 }
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    text = if (med.timesPerDay > 0) "${med.timesPerDay}/day" else "Not scheduled",
+                    text = if (med.timesPerDay > 0) stringResource(R.string.med_times_per_day, med.timesPerDay) else stringResource(R.string.med_not_scheduled),
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.onSurfaceVariant,
                     letterSpacing = 0.4.sp,
@@ -146,7 +148,7 @@ private fun MedicationCard(
                 IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
                     Icon(
                         imageVector = Icons.Outlined.DeleteOutline,
-                        contentDescription = "Remove",
+                        contentDescription = stringResource(R.string.common_remove),
                         tint = colors.error,
                         modifier = Modifier.size(20.dp),
                     )
@@ -157,7 +159,7 @@ private fun MedicationCard(
                 OutlinedTextField(
                     value = med.name,
                     onValueChange = onNameChange,
-                    label = { Text("Name") },
+                    label = { Text(stringResource(R.string.med_name)) },
                     placeholder = { Text("Methylphenidate") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
@@ -172,7 +174,7 @@ private fun MedicationCard(
                 OutlinedTextField(
                     value = med.dose,
                     onValueChange = onDoseChange,
-                    label = { Text("Dose") },
+                    label = { Text(stringResource(R.string.med_dose)) },
                     placeholder = { Text("20") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -186,7 +188,7 @@ private fun MedicationCard(
                 Box {
                     val selected = MedicationUnit.fromKey(med.doseUnit)
                     SlotChip(
-                        label = selected?.label ?: "unit",
+                        label = selected?.let { stringResource(it.labelRes) } ?: stringResource(R.string.med_unit_placeholder),
                         selected = selected != null,
                         onClick = { showUnitMenu = true },
                         modifier = Modifier.width(88.dp).height(56.dp),
@@ -197,7 +199,7 @@ private fun MedicationCard(
                     ) {
                         MedicationUnit.entries.forEach { unit ->
                             DropdownMenuItem(
-                                text = { Text(unit.label) },
+                                text = { Text(stringResource(unit.labelRes)) },
                                 onClick = {
                                     onDoseUnitChange(unit)
                                     showUnitMenu = false
@@ -213,13 +215,13 @@ private fun MedicationCard(
             // made-up answer
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SlotChip(
-                    label = "Every day",
+                    label = stringResource(R.string.med_every_day),
                     selected = !med.asNeeded,
                     onClick = { if (med.asNeeded) onToggleAsNeeded() },
                     modifier = Modifier.weight(1f),
                 )
                 SlotChip(
-                    label = "As needed",
+                    label = stringResource(R.string.med_as_needed),
                     selected = med.asNeeded,
                     onClick = { if (!med.asNeeded) onToggleAsNeeded() },
                     modifier = Modifier.weight(1f),
@@ -228,14 +230,14 @@ private fun MedicationCard(
 
             if (!med.asNeeded) {
                 Text(
-                    text = "When?",
+                    text = stringResource(R.string.med_when),
                     style = MaterialTheme.typography.labelMedium,
                     color = colors.onSurfaceVariant,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     MedicationSlot.entries.forEach { slot ->
                         SlotChip(
-                            label = slot.label,
+                            label = stringResource(slot.labelRes),
                             selected = slot.key in med.slots,
                             onClick = { onSlotToggle(slot) },
                             modifier = Modifier.weight(1f),
@@ -249,7 +251,7 @@ private fun MedicationCard(
                 // dose could peak anywhere.
                 TimePickerField(
                     value = med.times.firstOrNull().orEmpty(),
-                    label = "Exact time (optional)",
+                    label = stringResource(R.string.med_exact_time),
                     placeholder = "08:00",
                     mutedColor = colors.onSurfaceVariant,
                     accentColor = colors.primary,
@@ -265,7 +267,7 @@ private fun MedicationCard(
     if (showTimePicker) {
         val parts = med.times.firstOrNull()?.split(":")
         TimePickerDialog(
-            title = "When do you take it?",
+            title = stringResource(R.string.med_when_take),
             initialHour = parts?.getOrNull(0)?.toIntOrNull() ?: 8,
             initialMinute = parts?.getOrNull(1)?.toIntOrNull() ?: 0,
             onConfirm = { h, m ->
@@ -334,7 +336,7 @@ private fun AddMedicationButton(onClick: () -> Unit, hasItems: Boolean) {
             )
             Spacer(Modifier.width(6.dp))
             Text(
-                text = if (hasItems) "Add another" else "Add a medication",
+                text = if (hasItems) stringResource(R.string.med_add_another) else stringResource(R.string.med_add),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = colors.primary,

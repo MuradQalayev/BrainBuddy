@@ -1,5 +1,7 @@
 package com.muradgalayev.brainbuddy.ui.modes
 
+import com.muradgalayev.brainbuddy.ui.utils.stateDescription
+import com.muradgalayev.brainbuddy.ui.utils.contentDescription
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
@@ -91,6 +93,8 @@ import com.muradgalayev.brainbuddy.domain.model.RingerSetting
 import com.muradgalayev.brainbuddy.ui.accessibility.animationsOn
 import com.muradgalayev.brainbuddy.ui.home.HomeWidget
 import kotlin.math.roundToInt
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 private const val SECTION_SOUND = "sound"
 private const val SECTION_APP = "app"
@@ -142,11 +146,11 @@ fun ModeEditScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = { viewModel.discardDraft(); onBack() }) {
-                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.common_back))
             }
             Spacer(Modifier.width(4.dp))
             Text(
-                text = if (modeId == null) "New mode" else "Edit mode",
+                text = if (modeId == null) stringResource(R.string.mode_new) else stringResource(R.string.mode_edit),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f),
@@ -155,7 +159,7 @@ fun ModeEditScreen(
                 IconButton(onClick = { confirmDelete = true }) {
                     Icon(
                         Icons.Rounded.DeleteOutline,
-                        contentDescription = "Delete mode",
+                        contentDescription = stringResource(R.string.mode_delete),
                         tint = colors.error,
                     )
                 }
@@ -165,7 +169,7 @@ fun ModeEditScreen(
         if (mode == null) {
             if (draftLoadError == null) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Loading…", color = colors.onSurfaceVariant)
+                    Text(stringResource(R.string.common_loading), color = colors.onSurfaceVariant)
                 }
             } else {
                 Column(
@@ -190,7 +194,7 @@ fun ModeEditScreen(
                     }
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        text = "Mode unavailable",
+                        text = stringResource(R.string.mode_unavailable),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                     )
@@ -202,7 +206,7 @@ fun ModeEditScreen(
                     )
                     Spacer(Modifier.height(20.dp))
                     Button(onClick = { viewModel.discardDraft(); onBack() }) {
-                        Text("Back to modes")
+                        Text(stringResource(R.string.mode_back_to_modes))
                     }
                 }
             }
@@ -229,12 +233,12 @@ fun ModeEditScreen(
 
             Column {
                 Text(
-                    "Settings",
+                    stringResource(R.string.common_settings),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    "Open a section to choose what this mode changes.",
+                    stringResource(R.string.mode_open_section),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                 )
@@ -242,7 +246,7 @@ fun ModeEditScreen(
 
             ModeSettingsCard(
                 icon = Icons.Rounded.NotificationsNone,
-                title = "Sound & notifications",
+                title = stringResource(R.string.mode_sound_notifications),
                 summary = changeCountLabel(soundChangeCount(mode.overrides)),
                 accent = accent,
                 expanded = expandedSection == SECTION_SOUND,
@@ -260,8 +264,8 @@ fun ModeEditScreen(
                     },
                 )
                 OverrideSwitchRow(
-                    title = "Do Not Disturb",
-                    description = "Holds notifications on the phone itself, not just Myndora's.",
+                    title = stringResource(R.string.mode_dnd),
+                    description = stringResource(R.string.mode_dnd_desc),
                     value = mode.overrides.doNotDisturb,
                     accent = accent,
                     onChange = { value ->
@@ -271,15 +275,15 @@ fun ModeEditScreen(
                     },
                 )
                 OverrideSetRow(
-                    title = "Myndora notifications",
-                    description = "Choose which reminders are allowed in this mode.",
+                    title = stringResource(R.string.mode_myndora_notifications),
+                    description = stringResource(R.string.mode_myndora_notifications_desc),
                     selected = mode.overrides.allowedNotifications,
                     options = ModeNotificationKind.entries,
-                    optionLabel = ::notificationLabel,
+                    optionLabel = { notificationLabel(it) },
                     accent = accent,
                     warnWhenMissing = { kind ->
                         if (kind == ModeNotificationKind.MEDICATION_REMINDERS) {
-                            "Medication reminders won't be shown in this mode"
+                            stringResource(R.string.mode_med_hidden_warning)
                         } else null
                     },
                     onChange = { selected ->
@@ -292,7 +296,7 @@ fun ModeEditScreen(
 
             ModeSettingsCard(
                 icon = Icons.Rounded.Palette,
-                title = "App appearance",
+                title = stringResource(R.string.mode_app_appearance),
                 summary = changeCountLabel(appChangeCount(mode.overrides)),
                 accent = accent,
                 expanded = expandedSection == SECTION_APP,
@@ -301,8 +305,8 @@ fun ModeEditScreen(
                 },
             ) {
                 OverrideSwitchRow(
-                    title = "Simplified workspace",
-                    description = "Show fewer cards and less on screen at once.",
+                    title = stringResource(R.string.mode_simplified_workspace),
+                    description = stringResource(R.string.mode_simplified_workspace_desc),
                     value = mode.overrides.simplifiedWorkspace,
                     accent = accent,
                     onChange = { value ->
@@ -312,8 +316,8 @@ fun ModeEditScreen(
                     },
                 )
                 OverrideSwitchRow(
-                    title = "Reduce motion",
-                    description = "Stop the app's idle movement while this mode is on.",
+                    title = stringResource(R.string.settings_reduce_motion),
+                    description = stringResource(R.string.mode_reduce_motion_desc),
                     value = mode.overrides.reduceMotion,
                     accent = accent,
                     onChange = { value ->
@@ -323,13 +327,13 @@ fun ModeEditScreen(
                     },
                 )
                 OverrideSetRow(
-                    title = "Home screen tiles",
-                    description = "Choose the tiles shown on Home in this mode.",
+                    title = stringResource(R.string.mode_home_tiles),
+                    description = stringResource(R.string.mode_home_tiles_desc),
                     selected = mode.overrides.hiddenHomeWidgets?.let { hidden ->
                         HomeWidget.entries.filterNot { it.id in hidden }.toSet()
                     },
                     options = HomeWidget.entries.toList(),
-                    optionLabel = { it.label },
+                    optionLabel = { stringResource(it.labelRes) },
                     accent = accent,
                     onChange = { shown ->
                         viewModel.updateDraft {
@@ -349,7 +353,7 @@ fun ModeEditScreen(
 
             ModeSettingsCard(
                 icon = Icons.Rounded.Timer,
-                title = "Focus & planning",
+                title = stringResource(R.string.mode_focus_planning),
                 summary = changeCountLabel(focusChangeCount(mode.overrides)),
                 accent = accent,
                 expanded = expandedSection == SECTION_FOCUS,
@@ -358,8 +362,8 @@ fun ModeEditScreen(
                 },
             ) {
                 OverrideSwitchRow(
-                    title = "Silence during focus sessions",
-                    description = "Turn on Do Not Disturb when a Pomodoro starts.",
+                    title = stringResource(R.string.mode_silence_focus),
+                    description = stringResource(R.string.mode_silence_focus_desc),
                     value = mode.overrides.autoDndOnFocusSession,
                     accent = accent,
                     onChange = { value ->
@@ -369,7 +373,7 @@ fun ModeEditScreen(
                     },
                 )
                 MinutesOverrideRow(
-                    title = "Focus session length",
+                    title = stringResource(R.string.mode_focus_length),
                     value = mode.overrides.pomodoroFocusMinutes,
                     range = 5f..90f,
                     accent = accent,
@@ -380,7 +384,7 @@ fun ModeEditScreen(
                     },
                 )
                 MinutesOverrideRow(
-                    title = "Break length",
+                    title = stringResource(R.string.mode_break_length),
                     value = mode.overrides.pomodoroBreakMinutes,
                     range = 3f..30f,
                     accent = accent,
@@ -409,11 +413,11 @@ fun ModeEditScreen(
 
             ModeSettingsCard(
                 icon = Icons.Rounded.Schedule,
-                title = "Schedule",
+                title = stringResource(R.string.mode_schedule),
                 summary = mode.schedule?.let {
                     scheduleSummary(it.days, it.startMinute, it.endMinute, it.enabled)
-                        ?: "Choose days"
-                } ?: "Manual only",
+                        ?: stringResource(R.string.mode_choose_days)
+                } ?: stringResource(R.string.sync_manual),
                 accent = accent,
                 expanded = expandedSection == SECTION_SCHEDULE,
                 onToggle = {
@@ -433,7 +437,7 @@ fun ModeEditScreen(
 
             if (mode.overrides.isEmpty && mode.schedule == null) {
                 Text(
-                    "This mode doesn't change anything yet.",
+                    stringResource(R.string.mode_no_changes_yet),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 4.dp),
@@ -465,7 +469,7 @@ fun ModeEditScreen(
                         contentColor = Color.White,
                     ),
                 ) {
-                    Text(if (saving) "Saving…" else "Save mode", fontWeight = FontWeight.Bold)
+                    Text(if (saving) stringResource(R.string.common_saving) else stringResource(R.string.mode_save), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -482,8 +486,8 @@ fun ModeEditScreen(
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             shape = RoundedCornerShape(26.dp),
-            title = { Text("Delete ${mode.name.ifBlank { "this mode" }}?", fontWeight = FontWeight.Bold) },
-            text = { Text("Your settings are untouched — only the mode goes away.") },
+            title = { Text(stringResource(R.string.mode_delete_confirm, mode.name.ifBlank { stringResource(R.string.mode_this_mode) }), fontWeight = FontWeight.Bold) },
+            text = { Text(stringResource(R.string.mode_delete_body)) },
             confirmButton = {
                 TextButton(
                     enabled = !deleting,
@@ -497,14 +501,14 @@ fun ModeEditScreen(
                     },
                 ) {
                     Text(
-                        if (deleting) "Deleting…" else "Delete",
+                        if (deleting) stringResource(R.string.common_deleting) else stringResource(R.string.common_delete),
                         color = MaterialTheme.colorScheme.error,
                         fontWeight = FontWeight.Bold,
                     )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) { Text("Keep") }
+                TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.together_keep)) }
             },
         )
     }
@@ -531,8 +535,8 @@ private fun ModeIdentityCard(
             OutlinedTextField(
                 value = name,
                 onValueChange = onNameChange,
-                label = { Text("Name") },
-                placeholder = { Text("Deep work, errands, evening…") },
+                label = { Text(stringResource(R.string.med_name)) },
+                placeholder = { Text(stringResource(R.string.mode_name_placeholder)) },
                 leadingIcon = {
                     Icon(modeIcon(iconKey), contentDescription = null, tint = accent)
                 },
@@ -542,7 +546,7 @@ private fun ModeIdentityCard(
             )
 
             Spacer(Modifier.height(14.dp))
-            Text("Icon", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.mode_icon), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
             Row(
                 Modifier
@@ -577,7 +581,7 @@ private fun ModeIdentityCard(
                                 role = Role.RadioButton,
                                 onClick = { onIconChange(option.key) },
                             )
-                            .semantics { contentDescription = option.label },
+                            .contentDescription(stringResource(option.labelRes)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
@@ -597,7 +601,7 @@ private fun ModeIdentityCard(
             }
 
             Spacer(Modifier.height(14.dp))
-            Text("Colour", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.common_colour), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
             Row(
                 Modifier
@@ -644,7 +648,7 @@ private fun ModeIdentityCard(
                             Box(Modifier.size(11.dp).clip(CircleShape).background(swatch))
                             Spacer(Modifier.width(7.dp))
                             Text(
-                                option.label,
+                                stringResource(option.labelRes),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = swatchLabel,
                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
@@ -736,9 +740,9 @@ private fun ModeSettingsCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(role = Role.Button, onClick = onToggle)
-                    .semantics {
-                        stateDescription = if (expanded) "Expanded" else "Collapsed"
-                    }
+                    .stateDescription(
+                        if (expanded) stringResource(R.string.common_expanded) else stringResource(R.string.common_collapsed)
+                    )
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -798,10 +802,11 @@ private fun ModeSettingsCard(
     }
 }
 
+@Composable
 private fun changeCountLabel(count: Int): String = when (count) {
-    0 -> "No changes"
-    1 -> "1 change"
-    else -> "$count changes"
+    0 -> stringResource(R.string.mode_no_changes)
+    1 -> stringResource(R.string.mode_one_change)
+    else -> stringResource(R.string.mode_changes, count)
 }
 
 private fun soundChangeCount(overrides: ModeOverrides): Int = listOf(
@@ -823,13 +828,14 @@ private fun focusChangeCount(overrides: ModeOverrides): Int = listOf(
     overrides.workingHoursStartMinute,
 ).count { it != null }
 
+@Composable
 private fun notificationLabel(kind: ModeNotificationKind): String = when (kind) {
-    ModeNotificationKind.TODO_REMINDERS -> "To-do reminders"
-    ModeNotificationKind.CALENDAR_REMINDERS -> "Calendar reminders"
-    ModeNotificationKind.MEDICATION_REMINDERS -> "Medication reminders"
-    ModeNotificationKind.DAILY_SUMMARY -> "Daily summary"
-    ModeNotificationKind.POMODORO_NUDGES -> "Focus nudges"
-    ModeNotificationKind.BREAK_REMINDERS -> "Break reminders"
+    ModeNotificationKind.TODO_REMINDERS -> stringResource(R.string.notif_todo_reminders)
+    ModeNotificationKind.CALENDAR_REMINDERS -> stringResource(R.string.notif_calendar_reminders)
+    ModeNotificationKind.MEDICATION_REMINDERS -> stringResource(R.string.mode_med_reminders)
+    ModeNotificationKind.DAILY_SUMMARY -> stringResource(R.string.notif_daily_summary)
+    ModeNotificationKind.POMODORO_NUDGES -> stringResource(R.string.notif_focus_nudges)
+    ModeNotificationKind.BREAK_REMINDERS -> stringResource(R.string.notif_break_reminders)
 }
 
 @Composable
@@ -840,10 +846,10 @@ private fun RingerPicker(
 ) {
     val colors = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
-        Text("Ringer", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.mode_ringer), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(2.dp))
         Text(
-            "Silent is no sound and no vibration.",
+            stringResource(R.string.mode_ringer_desc),
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
         )
@@ -857,14 +863,14 @@ private fun RingerPicker(
                 .padding(3.dp),
             horizontalArrangement = Arrangement.spacedBy(3.dp),
         ) {
-            RingerChip("Don't change", value == null, accent, Modifier.weight(1.3f)) { onChange(null) }
-            RingerChip("Normal", value == RingerSetting.NORMAL, accent, Modifier.weight(1f)) {
+            RingerChip(stringResource(R.string.mode_dont_change), value == null, accent, Modifier.weight(1.3f)) { onChange(null) }
+            RingerChip(stringResource(R.string.ringer_normal), value == RingerSetting.NORMAL, accent, Modifier.weight(1f)) {
                 onChange(RingerSetting.NORMAL)
             }
-            RingerChip("Vibrate", value == RingerSetting.VIBRATE, accent, Modifier.weight(1f)) {
+            RingerChip(stringResource(R.string.ringer_vibrate), value == RingerSetting.VIBRATE, accent, Modifier.weight(1f)) {
                 onChange(RingerSetting.VIBRATE)
             }
-            RingerChip("Silent", value == RingerSetting.SILENT, accent, Modifier.weight(1f)) {
+            RingerChip(stringResource(R.string.ringer_silent), value == RingerSetting.SILENT, accent, Modifier.weight(1f)) {
                 onChange(RingerSetting.SILENT)
             }
         }
@@ -930,7 +936,7 @@ private fun MinutesOverrideRow(
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = value?.let { "$it min" } ?: "Don't change",
+                text = value?.let { stringResource(R.string.common_minutes_short, it) } ?: stringResource(R.string.mode_dont_change),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (value == null) colors.onSurfaceVariant else accent,
                 fontWeight = FontWeight.SemiBold,
@@ -957,7 +963,7 @@ private fun MinutesOverrideRow(
                 ),
                 modifier = Modifier
                     .weight(1f)
-                    .semantics { contentDescription = "$title duration" },
+                    .contentDescription(stringResource(R.string.mode_duration_cd, title)),
             )
         }
     }
@@ -987,12 +993,12 @@ private fun WorkingHoursRow(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    "Usable hours",
+                    stringResource(R.string.mode_usable_hours),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    "Bounds the times Myndora suggests for new events.",
+                    stringResource(R.string.mode_usable_hours_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                 )
@@ -1043,9 +1049,7 @@ private fun WorkingHoursRow(
                         thumbColor = accent,
                         activeTrackColor = accent,
                     ),
-                    modifier = Modifier.semantics {
-                        contentDescription = "Usable hours start"
-                    },
+                    modifier = Modifier.contentDescription(stringResource(R.string.mode_usable_start)),
                 )
                 Slider(
                     value = displayedEnd.toFloat(),
@@ -1064,9 +1068,7 @@ private fun WorkingHoursRow(
                         thumbColor = accent,
                         activeTrackColor = accent,
                     ),
-                    modifier = Modifier.semantics {
-                        contentDescription = "Usable hours end"
-                    },
+                    modifier = Modifier.contentDescription(stringResource(R.string.mode_usable_end)),
                 )
             }
         }
@@ -1085,15 +1087,11 @@ private fun snapEndToQuarter(raw: Float): Int =
 private fun sliderSteps(startMinute: Int, endMinute: Int): Int =
     ((endMinute - startMinute) / QUARTER_HOUR_MINUTES - 1).coerceAtLeast(0)
 
-private fun dayContentDescription(day: Int): String = listOf(
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-).getOrElse(day - 1) { "Day $day" }
+// ISO day number to its full name in the app's language
+private fun dayContentDescription(day: Int): String =
+    java.time.DayOfWeek.of(day.coerceIn(1, 7))
+        .getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.getDefault())
+        .replaceFirstChar { it.titlecase(java.util.Locale.getDefault()) }
 
 @Composable
 private fun ScheduleEditor(
@@ -1115,15 +1113,15 @@ private fun ScheduleEditor(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    "Turn on automatically",
+                    stringResource(R.string.mode_turn_on_auto),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     current?.let {
                         scheduleSummary(it.days, it.startMinute, it.endMinute, it.enabled)
-                            ?: "Pick at least one day"
-                    } ?: "Off — switch this mode by hand",
+                            ?: stringResource(R.string.mode_pick_day)
+                    } ?: stringResource(R.string.mode_off_by_hand),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                 )
@@ -1149,7 +1147,7 @@ private fun ScheduleEditor(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                val initials = listOf("M", "T", "W", "T", "F", "S", "S")
+                val initials = dayInitials()
                 (1..7).forEach { day ->
                     val on = day in current.days
                     val dayBackground by animateColorAsState(
@@ -1201,7 +1199,7 @@ private fun ScheduleEditor(
 
             Spacer(Modifier.height(12.dp))
             Text(
-                "From ${minutesLabel(current.startMinute)} to ${minutesLabel(current.endMinute)}",
+                stringResource(R.string.mode_from_to, minutesLabel(current.startMinute), minutesLabel(current.endMinute)),
                 style = MaterialTheme.typography.bodyMedium,
                 color = accent,
                 fontWeight = FontWeight.SemiBold,
@@ -1215,9 +1213,7 @@ private fun ScheduleEditor(
                     thumbColor = accent,
                     activeTrackColor = accent,
                 ),
-                modifier = Modifier.semantics {
-                    contentDescription = "Automatic schedule start"
-                },
+                modifier = Modifier.contentDescription(stringResource(R.string.mode_auto_start)),
             )
             Slider(
                 value = current.endMinute.coerceIn(0, MINUTES_PER_DAY).toFloat(),
@@ -1228,13 +1224,11 @@ private fun ScheduleEditor(
                     thumbColor = accent,
                     activeTrackColor = accent,
                 ),
-                modifier = Modifier.semantics {
-                    contentDescription = "Automatic schedule end"
-                },
+                modifier = Modifier.contentDescription(stringResource(R.string.mode_auto_end)),
             )
             if (current.crossesMidnight) {
                 Text(
-                    "Runs overnight into the next morning.",
+                    stringResource(R.string.mode_overnight),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                 )

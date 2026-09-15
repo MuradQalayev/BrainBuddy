@@ -1,5 +1,9 @@
 package com.muradgalayev.brainbuddy.ui.games
 
+import androidx.annotation.RequiresApi
+import android.os.VibratorManager
+import android.os.Build
+import com.muradgalayev.brainbuddy.ui.utils.contentDescription
 import android.content.Context
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -84,6 +88,8 @@ import com.muradgalayev.brainbuddy.ui.theme.myndoraAccents
 import kotlinx.coroutines.delay
 import kotlin.math.min
 import kotlin.random.Random
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 private const val GAME_PREFERENCES = "shape_flow_game"
 private const val BEST_SCORE_KEY = "best_score"
@@ -98,18 +104,18 @@ private enum class SequenceSpeed(val activeMillis: Long, val gapMillis: Long) {
 private enum class ShapeKind { Circle, Square, Trapezoid, Triangle, Squircle, Diamond }
 
 private data class PlayShape(
-    val name: String,
+    @androidx.annotation.StringRes val nameRes: Int,
     val color: Color,
     val kind: ShapeKind,
 )
 
 private val playShapes = listOf(
-    PlayShape("Purple circle", Color(0xFF7651C9), ShapeKind.Circle),
-    PlayShape("Blue square", Color(0xFF4F8BC9), ShapeKind.Square),
-    PlayShape("Golden trapezoid", Color(0xFFD9AA35), ShapeKind.Trapezoid),
-    PlayShape("Green triangle", Color(0xFF4FA973), ShapeKind.Triangle),
-    PlayShape("Rose squircle", Color(0xFFD95572), ShapeKind.Squircle),
-    PlayShape("Orange diamond", Color(0xFFE0772D), ShapeKind.Diamond),
+    PlayShape(R.string.shape_purple_circle, Color(0xFF7651C9), ShapeKind.Circle),
+    PlayShape(R.string.shape_blue_square, Color(0xFF4F8BC9), ShapeKind.Square),
+    PlayShape(R.string.shape_golden_trapezoid, Color(0xFFD9AA35), ShapeKind.Trapezoid),
+    PlayShape(R.string.shape_green_triangle, Color(0xFF4FA973), ShapeKind.Triangle),
+    PlayShape(R.string.shape_rose_squircle, Color(0xFFD95572), ShapeKind.Squircle),
+    PlayShape(R.string.shape_orange_diamond, Color(0xFFE0772D), ShapeKind.Diamond),
 )
 
 /** A short, sensory reset inspired by the shape fidget reference. */
@@ -222,14 +228,15 @@ fun ShapeFlowScreen(
 
     val instruction = when {
         mode == ShapeGameMode.FreePlay && freePlayTaps == 0 ->
-            "Tap any shape. Each one has its own little rhythm."
+            stringResource(R.string.shape_tap_any)
         mode == ShapeGameMode.FreePlay ->
-            "$freePlayTaps ${if (freePlayTaps == 1) "tap" else "taps"} — keep exploring"
-        phase == ShapeGamePhase.Ready -> "Watch the glow, then repeat the pattern."
-        phase == ShapeGamePhase.Showing -> "Watch carefully…"
-        phase == ShapeGamePhase.Input -> "Your turn  •  ${playerIndex + 1} of ${sequence.size}"
-        phase == ShapeGamePhase.Success -> "Beautiful — adding one more shape."
-        else -> "Almost! Take a breath and try the pattern again."
+            if (freePlayTaps == 1) stringResource(R.string.shape_one_tap)
+            else stringResource(R.string.shape_n_taps, freePlayTaps)
+        phase == ShapeGamePhase.Ready -> stringResource(R.string.shape_watch_glow)
+        phase == ShapeGamePhase.Showing -> stringResource(R.string.shape_watch_carefully)
+        phase == ShapeGamePhase.Input -> stringResource(R.string.shape_your_turn_of, playerIndex + 1, sequence.size)
+        phase == ShapeGamePhase.Success -> stringResource(R.string.shape_beautiful)
+        else -> stringResource(R.string.shape_almost)
     }
     val boardEnabled = mode == ShapeGameMode.FreePlay || phase == ShapeGamePhase.Input
 
@@ -305,8 +312,8 @@ fun ShapeFlowScreen(
 
             Spacer(Modifier.height(12.dp))
             Text(
-                text = if (hapticsEnabled) "Sound-free  •  Haptics on"
-                else "Sound-free  •  Haptics off",
+                text = if (hapticsEnabled) stringResource(R.string.shape_haptics_on)
+                else stringResource(R.string.shape_haptics_off),
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -338,7 +345,7 @@ private fun GameHeader(
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Icon(
                     Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.common_back),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(21.dp),
                 )
@@ -347,20 +354,20 @@ private fun GameHeader(
         Spacer(Modifier.width(13.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                text = "MINDFUL PLAY",
+                text = stringResource(R.string.shape_mindful_play),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.35.sp,
                 color = MaterialTheme.colorScheme.primary,
             )
             Text(
-                text = "Shape Flow",
+                text = stringResource(R.string.nav_shape_flow),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = "A tiny reset for busy minds",
+                text = stringResource(R.string.shape_tiny_reset),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -381,12 +388,12 @@ private fun GameHeader(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Vibration,
-                    contentDescription = if (hapticsEnabled) "Turn haptics off" else "Turn haptics on",
+                    contentDescription = if (hapticsEnabled) stringResource(R.string.shape_turn_haptics_off) else stringResource(R.string.shape_turn_haptics_on),
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(Modifier.width(5.dp))
                 Text(
-                    text = if (hapticsEnabled) "On" else "Off",
+                    text = if (hapticsEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                 )
@@ -415,14 +422,14 @@ private fun GameModeSelector(
     ) {
         Row(Modifier.padding(5.dp), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             ModeButton(
-                label = "Memory",
+                label = stringResource(R.string.shape_memory),
                 icon = Icons.Rounded.Psychology,
                 selected = selected == ShapeGameMode.Memory,
                 onClick = { onSelect(ShapeGameMode.Memory) },
                 modifier = Modifier.weight(1f),
             )
             ModeButton(
-                label = "Fidget",
+                label = stringResource(R.string.shape_fidget),
                 icon = Icons.Rounded.TouchApp,
                 selected = selected == ShapeGameMode.FreePlay,
                 onClick = { onSelect(ShapeGameMode.FreePlay) },
@@ -516,12 +523,12 @@ private fun GameArena(
                 PhasePill(mode = mode, phase = phase)
                 Spacer(Modifier.weight(1f))
                 ArenaMetric(
-                    label = if (mode == ShapeGameMode.Memory) "ROUND" else "TAPS",
+                    label = if (mode == ShapeGameMode.Memory) stringResource(R.string.shape_round) else stringResource(R.string.shape_taps_caps),
                     value = if (mode == ShapeGameMode.Memory) round.toString() else freePlayTaps.toString(),
                 )
                 if (mode == ShapeGameMode.Memory) {
                     Spacer(Modifier.width(7.dp))
-                    ArenaMetric(label = "BEST", value = bestScore.toString())
+                    ArenaMetric(label = stringResource(R.string.shape_best), value = bestScore.toString())
                 }
             }
 
@@ -563,14 +570,14 @@ private fun GameArena(
 private fun PhasePill(mode: ShapeGameMode, phase: ShapeGamePhase) {
     val colors = MaterialTheme.colorScheme
     val (label, accent) = if (mode == ShapeGameMode.FreePlay) {
-        "Free play" to MaterialTheme.myndoraAccents.support
+        stringResource(R.string.shape_free_play) to MaterialTheme.myndoraAccents.support
     } else {
         when (phase) {
-            ShapeGamePhase.Ready -> "Ready" to colors.onSurfaceVariant
-            ShapeGamePhase.Showing -> "Watch" to MaterialTheme.myndoraAccents.accentEnd
-            ShapeGamePhase.Input -> "Your turn" to MaterialTheme.myndoraAccents.support
-            ShapeGamePhase.Success -> "Nice" to colors.primary
-            ShapeGamePhase.Lost -> "Try again" to colors.error
+            ShapeGamePhase.Ready -> stringResource(R.string.shape_ready) to colors.onSurfaceVariant
+            ShapeGamePhase.Showing -> stringResource(R.string.shape_watch) to MaterialTheme.myndoraAccents.accentEnd
+            ShapeGamePhase.Input -> stringResource(R.string.shape_your_turn) to MaterialTheme.myndoraAccents.support
+            ShapeGamePhase.Success -> stringResource(R.string.shape_nice) to colors.primary
+            ShapeGamePhase.Lost -> stringResource(R.string.common_try_again) to colors.error
         }
     }
     Surface(
@@ -754,7 +761,10 @@ private fun ShapeTile(
     )
     Box(
         modifier = modifier
-            .semantics { contentDescription = "${shape.name}${if (active) ", glowing" else ""}" }
+            .contentDescription(
+                if (active) stringResource(R.string.shape_glowing, stringResource(shape.nameRes))
+                else stringResource(shape.nameRes)
+            )
             .clip(RoundedCornerShape(22.dp))
             .background(
                 if (active) Color.White.copy(alpha = .16f)
@@ -817,27 +827,27 @@ private fun MemoryControlDock(
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = "PACE",
+                        text = stringResource(R.string.shape_pace),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.15.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = if (speed == SequenceSpeed.Calm) "Easy to follow" else "A little challenge",
+                        text = if (speed == SequenceSpeed.Calm) stringResource(R.string.shape_easy_follow) else stringResource(R.string.shape_little_challenge),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
                 SpeedChoice(
-                    label = "Calm",
+                    label = stringResource(R.string.theme_calm),
                     selected = speed == SequenceSpeed.Calm,
                     enabled = !waiting,
                     onClick = { onSpeedChange(SequenceSpeed.Calm) },
                 )
                 Spacer(Modifier.width(7.dp))
                 SpeedChoice(
-                    label = "Quick",
+                    label = stringResource(R.string.shape_quick),
                     selected = speed == SequenceSpeed.Quick,
                     enabled = !waiting,
                     onClick = { onSpeedChange(SequenceSpeed.Quick) },
@@ -846,11 +856,11 @@ private fun MemoryControlDock(
             Spacer(Modifier.height(14.dp))
             PrimaryGameButton(
                 label = when (phase) {
-                    ShapeGamePhase.Ready -> "Start memory game"
-                    ShapeGamePhase.Lost -> "Try again"
-                    ShapeGamePhase.Input -> "Restart game"
-                    ShapeGamePhase.Showing -> "Watch the pattern"
-                    ShapeGamePhase.Success -> "Next round…"
+                    ShapeGamePhase.Ready -> stringResource(R.string.shape_start_memory)
+                    ShapeGamePhase.Lost -> stringResource(R.string.common_try_again)
+                    ShapeGamePhase.Input -> stringResource(R.string.shape_restart)
+                    ShapeGamePhase.Showing -> stringResource(R.string.shape_watch_pattern)
+                    ShapeGamePhase.Success -> stringResource(R.string.shape_next_round)
                 },
                 icon = if (phase == ShapeGamePhase.Input || phase == ShapeGamePhase.Lost) {
                     Icons.Rounded.Refresh
@@ -943,7 +953,7 @@ private fun FreePlayControlDock(
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = "NO SCORE. NO PRESSURE.",
+                    text = stringResource(R.string.shape_no_score),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
@@ -951,7 +961,7 @@ private fun FreePlayControlDock(
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = "Tap what feels good and stay as long as you like.",
+                    text = stringResource(R.string.shape_tap_feels_good),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -965,7 +975,7 @@ private fun FreePlayControlDock(
                     contentColor = MaterialTheme.colorScheme.primary,
                 ) {
                     Text(
-                        text = "Reset",
+                        text = stringResource(R.string.common_reset),
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
@@ -1051,7 +1061,7 @@ fun ShapeFlowEntryCard(
                 .clickable(
                     interactionSource = interaction,
                     indication = null,
-                    onClick = speaking("Shape Flow game", onClick),
+                    onClick = speaking(stringResource(R.string.shape_game_cd), onClick),
                 ),
         ) {
             Row(
@@ -1060,7 +1070,7 @@ fun ShapeFlowEntryCard(
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = "MINDFUL PLAY",
+                        text = stringResource(R.string.shape_mindful_play),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.25.sp,
@@ -1068,14 +1078,14 @@ fun ShapeFlowEntryCard(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "Shape Flow",
+                        text = stringResource(R.string.nav_shape_flow),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "Tap to unwind or follow the pattern.",
+                        text = stringResource(R.string.shape_card_sub),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1100,7 +1110,7 @@ fun ShapeFlowEntryCard(
                             )
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                text = "1–3 MIN  •  MEMORY + FIDGET",
+                                text = stringResource(R.string.shape_card_meta),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1212,17 +1222,76 @@ private fun DrawScope.drawPlayShape(
     }
 }
 
-@Suppress("DEPRECATION")
+// every shape has its own rhythm, so the memory game can be played by feel: count the pulses
+// and their length, not just how strong they are. strength alone was what told them apart before,
+// and on phones without amplitude control that made all six the same buzz. every pattern fits
+// inside Quick mode's 300ms glow, so the next shape's never starts on top of it
+private val ShapeRhythms: List<Pair<LongArray, IntArray>> = listOf(
+    // circle: one round thump
+    longArrayOf(0, 70) to intArrayOf(0, 170),
+    // square: two even knocks
+    longArrayOf(0, 35, 70, 35) to intArrayOf(0, 210, 0, 210),
+    // trapezoid: short, then long
+    longArrayOf(0, 25, 60, 95) to intArrayOf(0, 140, 0, 230),
+    // triangle: three quick ticks
+    longArrayOf(0, 18, 45, 18, 45, 18) to intArrayOf(0, 235, 0, 235, 0, 235),
+    // squircle: a soft swell that grows
+    longArrayOf(0, 30, 30, 30, 30, 30) to intArrayOf(0, 45, 95, 145, 200, 255),
+    // diamond: long, short, short
+    longArrayOf(0, 90, 50, 20, 40, 20) to intArrayOf(0, 225, 0, 200, 0, 200),
+)
+
 private fun vibrateForShape(context: Context, index: Int) {
-    val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
+    val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        context.getSystemService(VibratorManager::class.java)?.defaultVibrator
+    } else {
+        @Suppress("DEPRECATION")
+        context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+    } ?: return
     if (!vibrator.hasVibrator()) return
-    val effect = when (index) {
-        0 -> VibrationEffect.createOneShot(20L, 80)
-        1 -> VibrationEffect.createOneShot(30L, 105)
-        2 -> VibrationEffect.createWaveform(longArrayOf(0L, 18L, 22L, 22L), intArrayOf(0, 85, 0, 115), -1)
-        3 -> VibrationEffect.createOneShot(38L, 135)
-        4 -> VibrationEffect.createWaveform(longArrayOf(0L, 16L, 28L, 30L), intArrayOf(0, 90, 0, 145), -1)
-        else -> VibrationEffect.createOneShot(52L, 165)
+    val effect = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        shapePrimitives(vibrator, index)
+    } else {
+        null
+    } ?: ShapeRhythms[index.coerceIn(0, ShapeRhythms.lastIndex)].let { (timings, amplitudes) ->
+        VibrationEffect.createWaveform(timings, amplitudes, -1)
     }
     vibrator.vibrate(effect)
+}
+
+// the same six rhythms built from the phone's own haptic primitives, which feel crisper than a
+// raw motor buzz where the hardware has them. null when it doesn't, and the waveform takes over
+@RequiresApi(Build.VERSION_CODES.S)
+private fun shapePrimitives(vibrator: Vibrator, index: Int): VibrationEffect? {
+    val needed = when (index) {
+        0 -> intArrayOf(VibrationEffect.Composition.PRIMITIVE_THUD)
+        1 -> intArrayOf(VibrationEffect.Composition.PRIMITIVE_CLICK)
+        2 -> intArrayOf(VibrationEffect.Composition.PRIMITIVE_TICK, VibrationEffect.Composition.PRIMITIVE_CLICK)
+        3 -> intArrayOf(VibrationEffect.Composition.PRIMITIVE_TICK)
+        4 -> intArrayOf(VibrationEffect.Composition.PRIMITIVE_QUICK_RISE, VibrationEffect.Composition.PRIMITIVE_QUICK_FALL)
+        else -> intArrayOf(VibrationEffect.Composition.PRIMITIVE_CLICK, VibrationEffect.Composition.PRIMITIVE_LOW_TICK)
+    }
+    if (!vibrator.areAllPrimitivesSupported(*needed)) return null
+    val composition = VibrationEffect.startComposition()
+    when (index) {
+        0 -> composition.addPrimitive(VibrationEffect.Composition.PRIMITIVE_THUD, .9f)
+        1 -> composition
+            .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 1f)
+            .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 1f, 70)
+        2 -> composition
+            .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, .5f)
+            .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 1f, 60)
+        3 -> composition
+            .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 1f)
+            .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 1f, 45)
+            .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 1f, 45)
+        4 -> composition
+            .addPrimitive(VibrationEffect.Composition.PRIMITIVE_QUICK_RISE, .75f)
+            .addPrimitive(VibrationEffect.Composition.PRIMITIVE_QUICK_FALL, .6f)
+        else -> composition
+            .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 1f)
+            .addPrimitive(VibrationEffect.Composition.PRIMITIVE_LOW_TICK, .8f, 55)
+            .addPrimitive(VibrationEffect.Composition.PRIMITIVE_LOW_TICK, .8f, 40)
+    }
+    return composition.compose()
 }

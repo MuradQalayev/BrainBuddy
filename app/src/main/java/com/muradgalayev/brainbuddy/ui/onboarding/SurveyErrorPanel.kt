@@ -46,6 +46,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.muradgalayev.brainbuddy.data.local.FontSize
 import com.muradgalayev.brainbuddy.ui.theme.MyndoraTheme
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
+import com.muradgalayev.brainbuddy.ui.utils.asUiText
+import com.muradgalayev.brainbuddy.ui.utils.resolve
+import com.muradgalayev.brainbuddy.ui.utils.uiText
 
 // what the survey shows when a save doesn't go through. replaces a snackbar carrying a raw
 // exception message, for three reasons: a snackbar disappears before you've finished reading
@@ -131,7 +136,7 @@ private fun ErrorCard(
                 ) {
                     Icon(
                         Icons.Rounded.Close,
-                        contentDescription = "Dismiss",
+                        contentDescription = stringResource(R.string.common_dismiss),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(16.dp),
                     )
@@ -162,7 +167,7 @@ private fun ErrorCard(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
-                        "Skip for now — I'll finish this later",
+                        stringResource(R.string.survey_skip_finish_later),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -185,29 +190,29 @@ private data class ErrorCopy(
 private fun ErrorCopy.accent() =
     if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
 
+@Composable
 private fun SurveyError.wording(): ErrorCopy = when (kind) {
     SurveyError.Kind.MissingAnswers -> ErrorCopy(
-        title = "A couple of answers are missing",
-        body = detail?.let { "Have a look at $it and you're done." }
-            ?: "Swipe back through the questions — the dots at the top show which ones still need you.",
-        primaryAction = "Back to the questions",
+        title = stringResource(R.string.survey_missing_title),
+        body = detail?.resolve()?.let { stringResource(R.string.survey_missing_body_detail, it) }
+            ?: stringResource(R.string.survey_missing_body),
+        primaryAction = stringResource(R.string.survey_back_to_questions),
         icon = Icons.Outlined.EditNote,
         danger = false,
     )
 
     SurveyError.Kind.UsernameTaken -> ErrorCopy(
-        title = "That username is taken",
-        body = "Pick another one and we'll carry on from here.",
-        primaryAction = "Choose another",
+        title = stringResource(R.string.survey_username_taken_title),
+        body = stringResource(R.string.survey_username_taken_body),
+        primaryAction = stringResource(R.string.survey_choose_another),
         icon = Icons.Rounded.AlternateEmail,
         danger = false,
     )
 
     SurveyError.Kind.SaveFailed -> ErrorCopy(
-        title = "Couldn't save just now",
-        body = "Your answers are still here. Try again, or skip and come back to " +
-            "it — nothing you've typed will be lost.",
-        primaryAction = "Try again",
+        title = stringResource(R.string.survey_save_failed_title),
+        body = stringResource(R.string.survey_save_failed_body),
+        primaryAction = stringResource(R.string.common_try_again),
         icon = Icons.Rounded.CloudOff,
         danger = true,
     )
@@ -221,7 +226,7 @@ private fun SurveyError.wording(): ErrorCopy = when (kind) {
 private fun SurveyErrorSaveFailedPreview() {
     MyndoraTheme(fontSize = FontSize.Medium) {
         SurveyErrorPanel(
-            error = SurveyError(SurveyError.Kind.SaveFailed, "Unable to resolve host"),
+            error = SurveyError(SurveyError.Kind.SaveFailed, "Unable to resolve host".asUiText()),
             onDismiss = {}, onRetry = {}, onSkip = {},
         )
     }
@@ -232,7 +237,7 @@ private fun SurveyErrorSaveFailedPreview() {
 private fun SurveyErrorMissingPreview() {
     MyndoraTheme(fontSize = FontSize.Medium) {
         SurveyErrorPanel(
-            error = SurveyError(SurveyError.Kind.MissingAnswers, "the Deep Dive questions"),
+            error = SurveyError(SurveyError.Kind.MissingAnswers, uiText(R.string.survey_detail_deep_dive)),
             onDismiss = {}, onRetry = {}, onSkip = {},
         )
     }

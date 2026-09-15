@@ -1,5 +1,11 @@
 package com.muradgalayev.brainbuddy.ui.todo
 
+import com.muradgalayev.brainbuddy.ui.utils.localizedDateFormatter
+import com.muradgalayev.brainbuddy.ui.utils.uiText
+import com.muradgalayev.brainbuddy.ui.utils.asUiText
+import com.muradgalayev.brainbuddy.ui.utils.UiText
+import com.muradgalayev.brainbuddy.R
+import com.muradgalayev.brainbuddy.ui.utils.resolve
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.compose.ui.graphics.Color
@@ -30,12 +36,12 @@ data class TodoScreenUiState(
     val taskFilters: List<CategoryUi> = emptyList(),
     val selectedCategory: String = "all",
     val selectedTaskFilter: String = "today",
-    val dateTitle: String = "",
+    val dateTitle: UiText = "".asUiText(),
     // the day being browsed. defaults to today, the header's picker moves it
     val selectedDate: LocalDate = LocalDate.now(),
     // drives whether the Today shortcut is worth showing at all
     val isViewingToday: Boolean = true,
-    val insightTitle: String = "Today's task insights",
+    val insightTitle: UiText = uiText(R.string.todo_insights_today),
     val progress: Float = 0f,
     val isLoading: Boolean = true,
     val showAddTaskDialog: Boolean = false,
@@ -59,6 +65,7 @@ data class TaskEditData(
 
 @HiltViewModel
 class TodoViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val todoRepository: TodoRepository,
     private val togetherRepository: com.muradgalayev.brainbuddy.data.repository.TogetherRepository,
 ) : ViewModel() {
@@ -89,19 +96,19 @@ class TodoViewModel @Inject constructor(
     private val selectedDate = MutableStateFlow(LocalDate.now())
 
     private val defaultCategories = listOf(
-        CategoryUi("all", "All", selected = true),
-        CategoryUi("work", "Work"),
-        CategoryUi("education", "Education"),
-        CategoryUi("personal", "Personal"),
-        CategoryUi("sport", "Sport"),
-        CategoryUi("health", "Health"),
+        CategoryUi("all", uiText(R.string.common_all), selected = true),
+        CategoryUi("work", uiText(R.string.mode_work)),
+        CategoryUi("education", uiText(R.string.todo_cat_education)),
+        CategoryUi("personal", uiText(R.string.todo_cat_personal)),
+        CategoryUi("sport", uiText(R.string.todo_cat_sport)),
+        CategoryUi("health", uiText(R.string.widget_health)),
     )
     private val defaultTaskFilters = listOf(
-        CategoryUi("today", "Today", selected = true),
-        CategoryUi("upcoming", "Upcoming"),
-        CategoryUi("overdue", "Overdue"),
-        CategoryUi("high", "High priority"),
-        CategoryUi("completed", "Completed"),
+        CategoryUi("today", uiText(R.string.common_today), selected = true),
+        CategoryUi("upcoming", uiText(R.string.todo_filter_upcoming)),
+        CategoryUi("overdue", uiText(R.string.todo_filter_overdue)),
+        CategoryUi("high", uiText(R.string.todo_filter_high)),
+        CategoryUi("completed", uiText(R.string.onboarding_completed)),
     )
 
     init {
@@ -214,14 +221,15 @@ class TodoViewModel @Inject constructor(
         // 'Today' beats 'August 12' for the day you're actually on: it's what the user calls it, and
         // it makes leaving today visible without a second label
         val title = when (date) {
-            today -> "Today"
-            today.minusDays(1) -> "Yesterday"
-            today.plusDays(1) -> "Tomorrow"
-            // only spell out the year when it isn't this one
+            today -> uiText(R.string.common_today)
+            today.minusDays(1) -> uiText(R.string.common_yesterday)
+            today.plusDays(1) -> uiText(R.string.common_tomorrow)
+            // only spell out the year when it isn't this one. formatted here in the current locale;
+            // a language switch rebuilds the screen and this runs again
             else -> date.format(
-                if (date.year == today.year) DateTimeFormatter.ofPattern("MMMM dd")
-                else DateTimeFormatter.ofPattern("MMM dd, yyyy")
-            )
+                if (date.year == today.year) localizedDateFormatter("MMMMd")
+                else localizedDateFormatter("yMMMd")
+            ).asUiText()
         }
         _uiState.update {
             it.copy(
@@ -233,8 +241,8 @@ class TodoViewModel @Inject constructor(
                     if (filter.id == "today") filter.copy(title = title) else filter
                 }.ifEmpty { defaultTaskFilters },
                 isViewingToday = date == today,
-                insightTitle = if (date == today) "Today's task insights"
-                else "Task insights for ${date.format(DateTimeFormatter.ofPattern("MMM dd"))}",
+                insightTitle = if (date == today) uiText(R.string.todo_insights_today)
+                else uiText(R.string.todo_insights_for, date.format(localizedDateFormatter("MMMd"))),
             )
         }
     }
@@ -347,7 +355,7 @@ class TodoViewModel @Inject constructor(
             }
 
             val message = if (alsoAddFor.isEmpty()) {
-                "Your task has been added"
+                context.getString(R.string.todo_added)
             } else {
                 shareTaskWith(alsoAddFor, newTask, addToMyList)
             }
@@ -369,7 +377,7 @@ class TodoViewModel @Inject constructor(
         val failed = mutableListOf<String>()
 
         for (id in targetIds) {
-            val name = targets[id]?.name ?: "your connection"
+            val name = targets[id]?.name ?: context.getString(R.string.cal_your_connection)
             togetherRepository.createTodoFor(
                 ownerId = id,
                 title = task.title,
@@ -391,7 +399,7 @@ class TodoViewModel @Inject constructor(
         return outcome.message(
             keptOnMine = keptOnMyList,
             kind = com.muradgalayev.brainbuddy.ui.together.SharedItemKind.TASK,
-        )
+        ).resolve(context)
     }
     fun clearSuccessMessage() {
         _uiState.update { it.copy(successMessage = null) }
@@ -502,7 +510,7 @@ class TodoViewModel @Inject constructor(
             completed = this.isCompleted,
             flagged = this.priority == TodoPriority.HIGH.name,
             // a generic label rather than a raw uuid when the author is no longer a connection
-            addedByName = this.createdByOther?.let { authorNames[it] ?: "a connection" },
+            addedByName = this.createdByOther?.let { authorNames[it] ?: context.getString(R.string.cal_a_connection) },
         )
     }
 }

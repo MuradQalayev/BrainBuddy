@@ -38,6 +38,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -134,7 +136,7 @@ fun TaskCard(
                                 )
                                 Spacer(Modifier.width(4.dp))
                                 Text(
-                                    text = "Added by $author",
+                                    text = stringResource(R.string.cal_added_by, author),
                                     color = task.accent,
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
@@ -146,7 +148,7 @@ fun TaskCard(
                     if (task.flagged && !task.completed) {
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "HIGH PRIORITY",
+                            text = stringResource(R.string.todo_high_priority_caps),
                             color = palette.flagRed,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
@@ -201,7 +203,7 @@ fun TaskCard(
                     ) {
                         Icon(
                             imageVector = if (task.flagged) Icons.Outlined.Flag else Icons.Outlined.OutlinedFlag,
-                            contentDescription = if (task.flagged) "Remove flag" else "Flag as important",
+                            contentDescription = if (task.flagged) stringResource(R.string.todo_remove_flag) else stringResource(R.string.todo_flag),
                             tint = flagColor,
                             modifier = Modifier.size(18.dp)
                         )

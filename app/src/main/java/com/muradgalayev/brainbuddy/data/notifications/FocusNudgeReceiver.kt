@@ -56,7 +56,7 @@ class FocusNudgeReceiver : BroadcastReceiver() {
     private fun postNudge(context: Context, slot: Int) {
         // vary the copy by day so back-to-back nudges don't read identically
         val seed = (System.currentTimeMillis() / (24L * 60 * 60 * 1000)).toInt() + slot
-        val (heading, body) = ReminderCopy.focusNudge(seed)
+        val (heading, body) = ReminderCopy.focusNudge(context, seed)
 
         val tapIntent = PendingIntent.getActivity(
             context,

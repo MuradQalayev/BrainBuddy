@@ -41,6 +41,9 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
+import com.muradgalayev.brainbuddy.ui.utils.resolve
 
 @Composable
 fun UseCurrentLocationRow(
@@ -73,7 +76,7 @@ fun UseCurrentLocationRow(
                 modifier = Modifier.size(18.dp),
             )
             Spacer(Modifier.width(8.dp))
-            Text("Use my current location", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.loc_use_current), fontWeight = FontWeight.SemiBold)
         }
     }
 
@@ -81,26 +84,26 @@ fun UseCurrentLocationRow(
         LocationLookupStatus.Idle, LocationLookupStatus.Locating -> null
         is LocationLookupStatus.Matched ->
             if (status.cityName.equals(status.viaName, ignoreCase = true))
-                "Got it: ${status.cityName}"
+                stringResource(R.string.loc_got_it, status.cityName)
             else
-                "Got it: ${status.cityName} (matched from ${status.viaName})"
+                stringResource(R.string.loc_got_it_via, status.cityName, status.viaName)
         is LocationLookupStatus.NoMatch ->
-            "We detected ${status.detected}, but it's not in our list — pick the closest one."
+            stringResource(R.string.loc_no_match, status.detected)
         LocationLookupStatus.PermissionDenied ->
-            "Location access denied. Allow it from app settings or pick your city manually."
+            stringResource(R.string.loc_denied)
         LocationLookupStatus.LocationServicesOff ->
-            "Location is turned off in your phone's settings."
-        is LocationLookupStatus.Error -> status.message
+            stringResource(R.string.loc_services_off)
+        is LocationLookupStatus.Error -> status.message.resolve()
     }
 
     val action: Pair<String, () -> Unit>? = when (status) {
-        LocationLookupStatus.LocationServicesOff -> "Turn on" to {
+        LocationLookupStatus.LocationServicesOff -> stringResource(R.string.loc_turn_on) to {
             context.startActivity(
                 Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
         }
-        LocationLookupStatus.PermissionDenied -> "Open settings" to {
+        LocationLookupStatus.PermissionDenied -> stringResource(R.string.common_open_settings) to {
             context.startActivity(
                 Intent(
                     Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
@@ -192,7 +195,7 @@ private fun LocatingIndicator() {
         }
         Spacer(Modifier.width(12.dp))
         Text(
-            text = "Finding your location…",
+            text = stringResource(R.string.loc_finding),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold,
             color = colors.primary,

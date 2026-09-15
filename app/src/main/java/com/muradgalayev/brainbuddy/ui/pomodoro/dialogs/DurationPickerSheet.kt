@@ -46,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 private const val MIN_MINUTES = 1
 private const val MAX_MINUTES = 120
@@ -117,7 +119,7 @@ fun DurationPickerSheet(
             Spacer(Modifier.height(20.dp))
 
             Text(
-                text = "Session length",
+                text = stringResource(R.string.focus_session_length),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -244,7 +246,7 @@ fun DurationPickerSheet(
                 ),
             ) {
                 Text(
-                    text = "Set $selectedMinutes min",
+                    text = stringResource(R.string.focus_set_min, selectedMinutes),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                 )

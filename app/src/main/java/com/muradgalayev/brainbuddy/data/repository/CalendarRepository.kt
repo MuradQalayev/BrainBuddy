@@ -32,6 +32,7 @@ class CalendarRepository @Inject constructor(
     private val subtaskRemoteDataSource: SupabaseCalendarSubtaskDataSource,
     private val authRepository: AuthRepository,
     private val reminderScheduler: ReminderScheduler,
+    private val googleCalendarDeleter: com.muradgalayev.brainbuddy.data.google.GoogleCalendarDeleter,
 ) {
     companion object {
         private const val TAG = "CalendarRepository"
@@ -127,6 +128,7 @@ class CalendarRepository @Inject constructor(
         calendarEventDao.updateEvent(entity)
         calendarSubtaskDao.deleteForEvent(event.id, userId)
         reminderScheduler.cancelForItem(event.id)
+        googleCalendarDeleter.deleteLater(event.id)
     }
 
     suspend fun updateEvent(event: CalendarEvent) {
@@ -177,7 +179,18 @@ class CalendarRepository @Inject constructor(
         // them too, so individual deletes never need syncing
         calendarSubtaskDao.deleteForEvent(event.id, userId)
         reminderScheduler.cancelForItem(event.id)
+        // off the calling coroutine, so the delete never waits on Google
+        googleCalendarDeleter.deleteLater(event.id)
         tryRemoteDelete(entity.id, userId)
+    }
+
+    // a row deleted on the server by someone else, like a connection taking back an event they put
+    // here. pull never removes rows, so without this it would stay on this phone for good
+    suspend fun applyRemoteDelete(eventId: String) {
+        val userId = getCurrentUserId() ?: return
+        calendarEventDao.deleteById(eventId, userId)
+        calendarSubtaskDao.deleteForEvent(eventId, userId)
+        reminderScheduler.cancelForItem(eventId)
     }
 
     // subtasks (local-only)

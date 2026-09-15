@@ -1,5 +1,10 @@
 package com.muradgalayev.brainbuddy.ui.home
 
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import com.muradgalayev.brainbuddy.ui.utils.resolve
+import com.muradgalayev.brainbuddy.R
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -79,7 +84,9 @@ fun HomeTodayCard(
 ) {
     val accents = MaterialTheme.myndoraAccents
     val today = now.toLocalDate()
-    val dateLabel = remember(today) { today.format(DateTimeFormatter.ofPattern("EEEE d MMM")) }
+    val dateLabel = remember(today, LocalConfiguration.current) {
+        today.format(DateTimeFormatter.ofPattern("EEEE d MMM"))
+    }
 
     // which block is being peeked at. survives rotation, and clears itself so the card is never
     // left holding a stale selection the user has stopped looking at
@@ -101,7 +108,7 @@ fun HomeTodayCard(
         Column(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    HomeSectionLabel("TODAY", accents.accent)
+                    HomeSectionLabel(stringResource(R.string.home_today_caps), accents.accent)
                     Spacer(Modifier.height(2.dp))
                     Text(
                         dateLabel,
@@ -174,9 +181,13 @@ private fun DayRibbon(
         label = "ribbon_now",
     )
     val clock = remember(now.hour, now.minute) { now.format(DateTimeFormatter.ofPattern("HH:mm")) }
+    val nowDescription = stringResource(R.string.ribbon_now_cd, clock)
 
     val blocks = remember(agenda, today) { ribbonBlocks(agenda, today) }
-    val ribbonLabel = remember(agenda, today) { ribbonDescription(agenda, today) }
+    val resources = LocalContext.current.resources
+    val ribbonLabel = remember(agenda, today, LocalConfiguration.current) {
+        ribbonDescription(agenda, today, resources::getString)
+    }
 
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val width = maxWidth
@@ -197,7 +208,7 @@ private fun DayRibbon(
                         onPeek(if (next == peekedId) null else next)
                     }
                     .padding(vertical = 3.dp)
-                    .semantics { contentDescription = "Now $clock. Show what's on now." },
+                    .semantics { contentDescription = nowDescription },
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
@@ -355,9 +366,9 @@ private fun AgendaPeek(item: HomeAgendaItem, now: LocalDateTime) {
         Text(
             // an untimed task has no range worth printing, 'Anytime today' already says it
             if (item.start == null) {
-                countdownLabel(item, now)
+                countdownLabel(item, now).resolve()
             } else {
-                "${timeRangeLabel(item)} · ${countdownLabel(item, now)}"
+                "${timeRangeLabel(item).resolve()} · ${countdownLabel(item, now).resolve()}"
             },
             style = MaterialTheme.typography.labelMedium.tabular(),
             color = muted,
@@ -367,16 +378,20 @@ private fun AgendaPeek(item: HomeAgendaItem, now: LocalDateTime) {
 }
 
 // what the bar says to a screen reader, which otherwise sees an empty Canvas
-private fun ribbonDescription(agenda: List<HomeAgendaItem>, today: LocalDate): String {
+private fun ribbonDescription(
+    agenda: List<HomeAgendaItem>,
+    today: LocalDate,
+    lookup: (Int) -> String,
+): String {
     val timed = agenda
         .filter { it.start?.toLocalDate() == today }
         .sortedBy { it.start }
-    if (timed.isEmpty()) return "Day ribbon. Nothing scheduled today."
+    if (timed.isEmpty()) return lookup(R.string.ribbon_empty)
     val spoken = timed.take(RibbonSpokenItems)
-        .joinToString(". ") { "${it.title}, ${timeRangeLabel(it)}" }
+        .joinToString(". ") { "${it.title}, ${timeRangeLabel(it).resolve(lookup)}" }
     val rest = timed.size - RibbonSpokenItems
-    val tail = if (rest > 0) ". And $rest more." else "."
-    return "Day ribbon. $spoken$tail"
+    return if (rest > 0) lookup(R.string.ribbon_items_more).format(spoken, rest)
+    else lookup(R.string.ribbon_items).format(spoken)
 }
 
 // reading out a whole day is worse than a summary, the rest is counted
@@ -394,7 +409,7 @@ private fun AgendaSummary(agenda: List<HomeAgendaItem>) {
 
     if (agenda.isEmpty()) {
         Text(
-            "Nothing on today",
+            stringResource(R.string.home_nothing_today),
             style = MaterialTheme.typography.labelMedium,
             color = muted,
             maxLines = 1,
@@ -403,7 +418,7 @@ private fun AgendaSummary(agenda: List<HomeAgendaItem>) {
     }
     if (open.isEmpty()) {
         Text(
-            "All clear — everything's done",
+            stringResource(R.string.home_all_clear),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
             color = accents.support,
@@ -469,7 +484,7 @@ private fun WeatherChip(weather: WeatherSnapshot?) {
             )
             if (weather != null) {
                 Text(
-                    "H ${weather.highC.toInt()}  L ${weather.lowC.toInt()}",
+                    stringResource(R.string.weather_high_low, weather.highC.toInt(), weather.lowC.toInt()),
                     style = MaterialTheme.typography.labelSmall.tabular(),
                     color = ink.copy(alpha = .78f),
                     letterSpacing = .3.sp,
@@ -480,18 +495,20 @@ private fun WeatherChip(weather: WeatherSnapshot?) {
     }
 }
 
+@Composable
 private fun weatherSubtitle(weather: WeatherSnapshot?): String {
-    weather ?: return "Set your location for weather"
+    weather ?: return stringResource(R.string.weather_set_location)
     return "${weather.city} · ${weatherDescription(weather.weatherCode)}"
 }
 
+@Composable
 internal fun weatherDescription(code: Int): String = when (code) {
-    0 -> "Clear sky"
-    1, 2 -> "Partly cloudy"
-    3 -> "Overcast"
-    45, 48 -> "Foggy"
-    in 51..67, in 80..82 -> "Rain"
-    in 71..77, 85, 86 -> "Snow"
-    in 95..99 -> "Thunderstorm"
-    else -> "Current weather"
+    0 -> stringResource(R.string.weather_clear)
+    1, 2 -> stringResource(R.string.weather_partly_cloudy)
+    3 -> stringResource(R.string.weather_overcast)
+    45, 48 -> stringResource(R.string.weather_foggy)
+    in 51..67, in 80..82 -> stringResource(R.string.weather_rain)
+    in 71..77, 85, 86 -> stringResource(R.string.weather_snow)
+    in 95..99 -> stringResource(R.string.weather_thunderstorm)
+    else -> stringResource(R.string.weather_current)
 }

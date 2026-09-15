@@ -25,6 +25,7 @@ import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.muradgalayev.brainbuddy.data.repository.AuthRepository
+import com.muradgalayev.brainbuddy.R
 
 enum class HealthConnectAvailability { AVAILABLE, INSTALL_OR_UPDATE, NOT_SUPPORTED }
 
@@ -33,7 +34,7 @@ data class DailySleepSummary(val date: LocalDate, val hours: Double)
 // one readable health data type, and whether recording it needs a wearable
 data class HealthPermissionInfo(
     val permission: String,
-    val label: String,
+    @androidx.annotation.StringRes val labelRes: Int,
     val needsDevice: Boolean,
 )
 
@@ -91,17 +92,17 @@ class HealthConnectManager @Inject constructor(
     // chest strap: the permission can be granted and still yield nothing, which looks like a failure
     val permissionLabels: List<HealthPermissionInfo> = listOf(
         HealthPermissionInfo(
-            HealthPermission.getReadPermission(StepsRecord::class), "Steps", false),
+            HealthPermission.getReadPermission(StepsRecord::class), R.string.health_steps, false),
         HealthPermissionInfo(
-            HealthPermission.getReadPermission(HeartRateRecord::class), "Heart rate", true),
+            HealthPermission.getReadPermission(HeartRateRecord::class), R.string.health_heart_rate, true),
         HealthPermissionInfo(
-            HealthPermission.getReadPermission(RestingHeartRateRecord::class), "Resting heart rate", true),
+            HealthPermission.getReadPermission(RestingHeartRateRecord::class), R.string.wellness_resting_hr, true),
         HealthPermissionInfo(
-            HealthPermission.getReadPermission(SleepSessionRecord::class), "Sleep", true),
+            HealthPermission.getReadPermission(SleepSessionRecord::class), R.string.health_sleep, true),
         HealthPermissionInfo(
-            HealthPermission.getReadPermission(ExerciseSessionRecord::class), "Exercise", false),
+            HealthPermission.getReadPermission(ExerciseSessionRecord::class), R.string.health_exercise, false),
         HealthPermissionInfo(
-            HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class), "Calories", false),
+            HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class), R.string.health_calories, false),
     )
 
     // reads a metric, logging any failure instead of discarding it. every read here used to be
@@ -147,7 +148,7 @@ class HealthConnectManager @Inject constructor(
             .getOrElse {
                 _state.value = HealthConnectUiState(
                     availability = availability,
-                    error = "Couldn’t check Health Connect access",
+                    error = context.getString(R.string.health_check_failed),
                 )
                 return
             }
@@ -436,7 +437,7 @@ class HealthConnectManager @Inject constructor(
         } else {
             _state.value = _state.value.copy(
                 disconnecting = false,
-                error = "Couldn’t disconnect Health Connect",
+                error = context.getString(R.string.health_disconnect_failed),
             )
         }
     }

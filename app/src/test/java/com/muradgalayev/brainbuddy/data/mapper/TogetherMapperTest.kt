@@ -1,5 +1,7 @@
 package com.muradgalayev.brainbuddy.data.mapper
 
+import com.muradgalayev.brainbuddy.ui.utils.resolve
+import com.muradgalayev.brainbuddy.testing.TestStrings
 import com.muradgalayev.brainbuddy.data.remote.dto.ChallengeResponseDto
 import com.muradgalayev.brainbuddy.data.remote.dto.ConnectionDto
 import com.muradgalayev.brainbuddy.data.remote.dto.IncomingRequestDto
@@ -109,7 +111,7 @@ class TogetherMapperTest {
         val request = dto.toDomain()
 
         assertEquals(ChallengeKind.QUESTION, request.challengeKind)
-        assertEquals("What is my surname?", request.prompt)
+        assertEquals("What is my surname?", request.prompt.resolve(TestStrings.en))
     }
 
     @Test
@@ -122,7 +124,7 @@ class TogetherMapperTest {
             challengeQuestion = null,
         )
 
-        assertEquals("Enter the code Aylin gave you", dto.toDomain().prompt)
+        assertEquals("Enter the code Aylin gave you", dto.toDomain().prompt.resolve(TestStrings.en))
     }
 
     @Test
@@ -135,7 +137,7 @@ class TogetherMapperTest {
             challengeQuestion = "   ",
         )
 
-        assertEquals("Enter the code Aylin gave you", dto.toDomain().prompt)
+        assertEquals("Enter the code Aylin gave you", dto.toDomain().prompt.resolve(TestStrings.en))
     }
 
     @Test

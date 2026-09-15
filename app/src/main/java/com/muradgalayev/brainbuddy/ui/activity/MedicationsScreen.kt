@@ -1,5 +1,8 @@
 package com.muradgalayev.brainbuddy.ui.activity
 
+import com.muradgalayev.brainbuddy.ui.utils.localizedDateFormatter
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.animateColorAsState
@@ -101,11 +104,12 @@ fun MedicationsScreen(
     val today = remember { LocalDate.now() }
     var selectedDateText by rememberSaveable { mutableStateOf(today.toString()) }
     val selectedDate = remember(selectedDateText) { LocalDate.parse(selectedDateText) }
-    val doses = remember(medications, selectedDate) {
+    val anyTime = stringResource(R.string.meds_any_time)
+    val doses = remember(medications, selectedDate, anyTime) {
         medications.filter { it.isScheduledOn(selectedDate.dayOfWeek) }.flatMap { medication ->
             val medicationAccent = MEDICATION_COLORS[medications.indexOfFirst { it.id == medication.id }.coerceAtLeast(0) % MEDICATION_COLORS.size]
             medication.slots.distinct().map { slot ->
-                MedicationDose(medication, slot, medicationTime(slot), medicationAccent)
+                MedicationDose(medication, slot, medicationTime(slot, anyTime), medicationAccent)
             }
         }.sortedBy { medicationOrder(it.slot) }
     }
@@ -123,7 +127,7 @@ fun MedicationsScreen(
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 WellnessBackButton(onBack)
                 Text(
-                    "Medications",
+                    stringResource(R.string.ws_medications),
                     Modifier.weight(1f).padding(start = 14.dp),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.SemiBold,
@@ -136,8 +140,8 @@ fun MedicationsScreen(
                 AnimatedContent(targetState = selectedDate, label = "selected_medication_date") { date ->
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            if (date == today) "Today, ${date.format(DateTimeFormatter.ofPattern("MMMM d", Locale.getDefault()))}"
-                            else date.format(DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault())),
+                            if (date == today) stringResource(R.string.meds_today_date, date.format(localizedDateFormatter("MMMMd")))
+                            else date.format(localizedDateFormatter("EEEEMMMMd")),
                             style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.SemiBold,
                         )
@@ -167,7 +171,7 @@ fun MedicationsScreen(
         if (medications.isEmpty()) {
             item { EmptyMedicationCard({ onEditMedication(null) }, accent) }
         } else {
-            item { SectionTitle(if (selectedDate == today) "Today's log" else if (selectedDate > today) "Upcoming doses" else "Dose log", "${completed.size} of ${doses.size} taken") }
+            item { SectionTitle(if (selectedDate == today) stringResource(R.string.meds_todays_log) else if (selectedDate > today) stringResource(R.string.meds_upcoming) else stringResource(R.string.meds_dose_log), stringResource(R.string.meds_taken_of, completed.size, doses.size)) }
             if (pending.isEmpty() && doses.isNotEmpty()) {
                 item {
                     // a green panel to say 'nothing left to do' is a box drawing attention to the absence of work.
@@ -180,12 +184,12 @@ fun MedicationsScreen(
                         Spacer(Modifier.width(12.dp))
                         Column {
                             Text(
-                                "All done for today",
+                                stringResource(R.string.meds_all_done),
                                 fontWeight = FontWeight.SemiBold,
                                 style = MaterialTheme.typography.titleMedium,
                             )
                             Text(
-                                "You logged every scheduled dose.",
+                                stringResource(R.string.meds_all_done_body),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -203,7 +207,7 @@ fun MedicationsScreen(
             }
 
             if (completed.isNotEmpty()) {
-                item { SectionTitle("Logged", "Tap a check to undo") }
+                item { SectionTitle(stringResource(R.string.meds_logged), stringResource(R.string.meds_tap_undo)) }
                 completed.forEach { dose ->
                     item(key = "logged-${dose.medication.id}-${dose.slot}") {
                         Box(Modifier.animateItem()) {
@@ -215,8 +219,8 @@ fun MedicationsScreen(
 
             item {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Your medications", Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
-                    Text("Add", Modifier.clickable { onEditMedication(null) }.padding(10.dp), color = accent, fontWeight = FontWeight.Medium)
+                    Text(stringResource(R.string.meds_your_meds), Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.common_add), Modifier.clickable { onEditMedication(null) }.padding(10.dp), color = accent, fontWeight = FontWeight.Medium)
                 }
             }
             medications.forEachIndexed { index, medication ->
@@ -289,14 +293,14 @@ private fun DestinationRow(
 ) {
     Column(Modifier.fillMaxWidth()) {
         Text(
-            "Also show doses in",
+            stringResource(R.string.meds_also_show),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.size(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            DestinationChip("To-do", inTodo, accent) { onToggleTodo(!inTodo) }
-            DestinationChip("Calendar", inCalendar, accent) { onToggleCalendar(!inCalendar) }
+            DestinationChip(stringResource(R.string.common_todo_short), inTodo, accent) { onToggleTodo(!inTodo) }
+            DestinationChip(stringResource(R.string.together_scope_calendar), inCalendar, accent) { onToggleCalendar(!inCalendar) }
         }
     }
 }
@@ -371,9 +375,9 @@ private fun DoseCard(dose: MedicationDose, logged: Boolean, canLog: Boolean, onT
                 // is what done should look like
                 color = colors.onSurface.copy(alpha = if (logged) .45f else 1f),
             )
-            if (dose.medication.doseLabel.isNotBlank()) {
+            if (dose.medication.doseLabel(androidx.compose.ui.platform.LocalContext.current.resources).isNotBlank()) {
                 Text(
-                    dose.medication.doseLabel,
+                    dose.medication.doseLabel(androidx.compose.ui.platform.LocalContext.current.resources),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant.copy(alpha = if (logged) .5f else 1f),
                 )
@@ -397,7 +401,7 @@ private fun DoseCard(dose: MedicationDose, logged: Boolean, canLog: Boolean, onT
         ) {
             Icon(
                 if (logged) Icons.Rounded.Check else Icons.Rounded.Add,
-                if (!canLog) "Future dose cannot be logged" else if (logged) "Undo dose" else "Log dose",
+                if (!canLog) stringResource(R.string.meds_future_cannot) else if (logged) stringResource(R.string.meds_undo_dose) else stringResource(R.string.meds_log_dose),
                 Modifier.size(20.dp),
                 tint = if (logged) Color.White else accent.copy(alpha = if (canLog) 1f else .35f),
             )
@@ -433,13 +437,13 @@ private fun MedicationOverviewCard(medication: Medication, index: Int, onEdit: (
                 fontWeight = FontWeight.SemiBold,
             )
             val frequency = when (medication.timesPerDay) {
-                0 -> "As needed"
-                1 -> "Once a day"
-                else -> "${medication.timesPerDay} times a day"
+                0 -> stringResource(R.string.med_as_needed)
+                1 -> stringResource(R.string.sync_daily)
+                else -> stringResource(R.string.ws_times_a_day, medication.timesPerDay)
             }
             Text(
                 listOfNotNull(
-                    medication.doseLabel.takeIf { it.isNotBlank() },
+                    medication.doseLabel(androidx.compose.ui.platform.LocalContext.current.resources).takeIf { it.isNotBlank() },
                     frequency,
                 ).joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
@@ -463,8 +467,8 @@ private fun EmptyMedicationCard(onEdit: () -> Unit, accent: Color) {
         Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(Icons.Rounded.Medication, null, Modifier.size(42.dp), tint = accent)
             Spacer(Modifier.height(12.dp))
-            Text("Add your medications", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
-            Text("Set the dose and how many times you take it each day.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.meds_add_yours), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.meds_add_yours_body), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -479,10 +483,10 @@ private fun medicationOrder(slot: String) = when (slot.lowercase()) {
     else -> 4
 }
 
-private fun medicationTime(slot: String) = when (slot.lowercase()) {
+private fun medicationTime(slot: String, anyTime: String) = when (slot.lowercase()) {
     "morning" -> "08:00"
     "afternoon" -> "13:00"
     "evening" -> "18:00"
     "night" -> "22:00"
-    else -> "Any time"
+    else -> anyTime
 }

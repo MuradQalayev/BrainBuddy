@@ -51,6 +51,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.Headphones
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.LocalHospital
 import androidx.compose.material.icons.outlined.LocalPharmacy
 import androidx.compose.material.icons.outlined.LocationOn
@@ -130,6 +131,8 @@ import kotlin.math.sin
 import kotlin.math.pow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun CareNearbyScreen(
@@ -218,14 +221,14 @@ fun CareNearbyScreen(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             TopBar(
-                title = "Find Care",
+                title = stringResource(R.string.ws_find_care),
                 subtitle = state.cities.firstOrNull { it.id == state.selectedCityId }?.name,
                 onBack = onBack,
                 onReserve = {
                     if (isOnline) onReserve(null)
                     else Toast.makeText(
                         context,
-                        "An internet connection is required to make a booking",
+                        context.getString(R.string.care_need_internet),
                         Toast.LENGTH_LONG,
                     ).show()
                 },
@@ -311,7 +314,7 @@ fun CareNearbyScreen(
                 } else {
                     Toast.makeText(
                         context,
-                        "An internet connection is required to make a booking",
+                        context.getString(R.string.care_need_internet),
                         Toast.LENGTH_LONG,
                     ).show()
                 }
@@ -334,10 +337,10 @@ private fun ProfileCityRequiredBody() {
             modifier = Modifier.size(48.dp),
         )
         Spacer(Modifier.height(12.dp))
-        Text("Choose your city in ADHD Profile", fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.care_choose_city), fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(6.dp))
         Text(
-            "Healthcare results use the city saved during registration.",
+            stringResource(R.string.care_city_note),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
@@ -361,7 +364,7 @@ private fun TopBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", tint = colors.onSurface)
+            Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.common_back), tint = colors.onSurface)
         }
         Spacer(Modifier.width(4.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -389,7 +392,7 @@ private fun TopBar(
             }
         }
         IconButton(onClick = onRefresh, enabled = isOnline) {
-            Icon(Icons.Rounded.Refresh, contentDescription = "Refresh care results", tint = colors.onSurfaceVariant)
+            Icon(Icons.Rounded.Refresh, contentDescription = stringResource(R.string.care_refresh), tint = colors.onSurfaceVariant)
         }
         Surface(
             onClick = onReserve,
@@ -408,7 +411,7 @@ private fun TopBar(
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    text = "Book",
+                    text = stringResource(R.string.care_book),
                     color = if (isOnline) colors.onPrimaryContainer else colors.onSurfaceVariant.copy(alpha = .55f),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
@@ -427,7 +430,7 @@ private fun OfflineCareBanner() {
         color = colors.secondaryContainer,
     ) {
         Text(
-            text = "Offline: browsing saved care results. Connect to the internet to refresh or book.",
+            text = stringResource(R.string.care_offline),
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
             color = colors.onSecondaryContainer,
             style = MaterialTheme.typography.bodySmall,
@@ -459,7 +462,7 @@ private fun ErrorBanner(message: String, onDismiss: () -> Unit) {
             IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
                 Icon(
                     Icons.Rounded.Close,
-                    contentDescription = "Dismiss",
+                    contentDescription = stringResource(R.string.common_dismiss),
                     tint = colors.onErrorContainer,
                     modifier = Modifier.size(16.dp),
                 )
@@ -548,8 +551,8 @@ private fun AiFilterBanner(count: Int, onClear: () -> Unit) {
             )
             Spacer(Modifier.width(8.dp))
             Text(
-                text = if (count == 1) "Showing the match from your chat"
-                else "Showing $count results from your chat",
+                text = if (count == 1) stringResource(R.string.care_chat_one)
+                else stringResource(R.string.care_chat_many, count),
                 color = colors.onSecondaryContainer,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Medium,
@@ -566,13 +569,13 @@ private fun AiFilterBanner(count: Int, onClear: () -> Unit) {
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Close,
-                        contentDescription = "Clear filter",
+                        contentDescription = stringResource(R.string.care_clear_filter),
                         tint = colors.onSecondaryContainer,
                         modifier = Modifier.size(13.dp),
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        text = "Show all",
+                        text = stringResource(R.string.care_show_all),
                         color = colors.onSecondaryContainer,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
@@ -608,7 +611,7 @@ private fun MedicationChip(name: String) {
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    text = "Your meds: $name",
+                    text = stringResource(R.string.care_your_meds, name),
                     color = colors.primary,
                     fontWeight = FontWeight.SemiBold,
                     style = MaterialTheme.typography.labelMedium,
@@ -676,18 +679,18 @@ private fun MapThumbnail(
                         Icon(Icons.Outlined.LocationOn, null, tint = Color(0xFF47705A), modifier = Modifier.size(15.dp))
                         Spacer(Modifier.width(5.dp))
                         Text(
-                            if (placesWithLocation.isEmpty()) "Care map" else "${placesWithLocation.size} mapped nearby",
+                            if (placesWithLocation.isEmpty()) stringResource(R.string.care_map) else stringResource(R.string.care_mapped, placesWithLocation.size),
                             color = Color(0xFF385547), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium,
                         )
                     }
                 }
                 Column {
-                    Text("See care around you", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color(0xFF20352A))
+                    Text(stringResource(R.string.care_see_around), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = Color(0xFF20352A))
                     Spacer(Modifier.height(3.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.Fullscreen, null, tint = Color(0xFF536B60), modifier = Modifier.size(15.dp))
                         Spacer(Modifier.width(5.dp))
-                        Text("Tap to explore the full map", style = MaterialTheme.typography.bodySmall, color = Color(0xFF536B60))
+                        Text(stringResource(R.string.care_tap_explore_map), style = MaterialTheme.typography.bodySmall, color = Color(0xFF536B60))
                     }
                 }
             }
@@ -701,7 +704,7 @@ private fun MapThumbnail(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         Icons.Outlined.LocationOn,
-                        if (hasUserLocation) "Location found" else "Use my location",
+                        if (hasUserLocation) stringResource(R.string.care_location_found) else stringResource(R.string.care_use_location),
                         tint = if (hasUserLocation) Color.White else Color(0xFF47705A),
                         modifier = Modifier.size(20.dp),
                     )
@@ -851,7 +854,7 @@ private fun FullscreenMapDialog(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Rounded.Close,
-                        contentDescription = "Close map",
+                        contentDescription = stringResource(R.string.care_close_map),
                         tint = colors.onSurface,
                         modifier = Modifier.size(22.dp),
                     )
@@ -888,7 +891,7 @@ private fun FullscreenMapDialog(
                         Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                             Text(place.name, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(
-                                place.address.ifBlank { place.category.label },
+                                place.address.ifBlank { stringResource(place.category.labelRes) },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = colors.onSurfaceVariant,
                                 maxLines = 1,
@@ -901,7 +904,7 @@ private fun FullscreenMapDialog(
                             color = colors.primary,
                         ) {
                             Text(
-                                "Book",
+                                stringResource(R.string.care_book),
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                                 color = colors.onPrimary,
                                 fontWeight = FontWeight.Bold,
@@ -1017,7 +1020,7 @@ private fun CategoryRow(
     ) {
         CategoryChip(
             icon = Icons.Rounded.Apps,
-            label = "All",
+            label = stringResource(R.string.common_all),
             selected = active.isEmpty(),
             accent = MaterialTheme.colorScheme.primary,
             onClick = onClear,
@@ -1032,7 +1035,7 @@ private fun CategoryRow(
         ).forEach { cat ->
             CategoryChip(
                 icon = categoryIcon(cat),
-                label = cat.label,
+                label = stringResource(cat.labelRes),
                 selected = cat in active,
                 accent = categoryAccent(cat),
                 onClick = { onToggle(cat) },
@@ -1120,15 +1123,14 @@ private fun EmptyCitiesBody() {
         )
         Spacer(Modifier.height(12.dp))
         Text(
-            text = "No cities to show",
+            text = stringResource(R.string.care_no_cities),
             color = colors.onSurface,
             fontWeight = FontWeight.SemiBold,
             style = MaterialTheme.typography.titleMedium,
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            text = "Add rows to the cities & places tables in Supabase, " +
-                "or check that Row-Level Security allows reading them.",
+            text = stringResource(R.string.care_no_cities_body),
             color = colors.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(horizontal = 8.dp),
@@ -1154,7 +1156,7 @@ private fun EmptyPlacesBody(hasFilters: Boolean, onClearFilters: () -> Unit) {
         )
         Spacer(Modifier.height(12.dp))
         Text(
-            text = if (hasFilters) "Nothing matches those filters" else "Nothing to show in this city yet",
+            text = if (hasFilters) stringResource(R.string.care_no_match) else stringResource(R.string.care_nothing_city),
             color = colors.onSurface,
             fontWeight = FontWeight.SemiBold,
             style = MaterialTheme.typography.titleMedium,
@@ -1169,7 +1171,7 @@ private fun EmptyPlacesBody(hasFilters: Boolean, onClearFilters: () -> Unit) {
                 shape = RoundedCornerShape(999.dp),
             ) {
                 Text(
-                    text = "Clear filters",
+                    text = stringResource(R.string.care_clear_filters),
                     color = colors.primary,
                     fontWeight = FontWeight.SemiBold,
                     style = MaterialTheme.typography.labelLarge,
@@ -1200,11 +1202,16 @@ private fun PlaceList(
     }
 }
 
+// name, distance and the contact buttons are always there, they're what you pick a place by.
+// address, hours and notes fold away behind the chevron, open on every card they made the list
+// a wall of text
 @Composable
 private fun PlaceCard(place: Place, distance: String?, context: Context) {
     val colors = MaterialTheme.colorScheme
     val accent = categoryAccent(place.category)
     val icon = categoryIcon(place.category)
+    val hasDetails = place.address.isNotBlank() || place.hours.isNotBlank() || place.notes.isNotBlank()
+    var expanded by rememberSaveable(place.id) { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier
@@ -1236,7 +1243,7 @@ private fun PlaceCard(place: Place, distance: String?, context: Context) {
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = place.category.label,
+                        text = stringResource(place.category.labelRes),
                         color = accent,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
@@ -1268,23 +1275,35 @@ private fun PlaceCard(place: Place, distance: String?, context: Context) {
                         }
                     }
                 }
+                if (hasDetails) {
+                    Spacer(Modifier.width(4.dp))
+                    PlaceDetailsChevron(expanded = expanded, onClick = { expanded = !expanded })
+                }
             }
 
-            if (place.address.isNotBlank()) {
-                Spacer(Modifier.height(10.dp))
-                IconLine(Icons.Outlined.LocationOn, place.address, colors.onSurfaceVariant)
-            }
-            if (place.hours.isNotBlank()) {
-                Spacer(Modifier.height(4.dp))
-                IconLine(Icons.Outlined.Schedule, place.hours, colors.onSurfaceVariant.copy(alpha = 0.85f))
-            }
-            if (place.notes.isNotBlank()) {
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = place.notes,
-                    color = colors.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall,
-                )
+            AnimatedVisibility(
+                visible = expanded && hasDetails,
+                enter = expandVertically(expandFrom = Alignment.Top, animationSpec = tween(220)) + fadeIn(tween(180)),
+                exit = shrinkVertically(shrinkTowards = Alignment.Top, animationSpec = tween(180)) + fadeOut(tween(100)),
+            ) {
+                Column {
+                    if (place.address.isNotBlank()) {
+                        Spacer(Modifier.height(10.dp))
+                        IconLine(Icons.Outlined.LocationOn, place.address, colors.onSurfaceVariant)
+                    }
+                    if (place.hours.isNotBlank()) {
+                        Spacer(Modifier.height(4.dp))
+                        IconLine(Icons.Outlined.Schedule, place.hours, colors.onSurfaceVariant.copy(alpha = 0.85f))
+                    }
+                    if (place.notes.isNotBlank()) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = place.notes,
+                            color = colors.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
             }
 
             val hasAction = place.phone.isNotBlank() || place.website.isNotBlank() ||
@@ -1299,20 +1318,45 @@ private fun PlaceCard(place: Place, distance: String?, context: Context) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     if (place.phone.isNotBlank()) {
-                        ActionPill(Icons.Outlined.Phone, "Call", accent) { dial(context, place.phone) }
+                        ActionPill(Icons.Outlined.Phone, stringResource(R.string.care_call), accent) { dial(context, place.phone) }
                     }
                     if (place.address.isNotBlank() || (place.lat != null && place.lng != null)) {
-                        ActionPill(Icons.Outlined.LocationOn, "Map", accent) { openMap(context, place) }
+                        ActionPill(Icons.Outlined.LocationOn, stringResource(R.string.care_map_short), accent) { openMap(context, place) }
                     }
                     if (place.website.isNotBlank()) {
-                        ActionPill(Icons.Outlined.Public, "Site", accent) { openUrl(context, place.website) }
+                        ActionPill(Icons.Outlined.Public, stringResource(R.string.care_site), accent) { openUrl(context, place.website) }
                     }
                     if (place.email.isNotBlank()) {
-                        ActionPill(Icons.Outlined.Email, "Email", accent) { sendEmail(context, place.email) }
+                        ActionPill(Icons.Outlined.Email, stringResource(R.string.common_email), accent) { sendEmail(context, place.email) }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PlaceDetailsChevron(expanded: Boolean, onClick: () -> Unit) {
+    val rotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = tween(220),
+        label = "place_details_chevron",
+    )
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.KeyboardArrowDown,
+            contentDescription = if (expanded) stringResource(R.string.cal_hide_details) else stringResource(R.string.cal_show_details),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .size(20.dp)
+                .graphicsLayer { rotationZ = rotation },
+        )
     }
 }
 
@@ -1537,14 +1581,14 @@ private fun CareCollapsingHeader(
                         .graphicsLayer { alpha = ((fraction() - .55f) / .45f).coerceIn(0f, 1f) },
                 ) {
                     Text(
-                        "Care map",
+                        stringResource(R.string.care_map),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                     )
                     Text(
-                        if (placesWithLocation.isEmpty()) "Tap to explore"
-                        else "${placesWithLocation.size} mapped nearby",
+                        if (placesWithLocation.isEmpty()) stringResource(R.string.care_tap_explore)
+                        else stringResource(R.string.care_mapped, placesWithLocation.size),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -1629,7 +1673,7 @@ private fun FilterMenuButton(
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     Icons.Rounded.Menu,
-                    contentDescription = if (activeCount > 0) "Filters, $activeCount active" else "Filters",
+                    contentDescription = if (activeCount > 0) stringResource(R.string.care_filters_active, activeCount) else stringResource(R.string.todo_filters),
                     tint = if (activeCount > 0) MaterialTheme.colorScheme.onPrimary
                     else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(21.dp),
@@ -1642,7 +1686,7 @@ private fun FilterMenuButton(
             shape = RoundedCornerShape(20.dp),
         ) {
             DropdownMenuItem(
-                text = { Text("All categories", fontWeight = FontWeight.Bold) },
+                text = { Text(stringResource(R.string.care_all_categories), fontWeight = FontWeight.Bold) },
                 onClick = { onClearCategories(); onDismiss() },
                 leadingIcon = { Icon(Icons.Rounded.Apps, null) },
                 trailingIcon = {
@@ -1658,7 +1702,7 @@ private fun FilterMenuButton(
                 PlaceCategory.SupportGroup,
             ).forEach { cat ->
                 DropdownMenuItem(
-                    text = { Text(cat.label) },
+                    text = { Text(stringResource(cat.labelRes)) },
                     onClick = { onToggleCategory(cat) },
                     leadingIcon = { Icon(categoryIcon(cat), null, tint = categoryAccent(cat)) },
                     trailingIcon = {

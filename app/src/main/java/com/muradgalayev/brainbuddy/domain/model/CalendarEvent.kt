@@ -17,3 +17,11 @@ data class CalendarEvent(
     // owner created themselves
     val createdByOther: String? = null,
 )
+
+// a medical booking made through Care nearby. there's no column for it: a booking is spotted by
+// its description, which opens with res_request_description in whichever language it was made in.
+// a new translation of that string needs its opening words added here
+val CalendarEvent.isReservation: Boolean
+    get() = RESERVATION_MARKERS.any { description.startsWith(it) }
+
+private val RESERVATION_MARKERS = listOf("Reservation request", "Richiesta di prenotazione")

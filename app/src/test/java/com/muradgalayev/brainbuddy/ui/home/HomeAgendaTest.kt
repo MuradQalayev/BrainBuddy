@@ -1,5 +1,7 @@
 package com.muradgalayev.brainbuddy.ui.home
 
+import com.muradgalayev.brainbuddy.ui.utils.resolve
+import com.muradgalayev.brainbuddy.testing.TestStrings
 import com.muradgalayev.brainbuddy.domain.model.TodoItem
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -85,19 +87,19 @@ class HomeAgendaTest {
 
     @Test
     fun `countdown reads ahead, during and after`() {
-        assertEquals("in 45 min", countdownLabel(item("a", LocalTime.of(14, 45)), now))
-        assertEquals("in 3 h 30", countdownLabel(item("b", LocalTime.of(17, 30)), now))
-        assertEquals("30 min left", countdownLabel(item("c", LocalTime.of(13, 30), LocalTime.of(14, 30)), now))
-        assertEquals("20 min late", countdownLabel(item("d", LocalTime.of(13, 40)), now))
-        assertEquals("Anytime today", countdownLabel(item("e", null, kind = AgendaKind.Task), now))
+        assertEquals("in 45 min", countdownLabel(item("a", LocalTime.of(14, 45)), now).resolve(TestStrings.en))
+        assertEquals("in 3 h 30", countdownLabel(item("b", LocalTime.of(17, 30)), now).resolve(TestStrings.en))
+        assertEquals("30 min left", countdownLabel(item("c", LocalTime.of(13, 30), LocalTime.of(14, 30)), now).resolve(TestStrings.en))
+        assertEquals("20 min late", countdownLabel(item("d", LocalTime.of(13, 40)), now).resolve(TestStrings.en))
+        assertEquals("Anytime today", countdownLabel(item("e", null, kind = AgendaKind.Task), now).resolve(TestStrings.en))
     }
 
     @Test
     fun `durations read as hours once they pass sixty minutes`() {
-        assertEquals("59 min", humanDuration(59))
-        assertEquals("1 h", humanDuration(60))
-        assertEquals("1 h 5", humanDuration(65))
-        assertEquals("2 h", humanDuration(120))
+        assertEquals("59 min", humanDuration(59).resolve(TestStrings.en))
+        assertEquals("1 h", humanDuration(60).resolve(TestStrings.en))
+        assertEquals("1 h 5", humanDuration(65).resolve(TestStrings.en))
+        assertEquals("2 h", humanDuration(120).resolve(TestStrings.en))
     }
 
     @Test

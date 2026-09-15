@@ -11,6 +11,7 @@ import com.muradgalayev.brainbuddy.data.repository.ExportResult
 import com.muradgalayev.brainbuddy.data.repository.GoogleCalendarRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import com.muradgalayev.brainbuddy.R
 
 @HiltWorker
 class CalendarSyncWorker @AssistedInject constructor(
@@ -26,7 +27,7 @@ class CalendarSyncWorker @AssistedInject constructor(
             // the user disconnected since we were scheduled. don't retry, the scheduler is re-armed if
             // they reconnect
             Log.i(TAG, "Skipping sync; Google Calendar not linked")
-            record("Skipped — Google not connected")
+            record(applicationContext.getString(R.string.sync_skipped_google))
             return Result.success()
         }
         // GoogleCalendarRepository handles silent token refresh internally, so if we still get
@@ -39,8 +40,8 @@ class CalendarSyncWorker @AssistedInject constructor(
                     "Sync ok: pushed=${result.pushed} existed=${result.alreadyExisted} failed=${result.failed}"
                 )
                 record(
-                    if (result.pushed > 0) "Pushed ${result.pushed} event(s)"
-                    else "Up to date"
+                    if (result.pushed > 0) applicationContext.getString(R.string.sync_pushed, result.pushed)
+                    else applicationContext.getString(R.string.sync_up_to_date)
                 )
                 // per-event push failures are transient, network or 5xx. asking WorkManager to retry reruns
                 // the whole export, which is cheap since Google returns 409 for already-pushed events
@@ -51,7 +52,7 @@ class CalendarSyncWorker @AssistedInject constructor(
                 // silent until now: the token had expired beyond refresh and every scheduled run quietly
                 // no-opped, which looks exactly like sync never running at all. surface it so the user knows
                 // to reconnect
-                record("Needs you to reconnect Google")
+                record(applicationContext.getString(R.string.sync_reconnect_google))
                 Result.success()
             }
         }

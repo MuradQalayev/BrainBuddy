@@ -1,0 +1,2356 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+
+    <!-- common -->
+    <string name="common_cancel">Annulla</string>
+    <string name="common_close">Chiudi</string>
+    <string name="common_save">Salva</string>
+    <string name="common_back">Indietro</string>
+    <string name="common_continue">Continua</string>
+    <string name="common_done">Fatto</string>
+    <string name="common_delete">Elimina</string>
+    <string name="common_ok">OK</string>
+    <string name="common_retry">Riprova</string>
+    <string name="common_try_again">Riprova</string>
+    <string name="common_selected">Selezionato</string>
+    <string name="common_edit">Modifica</string>
+    <string name="common_add">Aggiungi</string>
+    <string name="common_remove">Rimuovi</string>
+    <string name="common_skip">Salta</string>
+    <string name="common_next">Avanti</string>
+    <string name="common_yes">Sì</string>
+    <string name="common_no">No</string>
+    <string name="common_dismiss">Ignora</string>
+    <string name="common_undo">Annulla</string>
+    <string name="common_today">Oggi</string>
+    <string name="common_tomorrow">Domani</string>
+    <string name="common_yesterday">Ieri</string>
+    <string name="common_on">Attivo</string>
+    <string name="common_off">Disattivato</string>
+    <string name="common_light">Chiaro</string>
+    <string name="common_dark">Scuro</string>
+    <string name="common_auto">Auto</string>
+    <string name="common_small">Piccolo</string>
+    <string name="common_medium">Medio</string>
+    <string name="common_large">Grande</string>
+    <string name="common_email">Email</string>
+    <string name="common_password">Password</string>
+    <string name="common_confirm">Conferma</string>
+    <string name="common_clear">Cancella</string>
+    <string name="common_open">Apri</string>
+    <string name="common_settings">Impostazioni</string>
+    <string name="common_more_options">Altre opzioni</string>
+    <string name="common_got_it">Ho capito</string>
+    <string name="common_not_now">Non ora</string>
+    <string name="common_start">Inizia</string>
+    <string name="common_stop">Interrompi</string>
+    <string name="common_pause">Pausa</string>
+    <string name="common_resume">Riprendi</string>
+    <string name="common_search">Cerca</string>
+    <string name="common_loading">Caricamento…</string>
+    <string name="common_share">Condividi</string>
+    <string name="common_copy">Copia</string>
+    <string name="common_send">Invia</string>
+    <string name="common_reset">Ripristina</string>
+    <string name="common_none">Nessuno</string>
+    <string name="common_all">Tutti</string>
+    <string name="common_minutes_short">%1$s min</string>
+
+    <!-- ui/settings/components/LanguagePicker.kt -->
+    <string name="language_title">Lingua</string>
+    <string name="language_dialog_body">Myndora cambia subito lingua, compresi i promemoria e le risposte dell\'assistente.</string>
+    <string name="language_setup_blurb">Scegli la lingua in cui vuoi usare Myndora. Potrai cambiarla più avanti nelle Impostazioni.</string>
+    <string name="language_settings_subtitle">Lingua dell\'app · %1$s</string>
+
+    <!-- ui/auth/AuthScreen.kt -->
+    <string name="auth_back_to_sign_in">Torna all\'accesso</string>
+    <string name="auth_show_field">Mostra %1$s</string>
+    <string name="auth_hide_field">Nascondi %1$s</string>
+    <string name="auth_continue_to_myndora">Continua su Myndora</string>
+    <string name="auth_still_signed_in">Il tuo account resta connesso su questo dispositivo</string>
+    <string name="auth_password_changed_body">La nuova password è pronta. Ora puoi entrare in Myndora in tutta sicurezza.</string>
+    <string name="auth_password_changed">Password modificata</string>
+    <string name="auth_badge_all_secure">TUTTO A POSTO</string>
+    <string name="auth_update_password">Aggiorna password</string>
+    <string name="auth_passwords_mismatch">Le password non coincidono ancora.</string>
+    <string name="auth_rule_match">Le due password coincidono</string>
+    <string name="auth_rule_min_length">Almeno 6 caratteri</string>
+    <string name="auth_password_strength">Sicurezza della password</string>
+    <string name="auth_confirm_password">Conferma password</string>
+    <string name="auth_new_password">Nuova password</string>
+    <string name="auth_new_password_body">Il link di reimpostazione è verificato. Scegli una password facile da ricordare e che usi solo per Myndora.</string>
+    <string name="auth_create_new_password">Crea una nuova password</string>
+    <string name="auth_badge_secure_reset">RESET SICURO</string>
+    <string name="auth_strength_excellent">Ottima</string>
+    <string name="auth_strength_strong">Forte</string>
+    <string name="auth_strength_good">Buona</string>
+    <string name="auth_strength_starting">Si comincia</string>
+    <string name="auth_send_link">Invia link</string>
+    <string name="auth_reset_body">Inserisci l\'email che hai usato per registrarti. Ti invieremo un link per impostare una nuova password.</string>
+    <string name="auth_reset_password">Reimposta la password</string>
+    <string name="auth_continue_google">Continua con Google</string>
+    <string name="auth_sign_in">Accedi</string>
+    <string name="auth_sign_up">Registrati</string>
+    <string name="auth_have_account">Hai già un account?</string>
+    <string name="auth_no_account">Non hai un account?</string>
+    <string name="auth_forgot_password">Password dimenticata?</string>
+    <string name="auth_show_password">Mostra password</string>
+    <string name="auth_hide_password">Nascondi password</string>
+    <string name="auth_phone_number">Numero di telefono</string>
+    <string name="auth_last_name">Cognome</string>
+    <string name="auth_first_name">Nome</string>
+    <string name="auth_create_account">Crea il tuo account</string>
+    <string name="auth_welcome_back">Che bello rivederti</string>
+
+    <!-- ui/auth/AuthViewModel.kt -->
+    <string name="auth_account_created">Account creato. Controlla la tua email per confermarlo, poi accedi.</string>
+    <string name="common_no_internet">Nessuna connessione a internet</string>
+    <string name="auth_error_password_length">La password deve avere almeno 6 caratteri</string>
+    <string name="auth_error_enter_name">Inserisci il tuo nome</string>
+    <string name="auth_error_fill_all">Compila tutti i campi</string>
+    <string name="auth_reset_link_sent">Link di reimpostazione inviato a %1$s. Controlla la tua email per continuare.</string>
+    <string name="auth_error_invalid_email">Inserisci un\'email valida</string>
+
+    <!-- data/auth/AuthErrorMessage.kt -->
+    <string name="auth_error_weak_password">La password è troppo debole</string>
+    <string name="auth_error_invalid_email_address">Inserisci un indirizzo email valido</string>
+    <string name="auth_error_redirect_not_allowed">Il callback di reimpostazione della password non è consentito dalla configurazione del server.</string>
+    <string name="auth_error_reset_send_failed">Il servizio email non è riuscito a inviare il messaggio di reimpostazione. Riprova più tardi.</string>
+    <string name="auth_error_email_not_authorized">L\'invio di email non è ancora configurato per questo indirizzo.</string>
+    <string name="auth_error_phone_taken">Questo numero di telefono è già collegato a un altro account Myndora.</string>
+    <string name="auth_error_code_wrong">Il codice di verifica non è corretto.</string>
+    <string name="auth_error_code_expired">Il codice di verifica è scaduto. Richiedine uno nuovo.</string>
+    <string name="auth_error_sms_not_configured">La verifica del telefono non è ancora configurata. Attiva un provider SMS in Supabase.</string>
+    <string name="auth_error_sms_rate">Sono stati richiesti troppi codici di verifica. Aspetta prima di riprovare.</string>
+    <string name="auth_error_email_rate">Sono state richieste troppe email. Aspetta un po\' e riprova.</string>
+    <string name="auth_error_already_registered">Questa email è già registrata</string>
+    <string name="auth_error_invalid_credentials">Email o password non validi</string>
+    <string name="auth_error_confirm_email">Conferma la tua email prima di accedere.</string>
+    <string name="auth_error_unreachable">Impossibile raggiungere il server. Controlla la connessione a internet.</string>
+    <string name="auth_error_generic">Qualcosa è andato storto. Riprova.</string>
+
+    <!-- ui/auth/AuthScreen.kt -->
+    <string name="auth_or">\u0020\u0020oppure\u0020\u0020</string>
+
+    <!-- ui/onboarding/AppearanceSetupScreen.kt -->
+    <string name="setup_text_size_blurb">Questa pagina si ridimensiona insieme al testo: quello che vedi è quello che ottieni.</string>
+    <string name="setup_text_size">Dimensione del testo</string>
+    <string name="setup_font_dyslexic_blurb">La base più pesante tiene ogni lettera nel verso giusto.</string>
+    <string name="setup_font_atkinson_blurb">Le lettere che di solito si confondono (I, l, 1, O, 0) sono disegnate ben distinte.</string>
+    <string name="setup_font_arial_blurb">Familiare e neutro.</string>
+    <string name="setup_typeface_blurb">Ogni carattere è mostrato con le sue lettere: scegli quello più facile da leggere, non quello più bello.</string>
+    <string name="setup_typeface">Carattere</string>
+    <string name="setup_light_or_dark_blurb">Auto segue l\'impostazione del telefono.</string>
+    <string name="setup_light_or_dark">Chiaro o scuro</string>
+    <string name="setup_appearance_intro">Decidi come appare e come si legge Myndora, prima di tutto il resto. L\'intera app cambia mentre scegli, e niente è definitivo: trovi tutto nelle Impostazioni.</string>
+    <string name="setup_make_it_yours">Rendila tua</string>
+
+    <!-- ui/onboarding/OnboardingChoiceScreen.kt -->
+    <string name="onboarding_do_later">Lo farò più tardi</string>
+    <string name="onboarding_deep_dive_blurb">Sonno, schemi di concentrazione, strategie, tono preferito. Più sappiamo, migliore è il supporto.</string>
+    <string name="onboarding_deep_dive_meta">12 domande · ~3 minuti</string>
+    <string name="onboarding_deep_dive">Approfondimento</string>
+    <string name="onboarding_quick_setup_blurb">Solo le basi. Quanto basta perché l\'assistente ti sia utile fin dal primo giorno.</string>
+    <string name="onboarding_quick_setup_meta">5 domande · ~30 secondi</string>
+    <string name="onboarding_quick_setup">Configurazione rapida</string>
+    <string name="onboarding_choice_intro">Myndora funziona meglio quando sa come si manifesta il tuo ADHD. Scegli quanto vuoi condividere: potrai modificare tutto in seguito.</string>
+    <string name="onboarding_get_to_know_you">Conosciamoci</string>
+
+    <!-- ui/onboarding/QuickSetupScreen.kt -->
+    <string name="onboarding_saved_offline">Salvato su questo dispositivo: verrà caricato quando tornerai online</string>
+    <string name="onboarding_ready">La tua esperienza Myndora è pronta.</string>
+    <string name="onboarding_nice_work">Ottimo lavoro!</string>
+    <string name="onboarding_completed">Completato</string>
+    <string name="onboarding_make_it_yours_caps">RENDILA TUA</string>
+    <string name="onboarding_improve_sub">Scegline fino a tre: modelleremo Myndora intorno a loro.</string>
+    <string name="onboarding_improve">In cosa vuoi migliorare?</string>
+    <string name="onboarding_pick_all">Scegli tutte le opzioni pertinenti.</string>
+    <string name="onboarding_hardest">Cosa ti risulta più difficile?</string>
+    <string name="onboarding_diagnosis_sub">Ci aiuta a darti consigli su misura.</string>
+    <string name="onboarding_diagnosis">Diagnosi</string>
+    <string name="onboarding_age_range_sub">Scegli la fascia che ti corrisponde.</string>
+    <string name="onboarding_age_range">La tua fascia d\'età</string>
+    <string name="onboarding_where_live_sub">Ci serve per mostrarti servizi di supporto nella tua zona.</string>
+    <string name="onboarding_where_live">Dove vivi?</string>
+    <string name="onboarding_surname">Cognome</string>
+    <string name="onboarding_personal_info_sub">Dicci come dobbiamo chiamarti.</string>
+    <string name="onboarding_personal_info">Dati personali</string>
+    <string name="onboarding_finish_setup">Completa la configurazione</string>
+    <string name="common_save_changes">Salva modifiche</string>
+
+    <!-- ui/onboarding/ChecklistComponents.kt -->
+    <string name="checklist_progress">%1$s di %2$s completati</string>
+    <string name="checklist_complete_below">Completa la tua checklist qui sotto.</string>
+    <string name="checklist_lets_set_up">Configuriamo tutto</string>
+
+    <!-- domain/model/IntakeAnswers.kt -->
+    <string name="intake_past_nothing">Ancora niente di strutturato</string>
+    <string name="intake_body_doubling">Body doubling</string>
+    <string name="intake_past_medication">Solo farmaci, nessun altro strumento</string>
+    <string name="intake_past_therapy">Terapia o coaching</string>
+    <string name="intake_past_other_apps">Altre app pensate per l\'ADHD</string>
+    <string name="intake_past_planners">Agende o app di pianificazione</string>
+    <string name="intake_env_public">Luoghi pubblici (bar, biblioteche…)</string>
+    <string name="intake_env_varies">Varia molto</string>
+    <string name="intake_env_shared">Uno spazio condiviso o rumoroso</string>
+    <string name="intake_env_quiet">Uno spazio tranquillo e dedicato</string>
+    <string name="intake_body_no">No, preferisco lavorare in autonomia</string>
+    <string name="intake_body_maybe">Forse, mi incuriosisce</string>
+    <string name="intake_body_yes">Sì, decisamente</string>
+    <string name="intake_missed_remotivate">Cerca attivamente di rimotivarmi</string>
+    <string name="intake_missed_gently">Fammelo notare con gentilezza, senza giudizi</string>
+    <string name="intake_missed_dont_mention">Non parlarne, andiamo avanti</string>
+    <string name="intake_ceiling_frequent">Controlli frequenti mi aiutano a restare in carreggiata</string>
+    <string name="intake_ceiling_moderate">Una quantità moderata, quando serve</string>
+    <string name="intake_ceiling_rare">Raramente: al massimo un paio di volte al giorno</string>
+    <string name="intake_nudge_case">Voglio scegliere caso per caso</string>
+    <string name="intake_nudge_firm">Deciso, quasi come una scadenza</string>
+    <string name="intake_nudge_direct">Diretto e breve</string>
+    <string name="intake_nudge_gentle">Gentile e incoraggiante</string>
+    <string name="intake_impulse_none">Nessuna di queste in particolare</string>
+    <string name="intake_impulse_blurting">Dire tutto quello che penso senza filtri</string>
+    <string name="intake_impulse_phone">Controllare il telefono / le notifiche</string>
+    <string name="intake_impulse_eating">Mangiare d\'impulso / spuntini</string>
+    <string name="intake_impulse_spending">Spese impulsive</string>
+    <string name="intake_impulse_interrupting">Interrompere gli altri</string>
+    <string name="intake_return_abandon">Di solito lo dimentico o lo abbandono</string>
+    <string name="intake_return_lot">Con molta fatica</string>
+    <string name="intake_return_some">Con un po\' di fatica</string>
+    <string name="intake_return_easily">Facilmente</string>
+    <string name="intake_plan_derails">Spesso non riesco a rimettermi in carreggiata lo stesso giorno</string>
+    <string name="intake_plan_reset">Molto destabilizzante, mi serve tempo per riprendermi</string>
+    <string name="intake_plan_adjust">Un po\' frustrante, ma mi adatto in fretta</string>
+    <string name="intake_plan_barely">Mi disturba appena</string>
+    <string name="intake_capture_rarely">Raramente / no</string>
+    <string name="intake_sometimes">A volte</string>
+    <string name="intake_often">Spesso</string>
+    <string name="intake_capture_always">Sì, sempre</string>
+    <string name="intake_rarely">Raramente</string>
+    <string name="intake_never">Mai</string>
+    <string name="intake_sleep_both">Un po\' tutte e due</string>
+    <string name="intake_sleep_forced">È per lo più imposto dalle circostanze</string>
+    <string name="intake_sleep_chosen">È quello che sceglierei naturalmente</string>
+    <string name="intake_chrono_varies">Cambia molto da una settimana all\'altra</string>
+    <string name="intake_chrono_def_night">Decisamente una persona notturna</string>
+    <string name="intake_chrono_some_night">Più una persona notturna</string>
+    <string name="intake_chrono_some_morning">Più una persona mattutina</string>
+    <string name="intake_chrono_def_morning">Decisamente una persona mattutina</string>
+    <string name="intake_prefer_not_to_say">Preferisco non dirlo</string>
+    <string name="intake_none_of_these">Nessuna di queste</string>
+    <string name="intake_cond_learning">Disturbo dell\'apprendimento</string>
+    <string name="intake_cond_sensory">Sensibilità sensoriali</string>
+    <string name="intake_cond_autism">Autismo</string>
+    <string name="intake_cond_depression">Depressione</string>
+    <string name="intake_cond_anxiety">Ansia</string>
+    <string name="intake_not_sure_prefer_not">Non so / preferisco non dirlo</string>
+    <string name="intake_presentation_combined">Combinata</string>
+    <string name="intake_presentation_hyperactive">Iperattiva-impulsiva</string>
+    <string name="intake_presentation_inattentive">Disattenta</string>
+
+    <!-- domain/model/AdhdProfile.kt -->
+    <string name="intake_tone_professional">Professionale</string>
+    <string name="intake_tone_playful">Giocoso</string>
+    <string name="intake_tone_direct">Diretto</string>
+    <string name="intake_tone_gentle">Gentile</string>
+    <string name="intake_coping_none">Nessuna al momento</string>
+    <string name="intake_coping_music">Musica / suoni d\'ambiente</string>
+    <string name="intake_coping_alarms">Sveglie / promemoria</string>
+    <string name="intake_coping_lists">Liste di cose da fare</string>
+    <string name="intake_coping_pomodoro">Pomodoro</string>
+    <string name="intake_time_varies">Varia</string>
+    <string name="intake_time_night">Notte</string>
+    <string name="intake_time_evening">Sera</string>
+    <string name="intake_time_afternoon">Pomeriggio</string>
+    <string name="intake_time_morning">Mattina</string>
+    <string name="intake_goal_overwhelmed">Sentirmi meno sotto pressione in generale</string>
+    <string name="intake_goal_sleep">Dormire meglio</string>
+    <string name="intake_goal_impulsive">Agire meno d\'impulso</string>
+    <string name="intake_goal_stress">Mantenere la calma sotto stress</string>
+    <string name="intake_goal_focus">Concentrarmi meglio</string>
+    <string name="intake_goal_time">Gestire il mio tempo</string>
+    <string name="intake_goal_remember">Ricordare le cose</string>
+    <string name="intake_goal_finish">Portare a termine ciò che inizio</string>
+    <string name="intake_goal_start">Iniziare le attività</string>
+    <string name="intake_sym_executive">Disfunzione esecutiva</string>
+    <string name="intake_sym_emotional">Disregolazione emotiva</string>
+    <string name="intake_sym_time_blindness">Cecità temporale</string>
+    <string name="intake_sym_impulsivity">Impulsività</string>
+    <string name="intake_sym_hyperactivity">Iperattività</string>
+    <string name="intake_sym_inattention">Disattenzione</string>
+    <string name="intake_diag_exploring">Sto ancora esplorando</string>
+    <string name="intake_diag_general">No, sono qui per un aiuto generale su concentrazione e organizzazione</string>
+    <string name="intake_diag_professional">Un professionista me ne ha parlato, ma non ho approfondito</string>
+    <string name="intake_diag_suspect">Lo sospetto fortemente, ma non ho una diagnosi</string>
+    <string name="intake_diag_yes">Sì, con una diagnosi formale</string>
+
+    <!-- ui/onboarding/SurveyComponents.kt -->
+    <string name="username_placeholder">es. gufo_concentrato</string>
+    <string name="username_label">Nome utente</string>
+    <string name="username_invalid">Usa 3–20 lettere, numeri o trattini bassi</string>
+    <string name="username_taken">Già in uso</string>
+    <string name="username_available">Disponibile</string>
+    <string name="common_checking">Verifica in corso…</string>
+    <string name="username_hint">3–20 caratteri · lettere, numeri, _</string>
+    <string name="survey_cap_count">%1$s di %2$s scelte</string>
+    <string name="survey_cap_reached">Ecco le tue %1$s: toccane una per sostituirla</string>
+
+    <!-- ui/onboarding/DeepDiveScreen.kt -->
+    <string name="deep_choose_wake">Scegli l\'ora della sveglia</string>
+    <string name="deep_choose_bedtime">Scegli l\'ora di dormire</string>
+    <string name="deep_choose_voice_sub">Come dovrebbe parlarti Myndora?</string>
+    <string name="deep_choose_voice">Scegli la mia voce</string>
+    <string name="deep_pain_point_placeholder">Per esempio: la mattina non riesco a iniziare</string>
+    <string name="deep_pain_point_sub">Facoltativo: descrivi con parole tue cosa ti risulta difficile.</string>
+    <string name="deep_pain_point">La tua difficoltà più grande</string>
+    <string name="deep_already_helps_sub">Scegli tutto ciò che fa parte della tua routine.</string>
+    <string name="deep_already_helps">Cosa ti aiuta già?</string>
+    <string name="deep_tried_sub">Così non ti suggeriamo cose che non hanno funzionato.</string>
+    <string name="deep_tried">Cosa hai già provato?</string>
+    <string name="deep_where_done_sub">Il posto dove lavori di solito, non quello ideale.</string>
+    <string name="deep_where_done">Dove porti a termine le cose?</string>
+    <string name="deep_alongside_sub">Alcune persone si concentrano meglio in compagnia, anche a distanza.</string>
+    <string name="deep_alongside">Lavorare insieme a qualcuno?</string>
+    <string name="deep_miss_something_sub">Cosa ti aiuterebbe davvero in quel momento?</string>
+    <string name="deep_miss_something">Quando ti sfugge qualcosa</string>
+    <string name="deep_too_much_sub">Lo tratteremo come un limite massimo, mai come un obiettivo.</string>
+    <string name="deep_too_much">Quanto è troppo?</string>
+    <string name="deep_change_any_time">Puoi cambiarlo in qualsiasi momento.</string>
+    <string name="deep_reminder_sound">Come dovrebbero suonare i promemoria?</string>
+    <string name="deep_hold_back_sub">Scegli tutto ciò che ti suona familiare.</string>
+    <string name="deep_hold_back">Cosa ti è più difficile trattenere?</string>
+    <string name="deep_back_to_task_sub">Dopo che qualcosa ti ha distratto.</string>
+    <string name="deep_back_to_task">Tornare a un\'attività</string>
+    <string name="deep_plans_change_sub">Come la vivi?</string>
+    <string name="deep_plans_change">Quando i piani cambiano all\'improvviso</string>
+    <string name="deep_write_down_sub">Altrimenti rischi di dimenticarle?</string>
+    <string name="deep_write_down">Hai bisogno di annotare le cose?</string>
+    <string name="deep_interrupted_sub">Quanto spesso perdi il filo di quello che stavi facendo?</string>
+    <string name="deep_interrupted">Interruzioni a metà attività?</string>
+    <string name="deep_medication_sub">Resta privato e aiuta i promemoria ad adattarsi alla tua routine.</string>
+    <string name="deep_medication">Farmaci</string>
+    <string name="deep_schedule_choice_sub">O dipendono da lavoro, famiglia o altri impegni?</string>
+    <string name="deep_schedule_choice">Quegli orari li scegli tu?</string>
+    <string name="deep_wake_up">Sveglia</string>
+    <string name="deep_bedtime">Ora di dormire</string>
+    <string name="deep_sleep_rhythm_sub">Facoltativo: un orario approssimativo va benissimo.</string>
+    <string name="deep_sleep_rhythm">Il tuo ritmo del sonno</string>
+    <string name="deep_focus_stretch_sub">Per quanto tempo riesci di solito a concentrarti prima di aver bisogno di una pausa?</string>
+    <string name="deep_focus_stretch">La tua durata di concentrazione</string>
+    <string name="deep_most_yourself_sub">Più vigile, con la mente più lucida.</string>
+    <string name="deep_most_yourself">Quando ti senti al meglio?</string>
+    <string name="deep_best_time_sub">Quando ti viene più naturale concentrarti?</string>
+    <string name="deep_best_time">Il tuo momento migliore</string>
+    <string name="deep_pick_three">Scegline fino a tre.</string>
+    <string name="deep_hardest_sub">Scegli tutto ciò che ti suona familiare.</string>
+    <string name="deep_anything_else_sub">Facoltativo. Cambia ciò che ti suggeriamo, non è una diagnosi.</string>
+    <string name="deep_anything_else">C\'è qualcos\'altro che ti riguarda?</string>
+    <string name="deep_optional_skip">Facoltativo: salta se preferisci non dirlo.</string>
+    <string name="deep_which_presentation">Quale presentazione?</string>
+    <string name="deep_diagnosis_sub">Ci aiuta a personalizzare i consigli senza dare nulla per scontato.</string>
+    <string name="deep_finish_profile">Completa il mio profilo</string>
+    <string name="deep_save_profile">Salva profilo</string>
+    <string name="deep_grow_profile">Arricchisci il tuo profilo</string>
+
+    <!-- ui/onboarding/SurveyErrorPanel.kt -->
+    <string name="survey_detail_deep_dive">le domande dell\'Approfondimento</string>
+    <string name="survey_save_failed_body">Le tue risposte sono ancora qui. Riprova, oppure salta e torna più tardi: niente di ciò che hai scritto andrà perso.</string>
+    <string name="survey_save_failed_title">Impossibile salvare in questo momento</string>
+    <string name="survey_choose_another">Scegline un altro</string>
+    <string name="survey_username_taken_body">Scegline un altro e riprendiamo da qui.</string>
+    <string name="survey_username_taken_title">Quel nome utente è già in uso</string>
+    <string name="survey_back_to_questions">Torna alle domande</string>
+    <string name="survey_missing_body">Torna indietro tra le domande: i puntini in alto mostrano quali aspettano ancora una risposta.</string>
+    <string name="survey_missing_body_detail">Controlla %1$s e hai finito.</string>
+    <string name="survey_missing_title">Mancano un paio di risposte</string>
+    <string name="survey_skip_finish_later">Salta per ora: lo completerò più tardi</string>
+
+    <!-- ui/onboarding/SwipeQuestionnaire.kt -->
+    <string name="survey_tree_percent_cd">Il tuo albero è colorato al %1$s percento</string>
+    <string name="survey_continue_profile">Continua il profilo\u0020\u0020→</string>
+    <string name="survey_tree_full">Completamente cresciuto: ottimo lavoro!</string>
+    <string name="survey_tree_canopy">La chioma sta fiorendo · %1$s%%</string>
+    <string name="survey_tree_roots">Le radici stanno crescendo · %1$s%%</string>
+    <string name="survey_tree_empty">Rispondi a una domanda per dargli vita</string>
+    <string name="survey_tree_invite">Mi piacerebbe conoscerti meglio · %1$s%%</string>
+    <string name="survey_focus_tree">Il tuo albero della concentrazione</string>
+    <string name="survey_tree_thriving_body">Ora Myndora ti conosce meglio e può adattare il supporto al tuo modo di concentrarti, riposare e crescere.</string>
+    <string name="survey_tree_thriving">Il tuo albero è rigoglioso</string>
+    <string name="survey_profile_complete">✓\u0020\u0020PROFILO COMPLETO</string>
+    <string name="survey_keep_going">Continua</string>
+    <string name="survey_skip_for_now">Salta per ora</string>
+    <string name="survey_finish_later_body">Le tue risposte verranno salvate e potrai riprendere il questionario quando vuoi dalle Impostazioni. Myndora funziona anche senza: l\'assistente semplicemente non sarà ancora personalizzato per te.</string>
+    <string name="survey_finish_later_title">Finire più tardi?</string>
+    <string name="survey_question_of">Domanda %1$s di %2$s</string>
+
+    <!-- ui/onboarding/MedicationListSection.kt -->
+    <string name="med_add">Aggiungi un farmaco</string>
+    <string name="med_add_another">Aggiungine un altro</string>
+    <string name="med_when_take">Quando lo prendi?</string>
+    <string name="med_exact_time">Orario preciso (facoltativo)</string>
+    <string name="med_when">Quando?</string>
+    <string name="med_as_needed">Al bisogno</string>
+    <string name="med_every_day">Ogni giorno</string>
+    <string name="med_dose">Dose</string>
+    <string name="med_name">Nome</string>
+    <string name="med_not_scheduled">Non programmato</string>
+
+    <!-- ui/onboarding/UseCurrentLocationButton.kt -->
+    <string name="loc_finding">Ricerca della posizione…</string>
+    <string name="common_open_settings">Apri impostazioni</string>
+    <string name="loc_turn_on">Attiva</string>
+    <string name="loc_services_off">La localizzazione è disattivata nelle impostazioni del telefono.</string>
+    <string name="loc_denied">Accesso alla posizione negato. Consentilo dalle impostazioni dell\'app o scegli la città manualmente.</string>
+    <string name="loc_no_match">Abbiamo rilevato %1$s, ma non è nel nostro elenco: scegli la città più vicina.</string>
+    <string name="loc_got_it_via">Trovata: %1$s (in base a %2$s)</string>
+    <string name="loc_got_it">Trovata: %1$s</string>
+    <string name="loc_use_current">Usa la mia posizione attuale</string>
+
+    <!-- ui/onboarding/OnboardingViewModel.kt -->
+    <string name="survey_detail_name">il tuo nome</string>
+    <string name="loc_no_fix">Impossibile determinare la posizione. Riprova tra un attimo.</string>
+    <string name="loc_geocoder_unavailable">La ricerca dell\'indirizzo non è disponibile su questo dispositivo: scegli la città manualmente.</string>
+
+    <!-- domain/model/Medication.kt -->
+    <string name="med_unit_mg">mg</string>
+    <string name="med_unit_mcg">mcg</string>
+    <string name="med_unit_g">g</string>
+    <string name="med_unit_tablets">compresse</string>
+    <string name="med_unit_capsules">capsule</string>
+    <string name="med_unit_pieces">pezzi</string>
+    <string name="med_unit_ml">ml</string>
+    <string name="med_unit_drops">gocce</string>
+    <string name="med_unit_placeholder">unità</string>
+    <string name="med_times_per_day">%1$s/giorno</string>
+    <string name="age_under_18">Meno di 18 anni</string>
+
+    <!-- ui/settings/SettingsViewModel.kt -->
+    <string name="settings_photo_failed">Caricamento della foto non riuscito: %1$s</string>
+    <string name="settings_photo_updated">Foto aggiornata</string>
+    <string name="settings_save_failed">Salvataggio non riuscito: %1$s</string>
+    <string name="settings_username_taken">Quel nome utente è già in uso</string>
+    <string name="settings_profile_updated">Profilo aggiornato</string>
+    <string name="settings_saved_offline">Salvato su questo dispositivo · verrà sincronizzato quando sarai online</string>
+    <string name="settings_username_checking">Stiamo ancora verificando il nome utente, riprova tra un attimo</string>
+    <string name="settings_name_empty">Il nome non può essere vuoto</string>
+    <string name="settings_password_email_failed">Impossibile inviare l\'email per la password. Riprova.</string>
+    <string name="settings_no_email">Questo account non ha un indirizzo email</string>
+    <string name="settings_google_disconnected">Google Calendar scollegato</string>
+    <string name="cal_export_need_google">Collega un account Google per attivare l\'esportazione del calendario</string>
+    <string name="cal_export_nothing">Niente da esportare</string>
+    <string name="cal_export_failed">%1$s non riusciti</string>
+    <string name="cal_export_already">%1$s già presenti</string>
+    <string name="cal_export_added">%1$s aggiunti</string>
+    <string name="settings_calendar_connect_cancelled">Collegamento al calendario annullato</string>
+    <string name="settings_google_connect_failed">Impossibile collegare l\'account Google: %1$s</string>
+    <string name="settings_export_failed">Esportazione non riuscita: %1$s</string>
+    <string name="settings_export_saved_to">Salvato in %1$s</string>
+
+    <!-- common -->
+    <string name="common_unknown_error">errore sconosciuto</string>
+
+    <!-- ui/together/TogetherViewModel.kt -->
+    <string name="together_err_db_update">Il database di Myndora va aggiornato: esegui di nuovo l\'ultima migrazione SQL in Supabase. (%1$s)</string>
+    <string name="together_err_offline">Sei offline. Riprova quando sarai connesso.</string>
+    <string name="together_err_pgcrypto">Il server non riesce ancora a cifrare la risposta: pgcrypto non è nel search path. Esegui di nuovo l\'ultima migrazione SQL in Supabase.</string>
+    <string name="together_err_not_setup">Myndora Together non è ancora configurato sul server. Esegui la migrazione SQL in Supabase, poi riprova.</string>
+    <string name="together_withdraw_failed">Impossibile ritirare quella richiesta</string>
+    <string name="together_request_withdrawn">Richiesta ritirata</string>
+    <string name="together_decline_failed">Impossibile rifiutare quella richiesta</string>
+    <string name="together_request_declined">Richiesta rifiutata</string>
+    <string name="together_check_failed">Impossibile verificare quella risposta</string>
+    <string name="together_locked">Bloccato dopo troppi tentativi. Chiedi di inviarti una nuova richiesta.</string>
+    <string name="together_too_many_wrong">Troppe risposte sbagliate. Chiedi di inviarti una nuova richiesta.</string>
+    <string name="together_connected">Ora siete in contatto</string>
+    <string name="together_accept_failed">Impossibile accettare quell\'invito</string>
+    <string name="together_connected_with">Ora sei in contatto con %1$s</string>
+    <string name="together_invite_open_failed">Impossibile aprire quell\'invito</string>
+    <string name="together_revoke_failed">Impossibile revocare quei link</string>
+    <string name="together_invites_off">Link di invito disattivati</string>
+    <string name="together_invite_create_failed">Impossibile creare un link di invito</string>
+    <string name="together_contacts_failed">Impossibile abbinare i tuoi contatti in questo momento.</string>
+    <string name="together_code_verify_failed">Impossibile verificare quel codice. Riprova.</string>
+    <string name="together_phone_not_confirmed">Supabase non ha confermato quel numero di telefono. Richiedi un nuovo codice.</string>
+    <string name="together_demo_code">Per l\'anteprima di sviluppo, inserisci %1$s.</string>
+    <string name="together_enter_code">Inserisci il codice SMS a 6 cifre.</string>
+    <string name="together_code_send_failed">Impossibile inviare un codice di verifica. Riprova.</string>
+    <string name="together_phone_format">Inserisci il numero di telefono completo con prefisso internazionale, per esempio +39 333 123 4567.</string>
+    <string name="together_wrong_one">Non è quella giusta: ti resta 1 tentativo</string>
+    <string name="together_wrong_many">Non è quella giusta: ti restano %1$s tentativi</string>
+
+    <!-- domain/model/Together.kt -->
+    <string name="together_scope_focus_desc">Può invitarti a concentrarvi nello stesso momento e vedere che sei in una sessione e quanto manca, mai su cosa stai lavorando.</string>
+    <string name="together_scope_focus">Concentrazione insieme</string>
+    <string name="together_scope_wellness_desc">Può vedere il riepilogo di passi, sonno e battito cardiaco. Solo lettura.</string>
+    <string name="together_scope_wellness">Riepilogo benessere</string>
+    <string name="together_scope_todos_desc">Può aggiungere attività alla tua lista. Vedrà solo quelle che ha aggiunto.</string>
+    <string name="together_scope_todos">Cose da fare</string>
+    <string name="together_scope_free_desc">Vede in quali ore hai già impegni: solo gli orari, mai cosa c\'è dentro. Serve per suggerire quando programmare le cose.</string>
+    <string name="together_scope_free">Orari liberi</string>
+    <string name="together_scope_calendar_desc">Può aggiungere eventi al tuo calendario. Tu li vedrai; vedrà solo quelli che ha aggiunto.</string>
+    <string name="together_scope_calendar">Calendario</string>
+    <string name="together_rel_other">Altra persona</string>
+    <string name="together_rel_partner">Partner</string>
+    <string name="together_rel_family">Famiglia</string>
+    <string name="together_rel_friend">Amico/a</string>
+
+    <!-- ui/together/ConnectionProfileViewModel.kt -->
+    <string name="together_remove_task_failed">Impossibile rimuovere quell\'attività</string>
+    <string name="together_removed_list">Rimosso dalla sua lista</string>
+    <string name="together_remove_event_failed">Impossibile rimuovere quell\'evento</string>
+    <string name="together_removed_calendar">Rimosso dal suo calendario</string>
+    <string name="together_add_list_failed">Impossibile aggiungerlo. Potrebbe aver disattivato la condivisione delle attività.</string>
+    <string name="together_added_list">Aggiunto alla sua lista</string>
+    <string name="together_add_calendar_failed">Impossibile aggiungerlo. Potrebbe aver disattivato la condivisione del calendario.</string>
+    <string name="together_added_calendar">Aggiunto al suo calendario</string>
+    <string name="together_remove_conn_failed">Impossibile rimuovere quel contatto</string>
+    <string name="together_permission_failed">Impossibile modificare quell\'autorizzazione</string>
+    <string name="together_scope_off">Condivisione disattivata: %1$s</string>
+    <string name="together_scope_shared">Condivisione attivata: %1$s</string>
+
+    <!-- ui/together/TogetherScreen.kt -->
+    <string name="together_withdraw">Ritira</string>
+    <string name="together_waiting_answer">In attesa della sua risposta</string>
+    <string name="together_out_of_tries">Ha esaurito i tentativi: ritira la richiesta e inviane una nuova</string>
+    <string name="together_short_focus">Concentrazione</string>
+    <string name="together_short_wellness">Benessere</string>
+    <string name="together_short_todos">Cose da fare</string>
+    <string name="together_short_free">Orari liberi</string>
+    <string name="together_short_calendar">Calendario</string>
+    <string name="together_both_share">Tu condividi: %1$s · Condivide: %2$s</string>
+    <string name="together_they_share">Condivide: %1$s</string>
+    <string name="together_you_share">Tu condividi: %1$s</string>
+    <string name="together_nothing_shared">Ancora niente di condiviso</string>
+    <string name="together_decline">Rifiuta</string>
+    <string name="together_accept">Accetta</string>
+    <string name="together_answer_hint">Solo quella persona conosce la risposta: così Myndora verifica che sia davvero lei.</string>
+    <string name="together_your_answer">La tua risposta</string>
+    <string name="together_their_question">LA SUA DOMANDA</string>
+    <string name="together_locked_body">Bloccata dopo troppe risposte sbagliate. Chiedi di inviarti una nuova richiesta.</string>
+    <string name="together_no_requests_body">Qui compaiono le richieste che invii e ricevi.</string>
+    <string name="together_no_requests">Nessuna richiesta</string>
+    <string name="together_invite_contact">Invia un invito</string>
+    <string name="together_nobody_body">Invia a qualcuno che conosci un link di invito privato, con l\'app che preferisci. Poi scegliete entrambi cosa condividere.</string>
+    <string name="together_nobody_yet">Ancora nessuno qui</string>
+    <string name="together_stat_pending">In attesa</string>
+    <string name="together_stat_connected">Connessi</string>
+    <string name="together_connect_hint">Connettiti con partner, famiglia o amici</string>
+    <string name="together_small_world">Il tuo piccolo mondo</string>
+    <string name="together_your_people">Le tue persone</string>
+    <string name="together_connect">Connetti</string>
+    <string name="together_invite_body">Vuole connettersi con te (relazione: %1$s). Accettare collega solo i vostri account: niente viene condiviso finché non scegliete entrambi cosa condividere.</string>
+    <string name="together_invite_unusable">Questo invito non può essere usato</string>
+    <string name="together_invited_you">%1$s ti ha invitato</string>
+    <string name="together_opening_invite">Apertura dell\'invito…</string>
+    <string name="together_sent_by_you">Inviate da te</string>
+    <string name="together_waiting_for_you">In attesa di te</string>
+    <string name="together_add_someone">Aggiungi qualcuno</string>
+    <string name="together_title">Myndora Together</string>
+    <string name="together_tab_requests">Richieste</string>
+    <string name="together_tab_people">Persone</string>
+    <string name="together_waiting_one">1 persona ti sta aspettando</string>
+    <string name="together_waiting_many">%1$s persone ti stanno aspettando</string>
+    <string name="together_wants_connect">vuole connettersi (relazione: %1$s)</string>
+    <string name="together_enter_code_from">Inserisci il codice che ti ha dato %1$s</string>
+
+    <!-- ui/together/AddConnectionScreen.kt -->
+    <string name="together_sms_body">Connettiamoci in privato su Myndora. Questo invito monouso scade tra 24 ore: %1$s</string>
+    <string name="together_matching_body">I nomi e i numeri in chiaro restano sul tuo dispositivo. Myndora invia hash normalizzati dei numeri per un abbinamento con limiti di frequenza e non salva la tua rubrica.</string>
+    <string name="together_how_matching">Come l\'abbinamento protegge i tuoi contatti</string>
+    <string name="together_invite">Invita</string>
+    <string name="together_create_passcode_first">Crea il codice privato qui sopra per invitare qualcuno.</string>
+    <string name="together_sample_note">Ecco come appariranno i contatti confermati. Queste voci sono esempi locali, non utenti reali.</string>
+    <string name="together_none_discoverable">Nessuno dei tuoi contatti ha ancora un numero Myndora verificato e visibile.</string>
+    <string name="together_find_contacts">Trova contatti Myndora</string>
+    <string name="together_privacy_body">Con il tuo permesso, Myndora legge i numeri di telefono su questo dispositivo, li converte in hash e invia solo quegli hash per cercare account verificati. I nomi dei contatti e i numeri in chiaro non vengono caricati.</string>
+    <string name="together_contacts_needed">Serve l\'accesso ai contatti per creare questo elenco privato.</string>
+    <string name="together_matching">Abbinamento dei contatti…</string>
+    <string name="common_refresh">Aggiorna</string>
+    <string name="together_verified_in_contacts">Solo account verificati già presenti nei tuoi contatti</string>
+    <string name="together_sample_contacts">Contatti di esempio · nulla è stato caricato</string>
+    <string name="together_people_on_myndora">Persone su Myndora</string>
+    <string name="together_turn_off_link">Disattiva questo link</string>
+    <string name="together_create_invite">Crea link di invito</string>
+    <string name="together_how_know">Come vi conoscete?</string>
+    <string name="together_single_use">Monouso · scade tra 24 ore</string>
+    <string name="together_send_invite">Invia un invito</string>
+    <string name="together_verify_phone">Verifica telefono</string>
+    <string name="together_six_digit">Codice a 6 cifre</string>
+    <string name="together_dev_preview">Anteprima di sviluppo: inserisci 123456. Nessun SMS è stato inviato e Supabase non è stato modificato.</string>
+    <string name="together_preview_no_sms">Anteprima senza SMS</string>
+    <string name="together_send_sms_code">Invia codice SMS</string>
+    <string name="together_send_new_code">Invia un nuovo codice</string>
+    <string name="together_phone_with_code">Telefono con prefisso internazionale</string>
+    <string name="together_sms_verified_only">Solo un numero verificato via SMS può rendere un account visibile ai contatti del telefono.</string>
+    <string name="together_works_for_all">Funziona con gli account email e Google</string>
+    <string name="together_demo_only">%1$s · solo demo locale</string>
+    <string name="together_verify_phone_first">Prima verifica il tuo telefono</string>
+    <string name="together_phone_verified">Telefono verificato</string>
+    <string name="together_confirmation_preview">Anteprima della conferma</string>
+    <string name="together_no_sms_app">Su questo dispositivo non è disponibile nessuna app per gli SMS.</string>
+
+    <!-- ui/together/ConnectionProfileScreen.kt -->
+    <string name="common_end_time">Ora di fine</string>
+    <string name="common_start_time">Ora di inizio</string>
+    <string name="common_ends">Fine</string>
+    <string name="common_starts">Inizio</string>
+    <string name="common_in_a_week">Tra una settimana</string>
+    <string name="common_when">Quando</string>
+    <string name="together_note_optional">Nota (facoltativa)</string>
+    <string name="together_what_is_it">Di cosa si tratta?</string>
+    <string name="together_wellness_disclaimer">Solo un riepilogo: Myndora non condivide mai i dati sanitari grezzi, e questo non è un consiglio medico.</string>
+    <string name="wellness_calories_today">Calorie di oggi</string>
+    <string name="wellness_resting_hr">Frequenza cardiaca a riposo</string>
+    <string name="wellness_exercise_7d">Attività fisica, ultimi 7 giorni</string>
+    <string name="wellness_last_sleep">Ultimo sonno</string>
+    <string name="wellness_steps_7d">Passi, ultimi 7 giorni</string>
+    <string name="together_wellness_no_data">Condiviso, ma non ci sono ancora dati: si riempirà quando sincronizzerà Health Connect.</string>
+    <string name="together_wellness_of">Benessere di %1$s</string>
+    <string name="together_no_tasks_added">Non hai ancora aggiunto nessuna attività.</string>
+    <string name="together_add_task">Aggiungi un\'attività</string>
+    <string name="together_their_todos_body">Puoi aggiungere attività per %1$s. Vedi solo quelle che hai aggiunto tu.</string>
+    <string name="together_their_todos">Le sue cose da fare</string>
+    <string name="together_nothing_added">Non hai ancora aggiunto niente.</string>
+    <string name="together_add_event">Aggiungi un evento</string>
+    <string name="together_their_calendar_body">Puoi aggiungere eventi per %1$s. Questo elenco mostra solo ciò che hai aggiunto tu: i suoi eventi restano privati.</string>
+    <string name="together_their_calendar">Il suo calendario</string>
+    <string name="together_busy_hours">Teniamo conto delle ore in cui %1$s ha già impegni. Myndora non ti mostra mai di cosa si tratta.</string>
+    <string name="together_keep">Mantieni</string>
+    <string name="together_remove_body">Perderete entrambi l\'accesso a tutto ciò che avete condiviso. Eventi e attività che hai già aggiunto al suo calendario o alla sua lista restano dove sono.</string>
+    <string name="together_remove_person">Rimuovere %1$s?</string>
+    <string name="together_remove_connection">Rimuovi contatto</string>
+    <string name="together_nothing_yet_their_side">Ancora niente. Sceglie dal suo lato cosa condividere.</string>
+    <string name="together_what_they_share">Cosa condivide %1$s con te</string>
+    <string name="together_what_you_share_body">Decidi tu, una cosa alla volta. Vedrà sempre e solo ciò che ha aggiunto, mai il resto del tuo calendario o della tua lista.</string>
+    <string name="together_what_you_share">Cosa condividi con %1$s</string>
+    <string name="together_conn_unavailable">Questo contatto non è più disponibile.</string>
+    <string name="together_connection">Contatto</string>
+    <string name="together_add_to_calendar_of">Aggiungi al calendario di %1$s</string>
+    <string name="together_add_to_their_calendar">Aggiungi al suo calendario</string>
+    <string name="together_add_to_list_of">Aggiungi alla lista di %1$s</string>
+    <string name="together_add_to_their_list">Aggiungi alla sua lista</string>
+    <string name="together_share_counts">Tu condividi %1$s · Condivide %2$s</string>
+
+    <!-- ui/together/ShareOutcome.kt -->
+    <string name="list_and">%1$s e %2$s</string>
+    <string name="share_rescued_calendar">Impossibile aggiungerlo per %1$s: salvato nel tuo calendario, così non lo perdi</string>
+    <string name="share_rescued_list">Impossibile aggiungerlo per %1$s: salvato nella tua lista, così non lo perdi</string>
+    <string name="share_added_for_you_and">Aggiunto per te e per %1$s</string>
+    <string name="share_added_to_calendar_of">Aggiunto al calendario di %1$s</string>
+    <string name="share_added_to_list_of">Aggiunto alla lista di %1$s</string>
+    <string name="share_saved_calendar_off">Salvato, ma impossibile aggiungerlo per %1$s: potrebbe aver disattivato la condivisione del calendario</string>
+    <string name="share_saved_tasks_off">Salvato, ma impossibile aggiungerlo per %1$s: potrebbe aver disattivato la condivisione delle attività</string>
+    <string name="share_partial">Aggiunto per %1$s; impossibile aggiungerlo per %2$s</string>
+
+    <!-- ui/together/NoConnectionsNotice.kt -->
+    <string name="together_connect_first_event">Prima connettiti con qualcuno, poi potrai inviargli questo evento direttamente.</string>
+    <string name="together_connect_first_task">Prima connettiti con qualcuno, poi potrai inviargli questa attività direttamente.</string>
+    <string name="together_nobody_connected">Ancora nessun contatto</string>
+
+    <!-- data/repository/TogetherRepository.kt -->
+    <string name="together_invite_invalid">Questo link di invito non è valido</string>
+
+    <!-- ui/ai/AiAssistantViewModel.kt -->
+    <string name="ai_hop_limit">Ci sono voluti più passaggi del previsto, quindi ho interrotto qui. Le parti completate sono salvate: chiedimelo di nuovo se manca qualcosa.</string>
+    <string name="ai_quota_exhausted">Hai usato tutti i %1$s messaggi AI di oggi. Tornano domani: nel frattempo l\'assistente offline qui sotto può comunque aggiungere cose da fare, cambiare impostazioni e avviare timer.</string>
+    <string name="ai_turn_failed">Qualcosa è andato storto da parte mia (%1$s). Riprova.</string>
+    <string name="ai_local_failed">Non è andato a buon fine: riprova tra un attimo.</string>
+    <string name="ai_offline_error">Sei offline, quindi per ora non posso ragionarci. Passa all\'assistente offline qui sotto: può comunque aggiungere cose da fare, cambiare impostazioni e avviare timer.</string>
+    <string name="ai_calendar_prime">Aggiungiamo un evento al tuo calendario 📅 Di cosa si tratta, e quando?</string>
+
+    <!-- common -->
+    <string name="common_no_details">nessun dettaglio</string>
+
+    <!-- ui/ai/AiAssistantViewModel.kt -->
+    <string name="ai_chip_open_wellness">Apri impostazioni benessere</string>
+    <string name="ai_chip_connect_health">Collega Health Connect</string>
+
+    <!-- ui/ai/AiPromptCard.kt -->
+    <string name="ai_speech_failed">L\'input vocale non ha funzionato: riprova.</string>
+    <string name="ai_speech_broken">L\'input vocale non funziona su questo dispositivo.</string>
+    <string name="ai_speech_busy">Sto ancora finendo l\'ultima richiesta.</string>
+    <string name="ai_speech_network">Per l\'input vocale ora serve una connessione.</string>
+    <string name="ai_mic_needed">Myndora ha bisogno di accedere al microfono per sentirti.</string>
+    <string name="ai_speech_no_match">Non ho capito: riprova.</string>
+    <string name="ai_voice_tap_to_talk">Tocca per parlare</string>
+    <string name="ai_read_aloud">Leggi la risposta ad alta voce</string>
+    <string name="ai_stop_reading">Interrompi la lettura</string>
+    <string name="time_days_ago">%1$s g fa</string>
+    <string name="time_hours_ago">%1$s h fa</string>
+    <string name="time_minutes_ago">%1$s min fa</string>
+    <string name="time_just_now">Adesso</string>
+    <string name="ai_delete_chat">Elimina chat</string>
+    <string name="ai_active">Attiva</string>
+    <string name="ai_no_chats_body">Qui compariranno le tue conversazioni con Myndora.</string>
+    <string name="ai_no_chats">Ancora nessuna chat</string>
+    <string name="ai_chat_history">Cronologia chat</string>
+    <string name="ai_switch_offline">Passa all\'assistente offline per continuare</string>
+    <string name="ai_more_tomorrow">Altri domani: l\'assistente offline funziona comunque</string>
+    <string name="ai_offline">Sei offline</string>
+    <string name="ai_out_of_messages">Messaggi AI di oggi esauriti</string>
+    <string name="ai_suggest_focus">Aiutami a concentrarmi</string>
+    <string name="ai_suggest_summarize">Riassumi la mia giornata</string>
+    <string name="ai_suggestions">Suggerimenti</string>
+    <string name="ai_voice_input">Input vocale</string>
+    <string name="ai_stop_listening">Smetti di ascoltare</string>
+    <string name="ai_voice_unavailable">L\'input vocale non è disponibile su questo dispositivo.</string>
+    <string name="ai_what_help">Come posso aiutarti?</string>
+    <string name="ai_new_chat">Nuova chat</string>
+    <string name="ai_start_voice">Avvia conversazione vocale</string>
+    <string name="ai_one_message">1 messaggio</string>
+    <string name="ai_message_count">%1$s messaggi</string>
+
+    <!-- ui/components/AiPromptCard.kt -->
+    <string name="ai_personal_assistant">Il tuo assistente personale</string>
+    <string name="ai_myndora_ai">Myndora AI</string>
+
+    <!-- ui/ai/AiVoiceProfiles.kt -->
+    <string name="voice_bright">Voce vivace ed energica</string>
+    <string name="voice_gentle">Voce dolce e rassicurante</string>
+    <string name="voice_warm">Voce calda e colloquiale</string>
+    <string name="voice_calm">Voce calma e posata</string>
+
+    <!-- domain/ai/offline/OfflineActionCatalog.kt -->
+    <string name="care_support_group">Gruppo di supporto</string>
+    <string name="care_specialist">Specialista / dentista</string>
+    <string name="care_hospital">Ospedale</string>
+    <string name="care_pharmacy">Farmacia</string>
+    <string name="offline_what_need">Di cosa hai bisogno?</string>
+    <string name="offline_care_sub">Da ciò che è già salvato su questo dispositivo</string>
+    <string name="offline_care">Cerca assistenza nelle vicinanze</string>
+    <string name="common_length">Durata</string>
+    <string name="offline_start_focus_sub">Funziona interamente sul dispositivo</string>
+    <string name="offline_start_focus">Avvia un timer di concentrazione</string>
+    <string name="offline_hint_mornings">es. La mattina non riesco a iniziare niente</string>
+    <string name="offline_in_the_way">Cosa ti ostacola?</string>
+    <string name="offline_note_hard_sub">Lo userò per personalizzare quando torneremo online</string>
+    <string name="offline_note_hard">Annota cosa ti risulta difficile ora</string>
+    <string name="common_tone">Tono</string>
+    <string name="offline_tone_sub">Vale anche quando torni online</string>
+    <string name="offline_tone">Cambia il modo in cui ti parlo</string>
+    <string name="offline_peak_time">Momento di picco</string>
+    <string name="offline_best_time_sub">Quando la concentrazione c\'è davvero</string>
+    <string name="offline_best_time">Cambia il mio momento migliore della giornata</string>
+    <string name="offline_focus_block">Blocco di concentrazione</string>
+    <string name="offline_focus_length_sub">Quanto ti sembra fattibile un blocco in questo momento</string>
+    <string name="offline_focus_length">Imposta la durata della concentrazione</string>
+    <string name="common_theme">Tema</string>
+    <string name="offline_switch_theme_sub">Chiaro, scuro o come il sistema</string>
+    <string name="offline_switch_theme">Cambia tema</string>
+    <string name="common_spacing">Spaziatura</string>
+    <string name="offline_change_spacing_sub">Più spazio tra righe e lettere</string>
+    <string name="offline_change_spacing">Cambia la spaziatura del testo</string>
+    <string name="offline_change_size_sub">Più piccolo o più grande ovunque</string>
+    <string name="offline_change_size">Cambia la dimensione del testo</string>
+    <string name="offline_change_font_sub">Incluso OpenDyslexic</string>
+    <string name="offline_change_font">Cambia il carattere</string>
+    <string name="color_yellow">Giallo</string>
+    <string name="color_red">Rosso</string>
+    <string name="color_blue">Blu</string>
+    <string name="common_colour">Colore</string>
+    <string name="offline_starts_at">Inizia alle</string>
+    <string name="offline_hint_dentist">es. Dentista</string>
+    <string name="offline_add_event_sub">Va dritto nella tua giornata, si sincronizza dopo</string>
+    <string name="offline_add_event">Aggiungi un evento al calendario</string>
+    <string name="priority_whenever">Quando capita</string>
+    <string name="priority_important">Importante</string>
+    <string name="priority_normal">Normale</string>
+    <string name="common_priority">Priorità</string>
+    <string name="offline_time_optional">Orario (facoltativo)</string>
+    <string name="offline_hint_pharmacy">es. Chiamare la farmacia</string>
+    <string name="offline_add_todo_sub">Si salva su questo dispositivo e si sincronizza quando torni online</string>
+    <string name="offline_add_todo">Aggiungi una cosa da fare</string>
+
+    <!-- domain/ai/offline/OfflineAction.kt -->
+    <string name="offline_group_care">Assistenza</string>
+    <string name="offline_group_focus">Concentrazione</string>
+    <string name="offline_group_profile">Il mio profilo</string>
+    <string name="offline_group_appearance">Aspetto</string>
+    <string name="offline_group_capture">Annota</string>
+
+    <!-- domain/ai/offline/OfflineActionRunner.kt -->
+    <string name="offline_failed_generic">Qualcosa è andato storto durante l\'esecuzione.</string>
+    <string name="offline_unavailable">Questa azione non è disponibile in questa versione.</string>
+    <string name="offline_still_need">Manca ancora: %1$s.</string>
+
+    <!-- ui/ai/offline/OfflineAssistantPanel.kt -->
+    <string name="offline_do_else">Fai qualcos\'altro</string>
+    <string name="offline_saved_here">Salvato qui: si sincronizzerà da solo più tardi</string>
+    <string name="offline_do_it">Fallo</string>
+    <string name="offline_suggested">Suggeriti</string>
+    <string name="offline_on_device">Sul dispositivo · si sincronizza quando ti riconnetti</string>
+    <string name="offline_back_online">Di nuovo online: chiudi per l\'assistente completo</string>
+    <string name="offline_assistant">Assistente offline</string>
+    <string name="offline_back_to_actions">Torna alle azioni</string>
+
+    <!-- domain/ai/offline/OfflineActionCatalog.kt -->
+    <string name="spacing_normal">Normale</string>
+    <string name="spacing_relaxed">Ampia</string>
+    <string name="spacing_loose">Molto ampia</string>
+    <string name="theme_system">Sistema</string>
+    <string name="offline_done_todo">Aggiunto alle tue cose da fare.</string>
+    <string name="offline_done_event">Aggiunto al tuo calendario.</string>
+    <string name="offline_done_font">Carattere cambiato.</string>
+    <string name="offline_done_size">Dimensione del testo cambiata.</string>
+    <string name="offline_done_spacing">Spaziatura del testo cambiata.</string>
+    <string name="offline_done_theme">Tema cambiato.</string>
+    <string name="offline_done_focus_length">Durata della concentrazione salvata.</string>
+    <string name="offline_done_best_time">Momento migliore della giornata salvato.</string>
+    <string name="offline_done_tone">Ricevuto: d\'ora in poi ti parlerò così.</string>
+    <string name="offline_done_note">Annotato. Grazie per avermelo detto.</string>
+    <string name="offline_done_focus">Timer di concentrazione avviato.</string>
+
+    <!-- ui/settings/SettingsSubScreens.kt -->
+    <string name="settings_location_note">Puoi cambiarla dal Profilo ADHD</string>
+    <string name="settings_location">Posizione</string>
+    <string name="common_not_set">Non impostato</string>
+    <string name="settings_email_note">Usata per accedere: non si può cambiare qui</string>
+    <string name="settings_phone_placeholder">es. +39 333 123 4567</string>
+    <string name="settings_phone_optional">Telefono (facoltativo)</string>
+    <string name="settings_change_photo">Cambia foto</string>
+    <string name="settings_profile_picture">Immagine del profilo</string>
+    <string name="settings_identity">La tua identità Myndora</string>
+    <string name="settings_edit_profile">Modifica profilo</string>
+    <string name="sync_desc_6h">Mantiene le modifiche ben allineate</string>
+    <string name="sync_desc_twice">Aggiorna verso mattina e sera</string>
+    <string name="sync_desc_daily">Tiene aggiornati i piani di domani</string>
+    <string name="sync_desc_weekly">Un aggiornamento discreto una volta a settimana</string>
+    <string name="sync_desc_manual">Solo quando scegli Sincronizza ora</string>
+    <string name="sync_mark_manual">MAN</string>
+    <string name="settings_sync_question">Quanto devono essere allineati i tuoi calendari?</string>
+    <string name="settings_expand_sync">Espandi le opzioni di sincronizzazione</string>
+    <string name="settings_collapse_sync">Comprimi le opzioni di sincronizzazione</string>
+    <string name="settings_sync_rhythm">Il tuo ritmo di sincronizzazione</string>
+    <string name="settings_link_calendar">Collega Google Calendar per portare i tuoi piani Myndora ovunque.</string>
+    <string name="settings_calendar_ready">Myndora e Google Calendar sono pronti a sincronizzarsi.</string>
+    <string name="settings_bring_plans">Riunisci i tuoi impegni</string>
+    <string name="settings_calendars_connected">Calendari collegati</string>
+    <string name="settings_personalize_optional">Facoltativa • usa i riepiloghi per suggerimenti su concentrazione e pause</string>
+    <string name="settings_personalize_on">Attiva • i riepiloghi sul benessere possono influenzare i suggerimenti</string>
+    <string name="settings_personalize_ai">Personalizza Myndora AI</string>
+    <string name="settings_7_days">7 GIORNI</string>
+    <string name="settings_todays_steps">PASSI DI OGGI</string>
+    <string name="settings_needs_watch">· serve uno smartwatch</string>
+    <string name="settings_show_data_types">Mostra i tipi di dati</string>
+    <string name="settings_hide_data_types">Nascondi i tipi di dati</string>
+    <string name="settings_what_allowed">Cosa hai consentito</string>
+    <string name="settings_install_health">Installa o aggiorna Health Connect</string>
+    <string name="settings_health_permissions_note">Scegli tu ogni autorizzazione. Myndora chiede solo l\'accesso in lettura e non carica questi dati.</string>
+    <string name="settings_disconnect">Scollega</string>
+    <string name="settings_disconnecting">Scollegamento…</string>
+    <string name="settings_allow_more_health">Consenti altri dati sanitari</string>
+    <string name="settings_live">Attivo</string>
+    <string name="settings_health_optional">Contesto facoltativo su passi e battito cardiaco</string>
+    <string name="settings_health_not_supported">Non supportato su questo dispositivo</string>
+    <string name="settings_health_install">Installa o aggiorna per collegarti</string>
+    <string name="settings_health_readonly">Dati sul benessere in sola lettura collegati</string>
+    <string name="settings_allow_personalization">Consenti personalizzazione</string>
+    <string name="settings_personalize_gently_body">Myndora può usare riepiloghi compatti sul benessere per adattare suggerimenti su concentrazione, carico di lavoro, orari e pause. I dati grezzi di Health Connect non vengono inviati e non vengono mai usati per una diagnosi. Puoi cambiarlo in qualsiasi momento in Impostazioni › Myndora AI.</string>
+    <string name="settings_personalize_gently">Lasciare che Myndora personalizzi con delicatezza?</string>
+    <string name="settings_health_share">Condividi in privato i dati sul benessere che scegli.</string>
+    <string name="settings_health_ready">I tuoi dati sul benessere sono pronti per Myndora.</string>
+    <string name="settings_health_connected">Dati sanitari collegati</string>
+    <string name="settings_linked_devices">Dispositivi collegati</string>
+    <string name="settings_health_unsupported">Health Connect non è supportato su questo dispositivo</string>
+    <string name="settings_health_updated">Accesso ai dati sanitari aggiornato</string>
+    <string name="settings_linked_accounts">Account collegati</string>
+    <string name="settings_read_aloud_caps">LETTURA AD ALTA VOCE</string>
+    <string name="settings_read_aloud_preview_cd">Anteprima del pulsante per leggere la risposta ad alta voce</string>
+    <string name="settings_see_in_action_desc">Scopri come trovare e usare la lettura ad alta voce</string>
+    <string name="settings_see_in_action">Guardala in azione</string>
+    <string name="settings_wellness_dialog_body">Myndora includerà riepiloghi recenti dei dati Health Connect che hai selezionato nelle richieste all\'AI, per personalizzare suggerimenti su concentrazione, orari, carico di lavoro e pause. I dati grezzi non vengono inviati. Questa è una personalizzazione del benessere, non un consiglio medico, e puoi disattivarla in qualsiasi momento.</string>
+    <string name="settings_wellness_dialog_title">Usare i dati sul benessere con l\'AI?</string>
+    <string name="settings_ai_local_note">Queste impostazioni sono salvate solo su questo dispositivo. Il questionario iniziale potrà aggiornare in seguito la preferenza sulle risposte vocali.</string>
+    <string name="settings_feature_preview_desc">Una breve guida visiva alla lettura ad alta voce della Ricerca smart.</string>
+    <string name="settings_feature_preview">Anteprima della funzione</string>
+    <string name="settings_wellness_off">Disattivata • i dati sanitari non vengono inclusi nelle richieste all\'AI</string>
+    <string name="settings_wellness_on">Attiva • i riepiloghi recenti sul benessere possono personalizzare l\'AI</string>
+    <string name="settings_wellness_connect_first">Collega Health Connect per renderla disponibile</string>
+    <string name="settings_wellness_paused">Consentita • in pausa finché Health Connect non viene ricollegato</string>
+    <string name="settings_wellness_personalization">Personalizzazione benessere</string>
+    <string name="settings_privacy_desc">Decidi tu se i dati sul benessere possono influenzare i suggerimenti dell\'AI.</string>
+    <string name="settings_privacy">Personalizzazione e privacy</string>
+    <string name="settings_system_voice">Verrà usata la voce di sistema del dispositivo.</string>
+    <string name="settings_preparing_voices">Preparazione delle anteprime vocali…</string>
+    <string name="settings_voice_sample">Ciao, sono Myndora. Come posso aiutarti?</string>
+    <string name="settings_choose_voice">Scegli una voce</string>
+    <string name="settings_chat_read_off">La chat resta silenziosa finché non tocchi il pulsante dell\'altoparlante</string>
+    <string name="settings_chat_read_on">Le nuove risposte della chat Myndora vengono lette automaticamente</string>
+    <string name="settings_chat_read_aloud">Lettura ad alta voce della Ricerca smart</string>
+    <string name="settings_spoken_off">L\'assistente dal vivo risponde in silenzio, solo con il testo</string>
+    <string name="settings_spoken_on">L\'assistente dal vivo risponde con testo e voce</string>
+    <string name="settings_spoken_responses">Risposte vocali</string>
+    <string name="settings_voice_sound_desc">Scegli quando Myndora parla e come suona.</string>
+    <string name="settings_voice_sound">Voce e suono</string>
+    <string name="settings_ai_hero_desc">Scegli quando Myndora parla e come suonano le sue risposte.</string>
+    <string name="settings_ai_hero">Il tuo assistente, la tua voce</string>
+    <string name="settings_notif_hero_desc">Scegli solo i momenti in cui un promemoria gentile aiuta davvero.</string>
+    <string name="settings_notif_hero">Informazioni sì, sovraccarico no</string>
+    <string name="settings_notifications">Notifiche</string>
+    <string name="settings_reduce_motion_note">Tutto ciò che si muove, pulsa o respira da solo si ferma. Le schermate cambiano comunque quando tocchi, solo in modo immediato.</string>
+    <string name="settings_reduce_motion_off">Gli elementi scorrono, crescono e si assestano quando cambiano</string>
+    <string name="settings_reduce_motion_on">Gli elementi compaiono invece di muoversi</string>
+    <string name="settings_reduce_motion">Riduci animazioni</string>
+    <string name="motion_tip_title">L\'app si muove troppo?</string>
+    <string name="motion_tip_body_spot">Questo fulmine respira, e altre parti dell\'app si spostano e pulsano da sole. Riduci il movimento ferma tutto in una volta: funziona sempre allo stesso modo, semplicemente sta ferma.</string>
+    <string name="motion_tip_body_bar">La barra qui sotto reagisce e si illumina mentre ti sposti, e altre parti dell\'app si spostano e pulsano da sole. Riduci il movimento ferma tutto in una volta: funziona sempre allo stesso modo, semplicemente sta ferma.</string>
+    <string name="motion_tip_turn_on">Ferma tutto</string>
+    <string name="motion_tip_keep">Mi piace così</string>
+    <string name="motion_tip_confirmed">Movimento disattivato. Impostazioni \u203a Personalizzazione per riattivarlo.</string>
+    <string name="settings_open_accessibility">Apri impostazioni di accessibilità</string>
+    <string name="settings_speak_tap_note">Vale per le schermate di Myndora. Per far leggere ad alta voce ogni app, attiva Seleziona per ascoltare nelle impostazioni di accessibilità di Android.</string>
+    <string name="settings_speak_tap_off">Toccare in giro per Myndora resta silenzioso</string>
+    <string name="settings_speak_tap_on">Pulsanti, schede e riquadri dicono il loro nome quando li tocchi</string>
+    <string name="settings_speak_tap">Leggi ciò che tocco</string>
+    <string name="settings_make_yours_desc">Adatta colori, caratteri e scorciatoie al tuo modo di pensare.</string>
+    <string name="settings_make_yours">Rendi Myndora tua</string>
+    <string name="settings_customization">Personalizzazione</string>
+    <string name="settings_back_to_settings">Torna alle impostazioni</string>
+    <string name="settings_customization_locked">La personalizzazione non è disponibile in questa modalità. Disattivala o modifica prima la modalità, così aspetto e layout restano prevedibili.</string>
+    <string name="settings_mode_active">Modalità %1$s attiva</string>
+    <string name="settings_last_sync">Ultima sincronizzazione: %1$s</string>
+    <string name="settings_sync_never">non ancora: la sincronizzazione in background non è partita</string>
+    <string name="sync_just_now">proprio ora</string>
+    <string name="sync_minute_ago">1 minuto fa</string>
+    <string name="sync_minutes_ago">%1$s minuti fa</string>
+    <string name="sync_hour_ago">1 ora fa</string>
+    <string name="sync_hours_ago">%1$s ore fa</string>
+    <string name="sync_day_ago">1 giorno fa</string>
+    <string name="sync_days_ago">%1$s giorni fa</string>
+
+    <!-- data/sync/CalendarSyncScheduler.kt -->
+    <string name="sync_6h">Ogni 6 ore</string>
+    <string name="sync_twice">Due volte al giorno</string>
+    <string name="sync_daily">Una volta al giorno</string>
+    <string name="sync_weekly">Una volta a settimana</string>
+    <string name="sync_manual">Solo manuale</string>
+
+    <!-- data/sync/CalendarSyncWorker.kt -->
+    <string name="sync_reconnect_google">Devi ricollegare Google</string>
+    <string name="sync_up_to_date">Tutto aggiornato</string>
+    <string name="sync_pushed">%1$s eventi inviati</string>
+    <string name="sync_skipped_google">Saltata: Google non è collegato</string>
+
+    <!-- data/health/HealthConnectManager.kt -->
+    <string name="health_disconnect_failed">Impossibile scollegare Health Connect</string>
+    <string name="health_check_failed">Impossibile verificare l\'accesso a Health Connect</string>
+    <string name="health_calories">Calorie</string>
+    <string name="health_exercise">Attività fisica</string>
+    <string name="health_sleep">Sonno</string>
+    <string name="health_heart_rate">Battito cardiaco</string>
+    <string name="health_steps">Passi</string>
+
+    <!-- ui/settings/SettingsScreen.kt -->
+    <string name="settings_sign_out">Esci</string>
+    <string name="settings_version">Versione</string>
+    <string name="settings_finish_now">Completa ora</string>
+    <string name="settings_not_finished">Non completato</string>
+    <string name="settings_complete">Completo</string>
+    <string name="settings_adhd_profile_sub">Personalizza il modo in cui l\'assistente ti aiuta.</string>
+    <string name="settings_adhd_profile">Profilo ADHD</string>
+    <string name="settings_sync_todos">Sincronizza le cose da fare con il Calendario</string>
+    <string name="settings_exporting">Esportazione…</string>
+    <string name="settings_connected_account">Account collegato</string>
+    <string name="settings_linked">Collegato</string>
+    <string name="settings_disconnect_google">Scollega account Google</string>
+    <string name="settings_connect_google_sub">Collegati per inviare i tuoi eventi a Google Calendar</string>
+    <string name="settings_connect_google_calendar">Collega Google Calendar</string>
+    <string name="settings_google_calendar">Google Calendar</string>
+    <string name="settings_google_photo">Foto dell\'account Google</string>
+    <string name="common_expand">Espandi</string>
+    <string name="common_collapse">Comprimi</string>
+    <string name="settings_unavailable_mode">Non disponibile mentre è attiva una modalità</string>
+    <string name="settings_edit_profile_title">Modifica profilo</string>
+    <string name="settings_not_signed_in">Accesso non effettuato</string>
+    <string name="settings_welcome">Ciao!</string>
+    <string name="settings_download_profile_sub">Un PDF con i tuoi dati e l\'attività dell\'ultima settimana.</string>
+    <string name="settings_download_profile">Scarica il mio profilo</string>
+    <string name="settings_preparing_pdf">Preparazione del PDF…</string>
+    <string name="settings_profile_continue">Continua per sbloccare consigli più personali.</string>
+    <string name="settings_profile_progress">%1$s di %2$s passaggi completati · ne mancano %3$s</string>
+    <string name="settings_profile_shaping">Il tuo profilo sta prendendo forma</string>
+    <string name="settings_send_email">Invia email</string>
+    <string name="settings_reset_email_body">Invieremo un\'email a %1$s. Apri il link sicuro per scegliere una password. Potrai comunque continuare ad accedere con Google.</string>
+    <string name="settings_no_email_found">Non abbiamo trovato un indirizzo email per questo account.</string>
+    <string name="settings_create_reset_password">Crea o reimposta la password</string>
+    <string name="settings_profile_cd">Profilo</string>
+    <string name="settings_about">Informazioni</string>
+    <string name="settings_health_connect_sub">Condividi passi e battito cardiaco in modo sicuro</string>
+    <string name="settings_health_connected_sub">Collegato • passi e battito cardiaco</string>
+    <string name="settings_health_connect">Health Connect</string>
+    <string name="settings_not_connected">Non collegato</string>
+    <string name="settings_together_add">Aggiungi qualcuno di cui ti fidi</string>
+    <string name="settings_people">Persone</string>
+    <string name="settings_ai_sub">Voce, personalizzazione del benessere e preferenze</string>
+    <string name="settings_ai_boost">1 potenziamento disponibile • sblocca il supporto basato sul benessere</string>
+    <string name="settings_notifications_sub">Promemoria, riepilogo giornaliero e spinte</string>
+    <string name="settings_customization_snackbar">La personalizzazione non è disponibile mentre è attiva la modalità %1$s. Disattivala o modifica prima quella modalità.</string>
+    <string name="settings_customization_sub">Tema, carattere e schermo</string>
+    <string name="settings_locked_while">Bloccata mentre è attiva la modalità %1$s</string>
+    <string name="settings_mode_running_manual">%1$s attiva • attivata manualmente</string>
+    <string name="settings_mode_running_sched">%1$s attiva • %2$s</string>
+    <string name="settings_modes_sub">Crea configurazioni calme e concentrate che cambiano insieme</string>
+    <string name="settings_modes">Modalità</string>
+    <string name="settings_general">Generali</string>
+    <string name="settings_password_signin_sub">Crea o reimposta la password</string>
+    <string name="settings_password_signin">Password e accesso</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_about_you">Su di te</string>
+    <string name="settings_password_link_sent">Link per la password inviato a %1$s</string>
+    <string name="settings_together_waiting_one">1 richiesta ti aspetta</string>
+    <string name="settings_together_waiting_many">%1$s richieste ti aspettano</string>
+
+    <!-- ui/settings/components/NotificationsSection.kt -->
+    <string name="notif_first_nudge">Prima spinta alle</string>
+    <string name="notif_twice">Due volte</string>
+    <string name="notif_focus_nudges_sub">Suggeriscimi di iniziare una sessione Pomodoro</string>
+    <string name="notif_focus_nudges">Spinte alla concentrazione</string>
+    <string name="notif_expand">Espandi %1$s</string>
+    <string name="notif_collapse">Comprimi %1$s</string>
+    <string name="notif_break_tell_me">Dimmi quando finisce una sessione di concentrazione o una pausa</string>
+    <string name="notif_break_reminders">Promemoria delle pause</string>
+    <string name="notif_focus_pomodoro_sub">Suggerimenti utili mentre lavori e ricarichi le energie</string>
+    <string name="notif_focus_pomodoro">Concentrazione e Pomodoro</string>
+    <string name="notif_morning_rundown_sub">Un riepilogo gentile della tua giornata, ogni mattina</string>
+    <string name="notif_morning_rundown">Resoconto del mattino</string>
+    <string name="notif_daily_rhythm_sub">Una panoramica tranquilla all\'inizio della giornata</string>
+    <string name="notif_daily_rhythm">Ritmo quotidiano</string>
+    <string name="notif_calendar_reminders_sub">Resta in anticipo sugli eventi, senza rumore</string>
+    <string name="notif_calendar_reminders">Promemoria del calendario</string>
+    <string name="notif_todo_reminders_sub">Scegli quando Myndora deve darti una spinta</string>
+    <string name="notif_todo_reminders">Promemoria delle cose da fare</string>
+    <string name="notif_break_reminders_sub">Avvisami quando finisce una sessione di concentrazione o una pausa</string>
+    <string name="notif_daily_summary">Riepilogo giornaliero</string>
+    <string name="notif_active_count">%1$s attive: promemoria, riepilogo e concentrazione</string>
+    <string name="notif_kind_start_sub">Una spinta proprio quando inizia</string>
+    <string name="notif_kind_30min_sub">Il momento di chiudere e muoversi</string>
+    <string name="notif_kind_day_before_sub">Un avviso il giorno prima</string>
+    <string name="notif_kind_start">All\'orario di inizio</string>
+    <string name="notif_kind_30min">30 minuti prima</string>
+    <string name="notif_kind_day_before">Il giorno prima</string>
+
+    <!-- ui/settings/components/AppearanceRow.kt -->
+    <string name="settings_text_spacing_desc">Aggiunge spazio tra righe e lettere. Questa pagina si aggiorna mentre scegli, così vedi subito la differenza.</string>
+    <string name="settings_text_spacing">Spaziatura del testo</string>
+    <string name="settings_font_size">Dimensione del carattere</string>
+    <string name="settings_font_dyslexic">Dislessia</string>
+    <string name="settings_font">Carattere</string>
+    <string name="settings_appearance">Aspetto</string>
+
+    <!-- ui/settings/components/QuickAccessSection.kt -->
+    <string name="settings_tap_to_add_nav">Tocca per aggiungere alla navigazione</string>
+    <string name="settings_shown_in_nav">Visibile nella barra di navigazione</string>
+    <string name="settings_quick_access_count">%1$s elementi nella barra di navigazione</string>
+    <string name="settings_quick_access">Accesso rapido</string>
+
+    <!-- ui/settings/components/ThemePicker.kt -->
+    <string name="theme_intensity">Intensità</string>
+    <string name="theme_second_color">Colore secondario</string>
+    <string name="theme_main_color">Colore principale</string>
+    <string name="theme_your_colors_desc">Scegli due tonalità. La luminosità viene regolata in automatico, così il testo resta leggibile sia in chiaro che in scuro.</string>
+    <string name="theme_your_colors">I tuoi colori</string>
+    <string name="theme_yours_build">Crea una tavolozza da due colori che scegli tu.</string>
+    <string name="theme_yours_adjust">Tocca per regolare i tuoi colori.</string>
+    <string name="theme_yours">Il tuo</string>
+    <string name="theme_color_theme_desc">Ordinati dal più calmo al più deciso. Scegli quello che ti va oggi: cambia solo i colori, mai la posizione delle cose.</string>
+    <string name="theme_color_theme">Tema colori</string>
+
+    <!-- ui/settings/components/ThemePreviewCard.kt -->
+    <string name="preview_read_chapter">Leggere un capitolo</string>
+    <string name="preview_tasks">Attività</string>
+    <string name="preview_three_things">3 cose oggi</string>
+    <string name="preview_good_morning">Buongiorno</string>
+
+    <!-- ui/theme/AppTheme.kt -->
+    <string name="theme_yours_blurb">Creato dai due colori che hai scelto.</string>
+    <string name="theme_bloom_blurb">Il più deciso e luminoso. Per quando niente riesce a catturare la tua attenzione.</string>
+    <string name="theme_bloom">Fioritura</string>
+    <string name="theme_ember_blurb">Caldo e stimolante. I colori di Myndora.</string>
+    <string name="theme_ember">Brace</string>
+    <string name="theme_tide_blurb">Fresco e poco stimolante. Ottimo per lunghe sessioni di lavoro concentrato.</string>
+    <string name="theme_tide">Marea</string>
+    <string name="theme_calm_blurb">L\'opzione più tranquilla. Per i giorni in cui tutto è già troppo.</string>
+    <string name="theme_calm">Calma</string>
+
+    <!-- ui/theme/CustomTheme.kt -->
+    <string name="vivid_vivid">Vivace</string>
+    <string name="vivid_balanced">Bilanciato</string>
+    <string name="vivid_soft">Tenue</string>
+
+    <!-- ui/accessibility/AccessibilityQuickAccess.kt -->
+    <string name="a11y_line_spacing">Interlinea</string>
+    <string name="a11y_brightness">Luminosità</string>
+    <string name="a11y_locked">Le modifiche all\'aspetto non sono disponibili in questa modalità. Disattivala o modifica prima la modalità.</string>
+    <string name="a11y_title">Accessibilità</string>
+    <string name="a11y_settings">Impostazioni di accessibilità</string>
+
+    <!-- ui/home/HomeAgenda.kt -->
+    <string name="agenda_anytime_today">Oggi, quando vuoi</string>
+    <string name="agenda_wrapping_up">Sta finendo</string>
+    <string name="agenda_left">ancora %1$s</string>
+    <string name="agenda_starting_now">Inizia ora</string>
+    <string name="agenda_in">tra %1$s</string>
+    <string name="agenda_now">Adesso</string>
+    <string name="agenda_late">%1$s di ritardo</string>
+    <string name="agenda_anytime">Quando vuoi</string>
+    <string name="duration_hours">%1$s h</string>
+    <string name="duration_hours_minutes">%1$s h %2$s</string>
+    <string name="ribbon_empty">Barra della giornata. Niente in programma oggi.</string>
+    <string name="ribbon_items">Barra della giornata. %1$s.</string>
+    <string name="ribbon_items_more">Barra della giornata. %1$s. E altri %2$s.</string>
+    <string name="ribbon_now_cd">Ora sono le %1$s. Mostra cosa c\'è adesso.</string>
+
+    <!-- ui/home/HomeTodayCard.kt -->
+    <string name="weather_current">Meteo attuale</string>
+    <string name="weather_thunderstorm">Temporale</string>
+    <string name="weather_snow">Neve</string>
+    <string name="weather_rain">Pioggia</string>
+    <string name="weather_foggy">Nebbia</string>
+    <string name="weather_overcast">Coperto</string>
+    <string name="weather_partly_cloudy">Parzialmente nuvoloso</string>
+    <string name="weather_clear">Sereno</string>
+    <string name="weather_high_low">Max %1$s\u0020\u0020Min %2$s</string>
+    <string name="home_all_clear">Tutto fatto: niente in sospeso</string>
+    <string name="home_nothing_today">Niente in programma oggi</string>
+    <string name="home_today_caps">OGGI</string>
+    <string name="weather_set_location">Imposta la tua posizione per il meteo</string>
+
+    <!-- domain/model/AppMode.kt -->
+    <string name="ringer_normal">Normale</string>
+    <string name="ringer_vibrate">Vibrazione</string>
+    <string name="ringer_silent">Silenzioso</string>
+    <string name="mode_work">Lavoro</string>
+    <string name="mode_weekend">Weekend</string>
+    <string name="home_mode_cd">Modalità: %1$s</string>
+    <string name="home_mode_caps">MODALITÀ</string>
+    <string name="home_mode_until">Fino alle %1$s</string>
+    <string name="home_mode_all_day">Tutto il giorno</string>
+    <string name="home_mode_manual">Finché non la cambi</string>
+    <string name="home_modes_intro">Una modalità prepara il telefono e Myndora per un momento della giornata. %1$s, per esempio, mette il telefono in vibrazione.</string>
+    <string name="home_modes_set_up">Configura</string>
+
+    <!-- ui/home/HomeModeTile.kt -->
+    <string name="mode_dnd">Non disturbare</string>
+    <string name="home_manage_modes">Gestisci modalità</string>
+    <string name="mode_settings_cd">Impostazioni di %1$s</string>
+    <string name="home_create_mode">Crea una modalità</string>
+    <string name="home_no_mode">Nessuna modalità</string>
+
+    <!-- ui/home/HomeCustomize.kt -->
+    <string name="home_customise">Personalizza la home</string>
+    <string name="home_layout_locked">Layout della home bloccato</string>
+    <string name="home_drag_reorder">Trascina per riordinare</string>
+    <string name="home_full_width">Larghezza piena</string>
+    <string name="home_half_width">Metà larghezza</string>
+    <string name="home_tap_to_add">Tocca per aggiungere</string>
+    <string name="home_remove_widget">Rimuovi dalla home</string>
+
+    <!-- ui/home/HomeFocusTile.kt -->
+    <string name="home_open_timer">Apri timer</string>
+    <string name="home_pick_block">Scegli un blocco</string>
+    <string name="home_session_running">Sessione in corso</string>
+    <string name="home_focus_caps">CONCENTRAZIONE</string>
+
+    <!-- ui/home/HomeNextUpCard.kt -->
+    <string name="home_start_focus">Inizia a concentrarti</string>
+    <string name="home_nothing_next_body">Il resto della giornata è tuo. Aggiungi al volo se arriva qualcosa.</string>
+    <string name="home_nothing_next">Niente in arrivo</string>
+    <string name="home_snooze_30">Posticipa di 30 minuti</string>
+    <string name="home_mark_done">Segna come fatto</string>
+    <string name="home_next_up_caps">PROSSIMO</string>
+    <string name="home_happening_now">IN CORSO</string>
+
+    <!-- ui/home/HomeScreen.kt -->
+    <string name="common_no_data">Nessun dato</string>
+    <string name="home_empty_body">Tocca Personalizza la home per rimettere qualcosa.</string>
+    <string name="home_empty">La tua home è vuota</string>
+    <string name="home_edit_hint_slot">\u0020· tocca uno spazio tratteggiato per rimetterne uno</string>
+    <string name="home_edit_hint">Tocca un riquadro per toglierlo · trascina la maniglia per riordinare · ⤢ per ridimensionare</string>
+    <string name="home_profile_photo">La tua foto del profilo</string>
+    <string name="home_title">Home</string>
+    <string name="home_customize_locked">La personalizzazione della home non è disponibile mentre è attiva la modalità %1$s. Modifica la schermata Home della modalità da Modalità.</string>
+
+    <!-- common -->
+    <string name="count_of">%1$s di %2$s</string>
+
+    <!-- ui/home/HomeWidgets.kt -->
+    <string name="widget_ask_blurb">La casella per scrivere all\'assistente</string>
+    <string name="widget_ask">Chiedi a Myndora</string>
+    <string name="widget_tree_blurb">A che punto sei con il tuo profilo</string>
+    <string name="survey_focus_tree_short">Albero della concentrazione</string>
+    <string name="widget_progress_blurb">Cosa hai completato, e un compagno che si sveglia con te</string>
+    <string name="widget_progress">Progressi di oggi</string>
+    <string name="widget_focus_blurb">Avvia un blocco da 5, 15 o 25 minuti con un tocco</string>
+    <string name="home_focus_widget">Concentrazione</string>
+    <string name="widget_health_blurb">Anelli di passi, sonno e farmaci</string>
+    <string name="widget_health">Salute</string>
+    <string name="widget_quick_add_blurb">Annota un\'attività o un evento in un paio di secondi</string>
+    <string name="widget_quick_add">Aggiunta rapida</string>
+    <string name="widget_next_up_blurb">L\'unica cosa che viene dopo, con un pulsante per iniziarla</string>
+    <string name="widget_next_up">Prossimo</string>
+    <string name="widget_mode_blurb">Quanto ti raggiunge in questo momento</string>
+    <string name="widget_mode">Modalità</string>
+    <string name="widget_today_blurb">La data, il meteo e la tua giornata come una linea del tempo</string>
+
+    <!-- ui/home/QuickCaptureCard.kt -->
+    <string name="qc_event">Evento</string>
+    <string name="qc_task">Attività</string>
+    <string name="qc_add_event">Aggiungi evento</string>
+    <string name="qc_add_task">Aggiungi attività</string>
+    <string name="qc_picked_up">· preso dal tuo testo</string>
+    <string name="qc_placeholder_event">Riunione tra 30 min</string>
+    <string name="qc_placeholder_task">Chiamare la farmacia domani alle 15</string>
+    <string name="qc_catch_it">Annotalo prima che ti sfugga</string>
+
+    <!-- ui/home/QuickCaptureViewModel.kt -->
+    <string name="qc_tap_dismiss">Tocca per chiudere</string>
+    <string name="qc_couldnt_save">Impossibile salvare</string>
+    <string name="qc_event_added">Evento aggiunto</string>
+    <string name="qc_task_added">Attività aggiunta</string>
+    <string name="qc_tonight">Stasera</string>
+    <string name="qc_in_an_hour">Tra 1 h</string>
+
+    <!-- ui/home/HomeWinsTile.kt -->
+    <string name="wins_done_out_of">fatte, su %1$s</string>
+    <string name="wins_all_done">Tutto quello di oggi. Fatto.</string>
+    <string name="wins_nothing_yet">Ancora niente: anche una sola conta</string>
+    <string name="wins_say_hi">Tocca per salutare</string>
+    <string name="wins_caps">PROGRESSI DI OGGI</string>
+
+    <!-- ui/home/TodayProgressBuddy.kt -->
+    <string name="buddy_awake_line">%1$s fatte. Resta sveglio per il resto della giornata: niente di ciò che farai o non farai lo rimetterà a dormire.</string>
+    <string name="buddy_awake">Sveglio, grazie a te.</string>
+    <string name="buddy_wide_awake_line">%1$s fatte e salta di gioia. Qualunque cosa porti il resto della giornata, questa parte è già successa.</string>
+    <string name="buddy_wide_awake">Sveglissimo.</string>
+    <string name="buddy_look_all_line">Tutte e %1$s. Goditelo per un attimo prima di cercare la prossima cosa.</string>
+    <string name="buddy_look">Guardalo come va!</string>
+    <string name="buddy_look_one_line">Tutto quello che oggi ti chiedeva. Ecco fatto.</string>
+    <string name="buddy_one_eye_line">È bastata una cosa. Iniziare è la parte difficile, e l\'hai già superata.</string>
+    <string name="buddy_one_eye">Un occhio aperto.</string>
+    <string name="buddy_asleep_line">Non ti sta aspettando: sta solo dormendo. Si sveglia alla prima cosa che completi, e la più piccola conta esattamente quanto la più grande.</string>
+    <string name="buddy_asleep">Dorme ancora.</string>
+    <string name="buddy_out_cold_line">Oggi non c\'è niente in programma, quindi si fa un pisolino. Dormire è la cosa che gli riesce meglio.</string>
+    <string name="buddy_out_cold">Nel mondo dei sogni.</string>
+    <string name="buddy_done_today">%1$s fatte oggi</string>
+    <string name="buddy_nothing_scheduled">niente in programma</string>
+
+    <!-- ui/home/HomeGreeting.kt -->
+    <string name="greet_rest_soon">Presto a riposare, {name}</string>
+    <string name="greet_world_asleep">Il mondo dorme, {name}</string>
+    <string name="greet_midnight_oil">A notte fonda, {name}</string>
+    <string name="greet_still_up">Ancora in piedi, {name}?</string>
+    <string name="greet_night_owl">Anima notturna, {name}</string>
+    <string name="greet_night">Notte, {name}</string>
+    <string name="greet_almost_bedtime">Quasi ora di dormire, {name}</string>
+    <string name="greet_time_to_rest">È ora di riposare, {name}</string>
+    <string name="greet_late_one">Si è fatto tardi, {name}</string>
+    <string name="greet_good_night">Buonanotte, {name}</string>
+    <string name="greet_easy_does_it">Ciao {name}, piano piano</string>
+    <string name="greet_long_day">Giornata lunga, {name}?</string>
+    <string name="greet_winding_down">Si rallenta, {name}</string>
+    <string name="greet_evening">Eccoci a sera, {name}</string>
+    <string name="greet_good_evening">Buonasera, {name}</string>
+    <string name="greet_keep_steady">Ciao {name}, un passo alla volta</string>
+    <string name="greet_still_going">Si va avanti, {name}</string>
+    <string name="greet_halfway">A metà strada, {name}</string>
+    <string name="greet_afternoon">Eccoci al pomeriggio, {name}</string>
+    <string name="greet_good_afternoon">Buon pomeriggio, {name}</string>
+    <string name="greet_rise_shine">Buon risveglio, {name}</string>
+    <string name="greet_lets_begin">Ciao {name}, cominciamo</string>
+    <string name="greet_fresh_page">Pagina nuova, {name}</string>
+    <string name="greet_morning">Buondì, {name}</string>
+    <string name="greet_good_morning">Buongiorno, {name}</string>
+    <string name="greet_quiet_hours">Le ore tranquille, {name}</string>
+    <string name="greet_morning_slow">Buongiorno, {name}: con calma</string>
+    <string name="greet_up_with_sun">In piedi col sole, {name}</string>
+    <string name="greet_early_start">Si parte presto, {name}</string>
+
+    <!-- ui/modes/ModeVisuals.kt -->
+    <string name="mode_every_day">Ogni giorno</string>
+    <string name="mode_accent_neutral">Neutro</string>
+    <string name="mode_accent_warm">Caldo</string>
+    <string name="mode_accent_theme">Colore del tema</string>
+    <string name="mode_icon_social">Socialità</string>
+    <string name="mode_icon_exercise">Sport</string>
+    <string name="mode_icon_study">Studio</string>
+    <string name="mode_icon_rest">Riposo</string>
+    <string name="mode_icon_quiet">Silenzio</string>
+    <string name="mode_icon_general">Generale</string>
+
+    <!-- ui/modes/ModeEditScreen.kt -->
+    <string name="mode_overnight">Continua durante la notte fino al mattino dopo.</string>
+    <string name="mode_auto_end">Fine della programmazione automatica</string>
+    <string name="mode_auto_start">Inizio della programmazione automatica</string>
+    <string name="mode_from_to">Dalle %1$s alle %2$s</string>
+    <string name="mode_off_by_hand">Disattivata: attiva questa modalità a mano</string>
+    <string name="mode_pick_day">Scegli almeno un giorno</string>
+    <string name="mode_turn_on_auto">Attiva automaticamente</string>
+    <string name="mode_usable_end">Fine degli orari utilizzabili</string>
+    <string name="mode_usable_start">Inizio degli orari utilizzabili</string>
+    <string name="mode_usable_hours_desc">Limita gli orari che Myndora suggerisce per i nuovi eventi.</string>
+    <string name="mode_usable_hours">Orari utilizzabili</string>
+    <string name="mode_duration_cd">Durata: %1$s</string>
+    <string name="mode_dont_change">Non cambiare</string>
+    <string name="mode_ringer_desc">Silenzioso significa niente suono e niente vibrazione.</string>
+    <string name="mode_ringer">Suoneria</string>
+    <string name="mode_med_reminders">Promemoria dei farmaci</string>
+    <string name="mode_changes">%1$s modifiche</string>
+    <string name="mode_one_change">1 modifica</string>
+    <string name="mode_no_changes">Nessuna modifica</string>
+    <string name="common_collapsed">Compresso</string>
+    <string name="common_expanded">Espanso</string>
+    <string name="mode_icon">Icona</string>
+    <string name="mode_name_placeholder">Lavoro profondo, commissioni, sera…</string>
+    <string name="common_deleting">Eliminazione…</string>
+    <string name="mode_delete_body">Le tue impostazioni restano intatte: sparisce solo la modalità.</string>
+    <string name="mode_delete_confirm">Eliminare %1$s?</string>
+    <string name="mode_save">Salva modalità</string>
+    <string name="common_saving">Salvataggio…</string>
+    <string name="mode_no_changes_yet">Questa modalità non cambia ancora nulla.</string>
+    <string name="mode_choose_days">Scegli i giorni</string>
+    <string name="mode_schedule">Programmazione</string>
+    <string name="mode_break_length">Durata della pausa</string>
+    <string name="mode_focus_length">Durata della sessione di concentrazione</string>
+    <string name="mode_silence_focus_desc">Attiva Non disturbare quando parte un Pomodoro.</string>
+    <string name="mode_silence_focus">Silenzio durante la concentrazione</string>
+    <string name="mode_focus_planning">Concentrazione e pianificazione</string>
+    <string name="mode_home_tiles_desc">Scegli i riquadri mostrati nella Home in questa modalità.</string>
+    <string name="mode_home_tiles">Riquadri della home</string>
+    <string name="mode_reduce_motion_desc">Ferma i movimenti inattivi dell\'app mentre questa modalità è attiva.</string>
+    <string name="mode_simplified_workspace_desc">Mostra meno schede e meno elementi sullo schermo.</string>
+    <string name="mode_simplified_workspace">Area di lavoro semplificata</string>
+    <string name="mode_app_appearance">Aspetto dell\'app</string>
+    <string name="mode_med_hidden_warning">In questa modalità i promemoria dei farmaci non verranno mostrati</string>
+    <string name="mode_myndora_notifications_desc">Scegli quali promemoria sono consentiti in questa modalità.</string>
+    <string name="mode_myndora_notifications">Notifiche di Myndora</string>
+    <string name="mode_dnd_desc">Trattiene le notifiche del telefono, non solo quelle di Myndora.</string>
+    <string name="mode_sound_notifications">Suoni e notifiche</string>
+    <string name="mode_open_section">Apri una sezione per scegliere cosa cambia questa modalità.</string>
+    <string name="mode_back_to_modes">Torna alle modalità</string>
+    <string name="mode_unavailable">Modalità non disponibile</string>
+    <string name="mode_delete">Elimina modalità</string>
+    <string name="mode_edit">Modifica modalità</string>
+    <string name="mode_new">Nuova modalità</string>
+    <string name="mode_this_mode">questa modalità</string>
+
+    <!-- ui/modes/ModesScreen.kt -->
+    <string name="modes_starts_when">Inizia quando la scegli tu</string>
+    <string name="modes_schedule_off">Programmazione disattivata</string>
+    <string name="modes_auto_schedule">Programmazione automatica</string>
+    <string name="modes_scheduled">Programmata</string>
+    <string name="modes_manual">Manuale</string>
+    <string name="modes_customize_cd">Personalizza la modalità %1$s</string>
+    <string name="modes_running">In corso</string>
+    <string name="modes_not_active">Non attiva</string>
+    <string name="modes_running_auto">In esecuzione automatica</string>
+    <string name="modes_selected_active">Selezionata e attiva</string>
+    <string name="modes_mode_cd">Modalità %1$s. %2$s. %3$s.</string>
+    <string name="common_not_selected">Non selezionato</string>
+    <string name="modes_no_mode_cd">Nessuna modalità. Sospende le programmazioni e usa le impostazioni personali senza modifiche delle modalità.</string>
+    <string name="modes_no_mode_desc">Sospende le programmazioni e mantiene le impostazioni personali</string>
+    <string name="modes_auto_none_cd">Modalità automatiche. Nessuna programmazione ancora configurata.</string>
+    <string name="modes_auto_cd">Modalità automatiche. Seguono le programmazioni salvate.</string>
+    <string name="modes_ready_schedule">Pronta quando aggiungi una programmazione</string>
+    <string name="modes_follow_schedules">Segue le programmazioni salvate nelle tue modalità</string>
+    <string name="modes_automatic">Automatica</string>
+    <string name="modes_off">Le modalità sono disattivate. Sono in uso le tue impostazioni personali.</string>
+    <string name="modes_auto_idle">La modalità automatica è attiva. Le tue impostazioni restano finché non parte una programmazione.</string>
+    <string name="modes_active_now">Attiva ora · %1$s</string>
+    <string name="modes_between_schedules">Tra una programmazione e l\'altra</string>
+    <string name="modes_n_saved">%1$s modalità salvate. Tocca per attivarne una, o aprila per personalizzarla.</string>
+    <string name="modes_one_saved">1 modalità salvata. Tocca per attivarla, o aprila per personalizzarla.</string>
+    <string name="modes_your_modes">Le tue modalità</string>
+    <string name="modes_choose_active_sub">Cambia l\'esperienza dell\'app con un tocco.</string>
+    <string name="modes_choose_active">Scegli cosa è attivo</string>
+
+    <!-- ui/modes/ModesViewModel.kt -->
+    <string name="modes_err_delete">Impossibile eliminare questa modalità. Riprova.</string>
+    <string name="modes_err_builtin">Le modalità predefinite non si possono eliminare: modificala invece</string>
+    <string name="modes_err_save">Impossibile salvare questa modalità. Riprova.</string>
+    <string name="modes_err_sign_in">Accedi di nuovo per salvare questa modalità</string>
+    <string name="modes_err_name">Dai un nome alla modalità</string>
+    <string name="modes_err_unavailable">Questa modalità non è più disponibile. Potrebbe essere stata eliminata su un altro dispositivo.</string>
+
+    <!-- ui/modes/ModeControls.kt -->
+    <string name="mode_choose">Scegli</string>
+
+    <!-- ui/calendar/CalendarViewModel.kt -->
+    <string name="cal_avail_one">Teniamo conto delle ore in cui %1$s ha impegni: Myndora non ti mostra mai di cosa si tratta.</string>
+    <string name="cal_avail_two">Teniamo conto delle ore in cui %1$s e %2$s hanno impegni: Myndora non ti mostra mai di cosa si tratta.</string>
+    <string name="cal_avail_many">Teniamo conto delle ore in cui %1$s persone hanno impegni: Myndora non ti mostra mai di cosa si tratta.</string>
+    <string name="cal_a_connection">un contatto</string>
+    <string name="cal_need_google_sync">Collega un account Google per attivare la sincronizzazione del calendario</string>
+    <string name="cal_nothing_to_sync">Niente da sincronizzare</string>
+    <string name="cal_your_connection">il tuo contatto</string>
+
+    <!-- ui/calendar/CalendarDialogs.kt -->
+    <string name="cal_they_see">Vedrà questo evento nel suo calendario. Continuerà a non vedere nient\'altro di tuo.</string>
+    <string name="cal_only_they">Solo quella persona riceverà l\'evento</string>
+    <string name="cal_on_your_day">Sarà anche nella tua giornata</string>
+    <string name="cal_add_mine_too">Aggiungi anche al mio calendario</string>
+    <string name="cal_pick_person">Scegli almeno una persona.</string>
+    <string name="cal_for_someone">Per qualcuno</string>
+    <string name="cal_for_myself">Per me</string>
+    <string name="cal_select_end">Seleziona l\'ora di fine</string>
+    <string name="cal_select_start">Seleziona l\'ora di inizio</string>
+    <string name="cal_add_for_calendars">Aggiungi a %1$s calendari</string>
+    <string name="cal_add_for_both">Aggiungi per voi due</string>
+    <string name="cal_add_for_people">Aggiungi per %1$s persone</string>
+    <string name="cal_add_for">Aggiungi per %1$s</string>
+    <string name="cal_also_add_to">Aggiungi anche a</string>
+    <string name="cal_color">Colore</string>
+    <string name="cal_end_after_start">L\'orario di fine deve essere dopo quello di inizio</string>
+    <string name="cal_pick_times">Scegli un orario di inizio e di fine</string>
+    <string name="cal_end">Fine</string>
+    <string name="cal_time">Orario</string>
+    <string name="cal_link_optional">Link (facoltativo)</string>
+    <string name="cal_location_hint">es. Ufficio, Zoom, Parco…</string>
+    <string name="cal_location_optional">Luogo (facoltativo)</string>
+    <string name="cal_description_hint">es. Aggiornamento settimanale con il team</string>
+    <string name="cal_description_optional">Descrizione (facoltativa)</string>
+    <string name="cal_event_name_hint">es. Riunione del team</string>
+    <string name="cal_event_name">Nome dell\'evento</string>
+    <string name="cal_who_for">Per chi è?</string>
+    <string name="cal_new_event">Nuovo evento</string>
+    <string name="cal_event_for_someone">Evento per qualcuno</string>
+    <string name="cal_edit_event">Modifica evento</string>
+
+    <!-- ui/calendar/CalendarHeader.kt -->
+    <string name="common_previous">Precedente</string>
+    <string name="cal_switch_month">Passa alla vista mensile</string>
+    <string name="cal_switch_week">Passa alla vista settimanale</string>
+    <string name="cal_week">Settimana</string>
+    <string name="cal_month">Mese</string>
+
+    <!-- ui/calendar/CalendarTasks.kt -->
+    <string name="cal_open_breakdown">Apri la suddivisione</string>
+    <string name="cal_steps_done">%1$s di %2$s passaggi fatti</string>
+    <string name="cal_breakdown_complete">Suddivisione completata</string>
+    <string name="cal_break_steps_sub">%1$s min · più facile un pezzo alla volta</string>
+    <string name="cal_break_steps">Dividilo in passaggi</string>
+    <string name="cal_divide">Dividi</string>
+    <string name="cal_show_details">Mostra dettagli</string>
+    <string name="cal_hide_details">Nascondi dettagli</string>
+    <string name="cal_overdue">IN RITARDO</string>
+    <string name="cal_added_by">Aggiunto da %1$s</string>
+    <string name="cal_delete_confirm">Vuoi davvero eliminare \"%1$s\"? L\'operazione non si può annullare.</string>
+    <string name="cal_delete_event_q">Eliminare l\'evento?</string>
+    <string name="cal_delete_event">Elimina evento</string>
+    <string name="cal_tap_plus">Tocca + per aggiungere un\'attività</string>
+    <string name="cal_no_tasks_day">Nessuna attività per questo giorno</string>
+    <string name="cal_n_done">%1$s fatte</string>
+    <string name="cal_one_done">1 fatta</string>
+    <string name="cal_still_to_come">Ancora da fare</string>
+    <string name="cal_slipped_many">%1$s cose ti sono sfuggite</string>
+    <string name="cal_slipped_one">1 cosa ti è sfuggita</string>
+
+    <!-- ui/calendar/TimeSuggestionChips.kt -->
+    <string name="suggest_range_cd">dalle %1$s alle %2$s.\u0020</string>
+    <string name="suggest_time_many">Orari suggeriti</string>
+    <string name="suggest_time_one">Orario suggerito</string>
+
+    <!-- ui/calendar/TaskBreakdownScreen.kt -->
+    <string name="bd_save_plan">Salva piano</string>
+    <string name="bd_plan_saved">Piano salvato</string>
+    <string name="bd_clear_plan">Svuota piano</string>
+    <string name="bd_add_station">Aggiungi tappa</string>
+    <string name="bd_autosave">Il piano si salva da solo mentre lo modifichi.</string>
+    <string name="bd_start_focus">Avvia sessione di concentrazione</string>
+    <string name="bd_break">Pausa</string>
+    <string name="bd_5_more">5 minuti in più</string>
+    <string name="bd_5_less">5 minuti in meno</string>
+    <string name="bd_move_down">Sposta giù</string>
+    <string name="bd_move_up">Sposta su</string>
+    <string name="bd_remove_station">Rimuovi tappa</string>
+    <string name="bd_name_step">Dai un nome a questo passaggio…</string>
+    <string name="bd_mark_not_done">Segna come non fatto</string>
+    <string name="bd_preset_pomodoro">25m + pause da 5m</string>
+    <string name="bd_preset_quarters">4 × %1$sm</string>
+    <string name="bd_preset_thirds">3 × %1$sm</string>
+    <string name="bd_preset_halves">2 × %1$sm</string>
+    <string name="bd_add_manual">Aggiungi una tappa a mano</string>
+    <string name="bd_quarters">In quattro parti</string>
+    <string name="bd_thirds">In tre parti</string>
+    <string name="bd_halves">A metà</string>
+    <string name="bd_add_stations">Aggiungi tappe da spuntare una alla volta.</string>
+    <string name="bd_split_minutes">Dividi questi %1$s minuti in tappe più piccole da spuntare.</string>
+    <string name="bd_break_it">Dividilo in passaggi</string>
+    <string name="bd_unplanned">%1$s min non pianificati</string>
+    <string name="bd_over">%1$s min oltre la durata dell\'evento</string>
+    <string name="bd_plan_complete">Piano completato</string>
+    <string name="bd_progress">%1$s di %2$s fatte · %3$s/%4$s min</string>
+    <string name="bd_unsaved">Modifiche non salvate</string>
+    <string name="bd_saved">Salvato</string>
+    <string name="bd_title">Suddivisione</string>
+    <string name="bd_event_gone">Questo evento non esiste più.</string>
+
+    <!-- ui/calendar/TaskBreakdownViewModel.kt -->
+    <string name="bd_focus_n">Concentrazione %1$s</string>
+    <string name="bd_part">Parte %1$s</string>
+    <string name="bd_new_step">Nuovo passaggio</string>
+
+    <!-- ui/todo/TodoViewModel.kt -->
+    <string name="todo_insights_today">Andamento delle attività di oggi</string>
+    <string name="todo_insights_for">Andamento delle attività del %1$s</string>
+    <string name="todo_added">L\'attività è stata aggiunta</string>
+    <string name="todo_filter_high">Alta priorità</string>
+    <string name="todo_filter_overdue">In ritardo</string>
+    <string name="todo_filter_upcoming">In arrivo</string>
+    <string name="todo_cat_sport">Sport</string>
+    <string name="todo_cat_personal">Personale</string>
+    <string name="todo_cat_education">Studio</string>
+
+    <!-- ui/todo/TaskDetailScreen.kt -->
+    <string name="todo_update">Aggiorna attività</string>
+    <string name="todo_status">Stato</string>
+    <string name="todo_end_time">Ora di fine</string>
+    <string name="todo_start_time">Ora di inizio</string>
+    <string name="todo_date">Data</string>
+    <string name="todo_date_time">Data e ora</string>
+    <string name="todo_description">Descrizione</string>
+    <string name="todo_title">Titolo</string>
+    <string name="todo_task_details">Dettagli attività</string>
+
+    <!-- ui/todo/TodoDialogs.kt -->
+    <string name="todo_they_see">Vedrà questa attività nella sua lista. Continuerà a non vedere nient\'altro di tuo.</string>
+    <string name="todo_only_they">Solo quella persona riceverà l\'attività</string>
+    <string name="todo_on_your_list">Sarà anche nella tua lista</string>
+    <string name="todo_add_mine_too">Aggiungi anche alla mia lista</string>
+    <string name="todo_description_hint">es. Stretching del mattino</string>
+    <string name="todo_hide_options">Nascondi opzioni extra</string>
+    <string name="todo_category">Categoria</string>
+    <string name="todo_pick_date">Scegli una data</string>
+    <string name="todo_task_name_hint">es. Pratica di yoga</string>
+    <string name="todo_task_name">Nome dell\'attività</string>
+    <string name="todo_delete_task">Elimina attività</string>
+    <string name="todo_edit_task">Modifica attività</string>
+    <string name="todo_add_for_lists">Aggiungi a %1$s liste</string>
+    <string name="todo_add_task_btn">Aggiungi attività</string>
+    <string name="todo_new_task">Nuova attività</string>
+    <string name="todo_task_for_someone">Attività per qualcuno</string>
+
+    <!-- ui/todo/TodoScreen.kt -->
+    <string name="todo_try_search">Prova con un altro termine di ricerca</string>
+    <string name="todo_no_found">Nessuna attività trovata</string>
+    <string name="todo_empty_today_sub">Tocca + per aggiungere la tua prima attività</string>
+    <string name="todo_empty_completed_sub">Qui compariranno le attività completate</string>
+    <string name="todo_empty_high_sub">Contrassegna un\'attività per darle priorità</string>
+    <string name="todo_empty_overdue_sub">Nessuna attività incompleta è scaduta</string>
+    <string name="todo_empty_upcoming_sub">Qui compariranno le attività future</string>
+    <string name="todo_empty_today">Nessuna attività per oggi</string>
+    <string name="todo_empty_completed">Nessuna attività completata</string>
+    <string name="todo_empty_high">Nessuna attività ad alta priorità</string>
+    <string name="todo_empty_overdue">Sei in pari con tutto</string>
+    <string name="todo_empty_upcoming">Niente in arrivo</string>
+    <string name="todo_show_tasks">Mostra attività</string>
+    <string name="todo_category_caps">CATEGORIA</string>
+    <string name="todo_view_caps">VISTA</string>
+    <string name="todo_filter_sub">Scegli una vista e una categoria</string>
+    <string name="todo_filter_title">Filtra le attività</string>
+    <string name="todo_completed_tasks">Attività completate</string>
+    <string name="todo_high_tasks">Attività ad alta priorità</string>
+    <string name="todo_overdue_tasks">Attività in ritardo</string>
+    <string name="todo_upcoming_tasks">Attività in arrivo</string>
+    <string name="todo_filters">Filtri</string>
+    <string name="todo_filters_count">Filtri · %1$s</string>
+    <string name="todo_choose_date">Scegli una data</string>
+    <string name="todo_search_hint">Cerca attività...</string>
+    <string name="todo_delete_body">Vuoi davvero eliminare questa attività?</string>
+    <string name="todo_delete_q">Eliminare l\'attività?</string>
+
+    <!-- ui/todo/TodoSwipe.kt -->
+    <string name="todo_edit_task_cd">Modifica attività</string>
+
+    <!-- ui/todo/TodoTaskCard.kt -->
+    <string name="todo_flag">Contrassegna come importante</string>
+    <string name="todo_remove_flag">Rimuovi contrassegno</string>
+    <string name="todo_high_priority_caps">ALTA PRIORITÀ</string>
+
+    <!-- ui/pomodoro/PomodoroUiState.kt -->
+    <string name="focus_empty_title_today">Oggi ancora nessuna concentrazione</string>
+    <string name="focus_fmt_m">%1$s min</string>
+    <string name="focus_fmt_h">%1$s h</string>
+    <string name="focus_fmt_hm">%1$s h %2$s min</string>
+    <string name="focus_cmp_first">Ottimo inizio: il primo giorno di concentrazione da un po\'!</string>
+    <string name="focus_cmp_more">%1$s in più di ieri: continua così!</string>
+    <string name="focus_cmp_less">%1$s in meno di ieri: dai che ce la fai</string>
+
+    <!-- data/local/PomodoroTimerManager.kt -->
+    <string name="focus_one_session_done">1 sessione completata</string>
+    <string name="focus_sessions_done">%1$s sessioni completate</string>
+    <string name="sound_rain">Pioggia</string>
+    <string name="sound_forest">Foresta</string>
+    <string name="sound_ocean">Onde del mare</string>
+    <string name="sound_fireplace">Camino</string>
+    <string name="sound_white_noise">Rumore bianco</string>
+    <string name="sound_cafe">Caffetteria</string>
+    <string name="sound_birds">Uccellini</string>
+    <string name="sound_wind">Vento</string>
+    <string name="sound_ambient">Suono d\'ambiente</string>
+
+    <!-- ui/pomodoro/components/AmbientSoundPill.kt -->
+    <string name="sound_choose">Scegli un suono</string>
+
+    <!-- ui/pomodoro/dialogs/AmbientSoundSheet.kt -->
+    <string name="sound_open_spotify">Apri in Spotify</string>
+    <string name="sound_spotify">Playlist Spotify</string>
+
+    <!-- ui/pomodoro/CreateFocusRoomSheet.kt -->
+    <string name="focus_not_enabled">Non ha ancora attivato Concentrazione insieme</string>
+    <string name="focus_n_minutes">%1$s minuti</string>
+    <string name="focus_create_room">Crea la stanza</string>
+    <string name="focus_creating">Creazione…</string>
+    <string name="focus_add_someone_first">Aggiungi prima qualcuno in Together, poi potrà attivare Concentrazione insieme per te.</string>
+    <string name="focus_with_who">Con chi</string>
+    <string name="focus_how_long">Quanto dura</string>
+    <string name="focus_both_tap">Entrambi toccherete avvia prima che parta il timer</string>
+
+    <!-- ui/pomodoro/FocusRoomScreen.kt -->
+    <string name="focus_waiting_others">In attesa di altre %1$s persone</string>
+    <string name="focus_waiting_for">In attesa di %1$s</string>
+    <string name="focus_starting">Si parte…</string>
+    <string name="focus_not_now_leave">Non ora, esci</string>
+    <string name="focus_leave">Lascia la sessione</string>
+    <string name="focus_youre_ready">Ci sei</string>
+    <string name="focus_im_ready">Ci sono</string>
+    <string name="focus_tap_ready">Tocca pronto quando sei alla scrivania</string>
+    <string name="focus_focusing_together">Concentrazione insieme</string>
+    <string name="focus_break_together">Pausa insieme ☕</string>
+    <string name="focus_ready_count">%1$s su %2$s ci sono</string>
+    <string name="focus_room">Stanza di concentrazione</string>
+    <string name="focus_back_stay_cd">Indietro: resti nella stanza</string>
+    <string name="focus_back_staying">Indietro, resti nella stanza</string>
+
+    <!-- ui/pomodoro/FocusTogetherCard.kt -->
+    <string name="focus_add_to_work">Aggiungi qualcuno in Together per lavorare insieme</string>
+    <string name="focus_focusing_with">In concentrazione con\u0020</string>
+    <string name="focus_break_with">In pausa con\u0020</string>
+    <string name="focus_open_room">Apri la stanza di concentrazione</string>
+    <string name="focus_join">Unisciti</string>
+    <string name="focus_starts_join">%1$s min · parte quando ti unisci</string>
+    <string name="focus_wants_with_you">%1$s vuole concentrarsi con te</string>
+    <string name="focus_starts_everyone">%1$s min · parte quando ci sono tutti</string>
+    <string name="focus_waiting_start">In attesa che %1$s tocchino avvia</string>
+
+    <!-- ui/pomodoro/PomodoroScreen.kt -->
+    <string name="common_not_now_title">Non ora</string>
+    <string name="common_open_settings_title">Apri impostazioni</string>
+    <string name="focus_permission_body">Per silenziare le notifiche durante le sessioni di concentrazione, Myndora ha bisogno dell\'accesso a Non disturbare. Così l\'app può silenziare temporaneamente le notifiche mentre il timer è in funzione.</string>
+    <string name="focus_permission_title">Autorizzazione per la modalità concentrazione</string>
+    <string name="focus_session_completed">Sessione completata</string>
+    <string name="focus_paused">In pausa</string>
+    <string name="focus_drag_ring">Trascina l\'anello per regolare</string>
+    <string name="focus_tap_duration">Tocca per impostare la durata</string>
+    <string name="focus_drag_adjust">Trascina per regolare</string>
+    <string name="focus_release_finish">Rilascia per terminare</string>
+    <string name="focus_break_caps">PAUSA</string>
+    <string name="focus_session_caps">SESSIONE DI CONCENTRAZIONE</string>
+    <string name="focus_mode_disabled">Modalità concentrazione disattivata</string>
+    <string name="focus_mode_enabled">Modalità concentrazione attiva</string>
+    <string name="focus_mode_manages">La modalità %1$s gestisce il silenzio durante la concentrazione</string>
+    <string name="focus_mode_disabled_cd">Modalità concentrazione disattivata</string>
+    <string name="focus_mode_enabled_cd">Modalità concentrazione attiva</string>
+    <string name="focus_silence_by_mode_cd">Silenzio durante la concentrazione gestito dalla modalità %1$s</string>
+    <string name="focus_timer_title">Timer di concentrazione</string>
+    <string name="focus_together_short">Insieme</string>
+    <string name="focus_dnd_prompt_title">Silenziare il telefono?</string>
+    <string name="focus_dnd_prompt_body">Non disturbare tiene lontane le notifiche fino alla fine di questa sessione. Puoi attivarlo quando vuoi anche con l\'icona in alto.</string>
+    <string name="focus_dnd_prompt_on">Attiva</string>
+    <string name="language_choose_cd">Scegli la lingua, ora %1$s</string>
+
+    <!-- ui/pomodoro/FocusTogetherViewModel.kt -->
+    <string name="focus_send_failed">Impossibile inviarlo (%1$s).</string>
+
+    <!-- ui/pomodoro/SharedSessionPanel.kt -->
+    <string name="focus_controls_room">I controlli sono nella stanza, così restate al passo insieme</string>
+    <string name="focus_break_together_plain">In pausa insieme</string>
+
+    <!-- ui/pomodoro/components/BottomControls.kt -->
+    <string name="focus_restart">Ricomincia</string>
+
+    <!-- ui/pomodoro/components/CalendarPlanStrip.kt -->
+    <string name="plan_start_item">Avvia %1$s</string>
+    <string name="plan_current">\u0020· in corso</string>
+    <string name="plan_show_all">Mostra tutti i passaggi</string>
+    <string name="plan_hide_all">Nascondi tutti i passaggi</string>
+    <string name="plan_all_steps">Tutti i %1$s passaggi</string>
+    <string name="plan_hide_steps">Nascondi passaggi</string>
+    <string name="plan_finish_first">Termina o interrompi la sessione in corso per passare a un altro passaggio.</string>
+    <string name="plan_step_of">Passaggio %1$s di %2$s · %3$s</string>
+    <string name="plan_stop_following">Smetti di seguire il piano</string>
+    <string name="plan_open_breakdown">Apri la suddivisione completa</string>
+    <string name="plan_calendar">Piano dal calendario</string>
+
+    <!-- ui/pomodoro/components/DailyFocusCard.kt -->
+
+    <!-- ui/pomodoro/components/HistorySummarySwitcher.kt -->
+    <string name="focus_history_cd">Cronologia</string>
+    <string name="focus_zero_today">0 min oggi</string>
+    <string name="focus_minutes_today">%1$s min oggi</string>
+
+    <!-- ui/pomodoro/dialogs/DurationPickerSheet.kt -->
+    <string name="focus_set_min">Imposta %1$s min</string>
+    <string name="focus_session_length">Durata della sessione</string>
+
+    <!-- ui/pomodoro/dialogs/PomodoroHistoryDialog.kt -->
+    <string name="focus_no_sessions_body">Completa una sessione di concentrazione e comparirà qui.</string>
+    <string name="focus_no_sessions">Ancora nessuna sessione</string>
+    <string name="focus_focused">Concentrazione</string>
+    <string name="focus_history_title">Cronologia della concentrazione</string>
+
+    <!-- ui/pomodoro/dialogs/PomodoroHistorySheet.kt -->
+    <string name="focus_no_sessions_body2">Completa una sessione di concentrazione e comparirà qui.</string>
+    <string name="focus_streak">%1$s giorni di fila</string>
+    <string name="focus_recent_sessions">Sessioni recenti</string>
+    <string name="focus_active_days">giorni attivi</string>
+    <string name="focus_best_day">giorno migliore</string>
+    <string name="focus_this_week">questa settimana</string>
+    <string name="focus_last_7">Ultimi 7 giorni</string>
+    <string name="focus_history_sheet_title">Cronologia della concentrazione</string>
+
+    <!-- ui/pomodoro/utils/PomodoroTimeFormatter.kt -->
+    <string name="focus_unknown_time">Orario sconosciuto</string>
+
+    <!-- ui/activity/WorkspaceContent.kt -->
+    <string name="ws_healthcare_near">Servizi sanitari vicino a te</string>
+    <string name="ws_find_care">Trova assistenza</string>
+    <string name="ws_care_nearby">Assistenza nelle vicinanze</string>
+    <string name="ws_nobody_yet">Ancora nessuno</string>
+    <string name="ws_feature_todo">Cose da fare</string>
+    <string name="ws_save_goals">Salva obiettivi</string>
+    <string name="ws_energy">Energia</string>
+    <string name="ws_goals_limits">Scegli limiti che motivano, senza pretendere troppo.</string>
+    <string name="ws_your_goals">I tuoi obiettivi di attività</string>
+    <string name="ws_medications">Farmaci</string>
+    <string name="ws_body_signals">Segnali del corpo</string>
+    <string name="ws_activity">Attività fisica</string>
+    <string name="ws_for_you">PER TE</string>
+    <string name="ws_dismiss_suggestion">Ignora suggerimento</string>
+    <string name="ws_hold_reorder">Tieni premuto per riordinare %1$s</string>
+    <string name="ws_n_pinned">%1$s in evidenza</string>
+    <string name="ws_hold_card">Tieni premuta una scheda, poi posizionala esattamente dove vuoi.</string>
+    <string name="ws_pinned_cards">Schede in evidenza</string>
+    <string name="ws_edit_summary">Modifica riepilogo</string>
+    <string name="ws_goals_body">Scegli obiettivi che sostengono la tua giornata, non obiettivi che aggiungono pressione.</string>
+    <string name="ws_build_rings">Costruisci i tuoi anelli</string>
+    <string name="ws_activity_goals">Obiettivi di attività</string>
+    <string name="ws_tap_log">Tocca per vedere e registrare le dosi</string>
+    <string name="ws_todays_doses">Dosi di oggi</string>
+    <string name="ws_no_timing">Nessun orario scelto</string>
+    <string name="ws_times_a_day">%1$s volte al giorno</string>
+    <string name="ws_no_sleep_recorded">Nessun sonno registrato</string>
+    <string name="ws_hours_total">%1$s ore in totale</string>
+    <string name="ws_select_day">Scegli un giorno</string>
+    <string name="ws_8h_goal">obiettivo 8 h</string>
+    <string name="ws_movement_sub">Ricarica veloce · Senza pressione</string>
+    <string name="ws_movement">Pausa di movimento adatta all\'ADHD</string>
+    <string name="ws_walk_sub">10 min · Camminata guidata</string>
+    <string name="ws_walk">Una camminata per ricaricarti</string>
+    <string name="ws_suggestions_sub">Piccole idee basate sul tuo spazio benessere</string>
+    <string name="ws_suggestions">Suggerimenti per te</string>
+    <string name="ws_no_readings">Nessuna misurazione oggi: mostriamo la media settimanale</string>
+    <string name="ws_week_avg">MEDIA SETT.</string>
+    <string name="ws_resting">A RIPOSO</string>
+    <string name="ws_avg_today">MEDIA OGGI</string>
+    <string name="ws_latest_sleep">Ultima sessione di sonno</string>
+    <string name="ws_no_sleep">Nessun dato sul sonno per ora</string>
+    <string name="ws_sleep_hours">%1$s ore</string>
+    <string name="ws_connect_health_sub">Tocca per collegare passi, sonno, attività e battito cardiaco.</string>
+    <string name="ws_connect_health">Collega i tuoi dati sanitari</string>
+    <string name="ws_glance">Oggi, in breve</string>
+    <string name="ws_pinned">In evidenza</string>
+    <string name="ws_profile_photo">Foto del profilo</string>
+    <string name="ws_connected">Collegato</string>
+    <string name="ws_tiny_reset_sub">Una pausa giocosa prima della prossima cosa</string>
+    <string name="ws_tiny_reset">Fai una piccola pausa</string>
+    <string name="ws_supported_sub">Benessere e assistenza, a portata di mano</string>
+    <string name="ws_supported">Prenditi cura di te</string>
+    <string name="ws_calendar_open">Il tuo calendario è libero</string>
+    <string name="ws_tasks_left">%1$s attività da fare</string>
+    <string name="ws_one_thing">Una cosa è sufficiente</string>
+    <string name="ws_next_move">Scegli la prossima mossa</string>
+    <string name="ws_title">Area di lavoro</string>
+    <string name="ws_one_reading">Da 1 misurazione di oggi</string>
+    <string name="ws_n_readings">Da %1$s misurazioni di oggi</string>
+    <string name="ws_one_request">1 richiesta in attesa</string>
+    <string name="ws_n_requests">%1$s richieste in attesa</string>
+    <string name="ws_one_medication">1 farmaco</string>
+    <string name="ws_n_medications">%1$s farmaci</string>
+    <string name="ws_connected_meds">Collegato · %1$s</string>
+    <string name="goal_suffix_steps">passi</string>
+    <string name="goal_suffix_minutes">minuti</string>
+
+    <!-- ui/activity/WorkspaceViewModel.kt -->
+    <string name="ws_no_tasks_completed">Ancora nessuna attività completata</string>
+    <string name="ws_completed_one">Hai completato 1 attività</string>
+    <string name="ws_completed_n">Hai completato %1$s attività</string>
+    <string name="ws_pomo_focus_paused">Concentrazione in pausa</string>
+    <string name="ws_pomo_focus_complete">Concentrazione completata</string>
+    <string name="ws_pomo_focus_ready">Concentrazione pronta</string>
+    <string name="ws_pomo_break_paused">Pausa sospesa</string>
+    <string name="ws_pomo_break_complete">Pausa terminata</string>
+    <string name="ws_pomo_break_ready">Pausa pronta</string>
+    <string name="ws_day_time">%1$s · %2$s</string>
+    <string name="ws_happening_now">In corso</string>
+    <string name="ws_no_focus_sessions">Ancora nessuna sessione di concentrazione</string>
+    <string name="ws_min_more">%1$s min in più di ieri</string>
+    <string name="ws_min_less">%1$s min in meno di ieri</string>
+    <string name="ws_same_as_yesterday">Come ieri</string>
+    <string name="ws_focused_today">%1$s di concentrazione oggi</string>
+    <string name="ws_hero_fresh">Un nuovo inizio ti aspetta</string>
+    <string name="ws_hero_fresh_sub">Prova una sessione tranquilla da 25 minuti. Anche iniziare in piccolo conta.</string>
+    <string name="ws_hero_yesterday">Ieri hai fatto %1$s. Non interrompere la serie!</string>
+    <string name="ws_hero_same">Stesso ritmo di ieri: la costanza vince.</string>
+    <string name="ws_task_count_one">1 attività</string>
+    <string name="ws_task_count_n">%1$s attività</string>
+    <string name="ws_banner_fresh">Un nuovo inizio</string>
+    <string name="ws_banner_fresh_sub">Pianifica un\'attività e prova una breve sessione di concentrazione per partire.</string>
+    <string name="ws_banner_great">Ottimo lavoro oggi</string>
+    <string name="ws_banner_both">Hai completato %1$s e fatto %2$s di concentrazione.</string>
+    <string name="ws_banner_tasks_only">Hai completato %1$s, ma ancora nessun tempo di concentrazione.</string>
+    <string name="ws_banner_focus_only">Ancora nessuna attività completata, ma hai fatto %1$s di concentrazione.</string>
+
+    <!-- ui/activity/WorkspaceHero.kt -->
+    <string name="hero_focused">di concentrazione</string>
+    <string name="health_steps_count">%1$s passi</string>
+    <string name="health_sleep_hours">%1$s h di sonno</string>
+    <string name="meds_today_date">Oggi, %1$s</string>
+
+    <!-- ui/activity/MedicationsScreen.kt -->
+    <string name="meds_any_time">In qualsiasi momento</string>
+
+    <!-- ui/activity/WorkspaceHero.kt -->
+    <string name="hero_see_list">Vedi la lista</string>
+    <string name="hero_back_focus">Torna alla concentrazione</string>
+    <string name="hero_short_block">Un breve blocco di concentrazione è un modo facile per iniziare.</string>
+    <string name="hero_nothing_scheduled">Niente in programma</string>
+    <string name="hero_dot_todo">· Cose da fare</string>
+    <string name="hero_dot_calendar">· Calendario</string>
+    <string name="hero_up_next">PROSSIMO</string>
+    <string name="hero_right_now">ADESSO</string>
+    <string name="hero_steady_week">Settimana costante</string>
+    <string name="hero_focus_adding">Il tempo di concentrazione si accumula</string>
+    <string name="hero_quiet_week">Una settimana tranquilla finora</string>
+    <string name="hero_moving">Stai andando avanti</string>
+    <string name="greet_fresh_page_plain">Pagina nuova</string>
+    <string name="hero_all_clear">Tutto fatto. Ottimo.</string>
+    <string name="hero_nothing_list">Ancora niente in lista</string>
+    <string name="hero_tasks_done">attività fatte</string>
+    <string name="hero_last_7">ULTIMI 7 GIORNI</string>
+
+    <!-- ui/activity/HealthScreen.kt -->
+    <string name="health_no_readings">Ancora nessuna misurazione oggi</string>
+    <string name="health_connect_line">Collega passi, sonno e attività</string>
+    <string name="health_taken_of">%1$s di %2$s prese oggi</string>
+    <string name="health_all_taken">Tutte le %1$s prese oggi</string>
+    <string name="health_nothing_today">Niente in programma oggi</string>
+    <string name="health_add_meds">Aggiungi cosa prendi e quando</string>
+
+    <!-- ui/activity/MedicationsScreen.kt -->
+    <string name="meds_add_yours_body">Imposta la dose e quante volte al giorno lo prendi.</string>
+    <string name="meds_add_yours">Aggiungi i tuoi farmaci</string>
+    <string name="meds_log_dose">Registra dose</string>
+    <string name="meds_undo_dose">Annulla dose</string>
+    <string name="meds_future_cannot">Una dose futura non può essere registrata</string>
+    <string name="common_todo_short">Cose da fare</string>
+    <string name="meds_also_show">Mostra le dosi anche in</string>
+    <string name="meds_your_meds">I tuoi farmaci</string>
+    <string name="meds_tap_undo">Tocca un segno di spunta per annullare</string>
+    <string name="meds_logged">Registrate</string>
+    <string name="meds_all_done_body">Hai registrato tutte le dosi previste.</string>
+    <string name="meds_all_done">Tutto fatto per oggi</string>
+    <string name="meds_taken_of">%1$s di %2$s prese</string>
+    <string name="meds_dose_log">Registro delle dosi</string>
+    <string name="meds_upcoming">Dosi in arrivo</string>
+    <string name="meds_todays_log">Registro di oggi</string>
+
+    <!-- ui/activity/MedicationEditScreen.kt -->
+    <string name="med_delete_body">Scompare dall\'elenco di oggi e dal tuo profilo. Le dosi già registrate restano.</string>
+    <string name="med_delete_confirm">Eliminare %1$s?</string>
+    <string name="med_add_btn">Aggiungi farmaco</string>
+    <string name="med_save_failed">Impossibile salvare. Controlla la connessione e riprova.</string>
+    <string name="med_days">Giorni</string>
+    <string name="med_only_needed_sub">Nessun promemoria, e non verrà contata come dose saltata</string>
+    <string name="med_only_needed">Solo al bisogno</string>
+    <string name="med_no_dose">nessuna dose impostata</string>
+    <string name="med_name_hint">Ritalin, Elvanse, melatonina…</string>
+    <string name="med_delete">Elimina farmaco</string>
+    <string name="med_new">Nuovo farmaco</string>
+    <string name="med_this_medication">questo farmaco</string>
+
+    <!-- ui/activity/WorkspaceScreen.kt -->
+    <string name="ws_open_voice">Apri l\'assistente vocale di Myndora</string>
+
+    <!-- ui/navigation/Screen.kt -->
+    <string name="nav_more">Altro</string>
+    <string name="nav_appointments">Appuntamenti</string>
+    <string name="nav_book_appointment">Prenota un appuntamento</string>
+    <string name="nav_choose_setup">Scegli la configurazione</string>
+    <string name="nav_splash">Myndora</string>
+    <string name="nav_login">Accesso</string>
+    <string name="nav_activity_goals">Obiettivi di attività</string>
+    <string name="nav_task_detail">Dettaglio attività</string>
+    <string name="nav_shape_flow">Shape Flow</string>
+    <string name="nav_todo">Cose da fare</string>
+
+    <!-- ui/navigation/BottomNavBar.kt -->
+    <string name="nav_ai_locked">Assistente AI, bloccato finché non completi il questionario</string>
+    <string name="nav_ai_assistant">Assistente AI</string>
+
+    <!-- ui/components/MyndoraLoader.kt -->
+    <string name="common_loading_plain">Caricamento</string>
+
+    <!-- ui/components/ProfileHeaderCard.kt -->
+    <string name="profile_get_started">Inizia</string>
+
+    <!-- ui/sharedcomponents/AppSearchbar.kt -->
+    <string name="search_close">Chiudi ricerca</string>
+    <string name="common_search_hint">Cerca...</string>
+
+    <!-- ui/sharedcomponents/MyndoraNotice.kt -->
+    <string name="notice_heads_up">Attenzione</string>
+    <string name="notice_error">Qualcosa è andato storto</string>
+    <string name="notice_all_done">Tutto fatto</string>
+
+    <!-- ui/sharedcomponents/SuccessPopup.kt -->
+    <string name="common_success">Fatto</string>
+
+    <!-- ui/sharedcomponents/TimePickerDialog.kt -->
+    <string name="tp_use_time">Usa questo orario</string>
+    <string name="tp_plus_15">Più 15 minuti</string>
+    <string name="tp_minus_15">Meno 15 minuti</string>
+    <string name="tp_hint">Scorri la tua giornata o usa un orario rapido</string>
+
+    <!-- ui/stories/StoryHint.kt -->
+    <string name="story_pull_down">Trascina giù</string>
+    <string name="story_many">%1$s storie</string>
+    <string name="story_one">1 storia</string>
+
+    <!-- ui/stories/StoryViewer.kt -->
+    <string name="story_cd">Storia</string>
+    <string name="story_open_link">Apri link</string>
+
+    <!-- ui/games/ShapeFlowScreen.kt -->
+    <string name="shape_glowing">%1$s, illuminato</string>
+    <string name="shape_one_tap">1 tocco: continua a esplorare</string>
+    <string name="shape_n_taps">%1$s tocchi: continua a esplorare</string>
+    <string name="shape_card_meta">1–3 MIN\u0020\u0020•\u0020\u0020MEMORIA + ANTISTRESS</string>
+    <string name="shape_card_sub">Tocca per rilassarti o segui la sequenza.</string>
+    <string name="shape_mindful_play">GIOCO CONSAPEVOLE</string>
+    <string name="shape_game_cd">Gioco Shape Flow</string>
+    <string name="shape_tap_feels_good">Tocca ciò che ti fa stare bene e resta quanto vuoi.</string>
+    <string name="shape_no_score">NESSUN PUNTEGGIO. NESSUNA PRESSIONE.</string>
+    <string name="shape_next_round">Prossimo turno…</string>
+    <string name="shape_watch_pattern">Guarda la sequenza</string>
+    <string name="shape_restart">Ricomincia il gioco</string>
+    <string name="shape_start_memory">Avvia il gioco di memoria</string>
+    <string name="shape_quick">Veloce</string>
+    <string name="shape_little_challenge">Una piccola sfida</string>
+    <string name="shape_easy_follow">Facile da seguire</string>
+    <string name="shape_pace">RITMO</string>
+    <string name="shape_nice">Ottimo</string>
+    <string name="shape_your_turn">Tocca a te</string>
+    <string name="shape_watch">Guarda</string>
+    <string name="shape_ready">Si parte</string>
+    <string name="shape_free_play">Gioco libero</string>
+    <string name="shape_best">RECORD</string>
+    <string name="shape_taps_caps">TOCCHI</string>
+    <string name="shape_round">TURNO</string>
+    <string name="shape_fidget">Antistress</string>
+    <string name="shape_memory">Memoria</string>
+    <string name="shape_turn_haptics_on">Attiva la vibrazione</string>
+    <string name="shape_turn_haptics_off">Disattiva la vibrazione</string>
+    <string name="shape_tiny_reset">Una piccola pausa per menti indaffarate</string>
+    <string name="shape_haptics_off">Senza suoni\u0020\u0020•\u0020\u0020Vibrazione disattivata</string>
+    <string name="shape_haptics_on">Senza suoni\u0020\u0020•\u0020\u0020Vibrazione attiva</string>
+    <string name="shape_almost">Quasi! Fai un respiro e riprova la sequenza.</string>
+    <string name="shape_beautiful">Bellissimo: aggiungiamo un\'altra forma.</string>
+    <string name="shape_your_turn_of">Tocca a te\u0020\u0020•\u0020\u0020%1$s di %2$s</string>
+    <string name="shape_watch_carefully">Guarda con attenzione…</string>
+    <string name="shape_watch_glow">Guarda la luce, poi ripeti la sequenza.</string>
+    <string name="shape_tap_any">Tocca una forma qualsiasi. Ognuna ha il suo piccolo ritmo.</string>
+    <string name="shape_orange_diamond">Rombo arancione</string>
+    <string name="shape_rose_squircle">Squircle rosa</string>
+    <string name="shape_green_triangle">Triangolo verde</string>
+    <string name="shape_golden_trapezoid">Trapezio dorato</string>
+    <string name="shape_blue_square">Quadrato blu</string>
+    <string name="shape_purple_circle">Cerchio viola</string>
+
+    <!-- ui/care/CareNearbyScreen.kt -->
+    <string name="care_all_categories">Tutte le categorie</string>
+    <string name="care_filters_active">Filtri, %1$s attivi</string>
+    <string name="care_mapped">%1$s sulla mappa qui vicino</string>
+    <string name="care_tap_explore">Tocca per esplorare</string>
+    <string name="care_map">Mappa dell\'assistenza</string>
+    <string name="care_site">Sito</string>
+    <string name="care_map_short">Mappa</string>
+    <string name="care_call">Chiama</string>
+    <string name="care_clear_filters">Rimuovi filtri</string>
+    <string name="care_nothing_city">Ancora niente da mostrare in questa città</string>
+    <string name="care_no_match">Nessun risultato con questi filtri</string>
+    <string name="care_no_cities_body">Aggiungi righe alle tabelle cities e places in Supabase, o verifica che la Row-Level Security ne consenta la lettura.</string>
+    <string name="care_no_cities">Nessuna città da mostrare</string>
+    <string name="care_book">Prenota</string>
+    <string name="care_close_map">Chiudi mappa</string>
+    <string name="care_use_location">Usa la mia posizione</string>
+    <string name="care_location_found">Posizione trovata</string>
+    <string name="care_tap_explore_map">Tocca per esplorare la mappa completa</string>
+    <string name="care_see_around">Guarda l\'assistenza intorno a te</string>
+    <string name="care_your_meds">I tuoi farmaci: %1$s</string>
+    <string name="care_show_all">Mostra tutto</string>
+    <string name="care_clear_filter">Rimuovi filtro</string>
+    <string name="care_chat_many">Stai vedendo %1$s risultati della tua chat</string>
+    <string name="care_chat_one">Stai vedendo il risultato della tua chat</string>
+    <string name="care_offline">Offline: stai consultando i risultati salvati. Connettiti a internet per aggiornarli o prenotare.</string>
+    <string name="care_refresh">Aggiorna i risultati</string>
+    <string name="care_city_note">I risultati usano la città salvata durante la registrazione.</string>
+    <string name="care_choose_city">Scegli la tua città nel Profilo ADHD</string>
+    <string name="care_need_internet">Per prenotare serve una connessione a internet</string>
+
+    <!-- ui/care/CareNearbyViewModel.kt -->
+    <string name="care_load_places_failed">Impossibile caricare i luoghi</string>
+    <string name="care_load_cities_failed">Impossibile caricare le città</string>
+
+    <!-- ui/reservation/ReservationViewModel.kt -->
+    <string name="res_save_failed">Impossibile salvare l\'appuntamento</string>
+    <string name="res_request_description">Richiesta di prenotazione — conferma direttamente con %1$s.\u0020</string>
+    <string name="res_appointment_at">Appuntamento presso %1$s</string>
+    <string name="res_connect_internet">Connettiti a internet per prenotare</string>
+    <string name="res_no_places">Non ci sono strutture sanitarie disponibili a %1$s</string>
+    <string name="res_choose_city_first">Prima scegli la tua città nel Profilo ADHD</string>
+
+    <!-- ui/reservation/ReservationScreen.kt -->
+    <string name="res_step_complete">Passaggio completato</string>
+    <string name="res_profile_city">La città del tuo profilo</string>
+    <string name="res_book_an">Prenota un appuntamento</string>
+    <string name="res_history">Storico delle prenotazioni</string>
+    <string name="res_added_calendar">L\'appuntamento è stato aggiunto al calendario.</string>
+    <string name="res_confirmed">Prenotazione confermata</string>
+    <string name="res_need_internet">Per prenotare serve internet</string>
+    <string name="res_reserve">Prenota l\'appuntamento</string>
+    <string name="res_30_min">Appuntamento di 30 minuti</string>
+    <string name="res_choose_time">Scegli un orario</string>
+    <string name="res_two_weeks">Scegli entro le prossime due settimane</string>
+    <string name="res_pick_day">Scegli un giorno</string>
+    <string name="res_near">Servizi sanitari vicino a %1$s</string>
+    <string name="res_choose_place">Scegli un luogo</string>
+
+    <!-- ui/reservation/ReservationHistoryScreen.kt -->
+    <string name="res_past">Passati</string>
+    <string name="res_planned">Previsto</string>
+    <string name="res_no_appointments_body">Qui compariranno gli appuntamenti che aggiungi.</string>
+    <string name="res_no_appointments">Ancora nessun appuntamento</string>
+    <string name="res_your_appointments">I tuoi appuntamenti</string>
+
+    <!-- ui/reservation/ReservationScreen.kt -->
+    <string name="res_you">te</string>
+
+    <!-- domain/model/Place.kt -->
+    <string name="place_other">Altro</string>
+    <string name="place_centro">Centro di ascolto</string>
+    <string name="place_asl">ASL</string>
+    <string name="place_specialist">Specialista</string>
+
+    <!-- data/notifications/ReminderCopy.kt -->
+    <string name="reminder_title_day_before">Il piano di domani</string>
+    <string name="reminder_title_30">Tra poco</string>
+    <string name="reminder_title_start">In programma adesso</string>
+    <string name="reminder_day_before_1">Domani alle %2$s: %1$s. C\'è qualcosa da preparare stasera?</string>
+    <string name="reminder_day_before_2">Promemoria: %1$s è domani alle %2$s.</string>
+    <string name="reminder_day_before_3">Sul radar: %1$s, domani alle %2$s.</string>
+    <string name="reminder_day_before_4">Domani ti aspetta %1$s (%2$s). Vuoi preparare un promemoria?</string>
+    <string name="reminder_30_1">Mancano 30 min a %1$s. Chiudi quello che stai facendo e respira.</string>
+    <string name="reminder_30_2">Alle %2$s: %1$s. Un po\' di stretching e vai.</string>
+    <string name="reminder_30_3">Tra mezz\'ora: %1$s. Ce la fai.</string>
+    <string name="reminder_30_4">%1$s inizia tra 30 minuti: acqua, bagno e ci sei.</string>
+    <string name="reminder_start_1">Si comincia: %1$s. Un passo alla volta.</string>
+    <string name="reminder_start_2">È il momento: %1$s.</string>
+    <string name="reminder_start_3">Ora tocca a %1$s. Inizia e basta: la perfezione può aspettare.</string>
+    <string name="nudge_title_1">Che ne dici di uno sprint di concentrazione?</string>
+    <string name="nudge_body_1">Un Pomodoro da 25 minuti. Scegli un\'attività e premi avvia.</string>
+    <string name="nudge_title_2">Hai 25 minuti?</string>
+    <string name="nudge_body_2">Una sessione di concentrazione adesso vale più di una perfetta più tardi. Via!</string>
+    <string name="nudge_title_3">È ora di concentrarsi</string>
+    <string name="nudge_body_3">Avvia un Pomodoro: la spinta arriva dopo aver iniziato, non prima.</string>
+    <string name="nudge_title_4">Una piccola spinta</string>
+    <string name="nudge_body_4">Imposta un timer, spegni il rumore e dedica tutta la tua attenzione a una cosa sola.</string>
+    <string name="break_start_title">Ottimo lavoro: è ora di una pausa</string>
+    <string name="break_start_body">Allontanati, sgranchisciti, bevi un po\' d\'acqua. Te lo sei meritato.</string>
+    <string name="break_over_title">La pausa è finita</string>
+    <string name="break_over_body">Che ne dici di un\'altra sessione di concentrazione? Inizia e basta.</string>
+    <string name="morning_title">Buongiorno</string>
+    <string name="morning_empty">Oggi nessun evento in calendario: trattati con gentilezza.</string>
+    <string name="morning_list_more">%1$s, %2$s e altri %3$s</string>
+    <string name="morning_today">Oggi: %1$s. Scegli quello che conta di più.</string>
+
+    <!-- data/notifications/NotificationChannels.kt -->
+    <string name="channel_breaks_desc">Avvisi quando finisce una sessione di concentrazione o una pausa.</string>
+    <string name="channel_breaks">Pause del Pomodoro</string>
+    <string name="channel_profile_desc">Promemoria occasionali per completare un profilo Myndora non finito.</string>
+    <string name="channel_profile">Promemoria del profilo</string>
+    <string name="channel_nudges_desc">Suggerimenti gentili per iniziare una sessione Pomodoro.</string>
+    <string name="channel_summary_desc">Un resoconto tranquillo della tua giornata, ogni mattina.</string>
+    <string name="channel_reminders_desc">Avvisi prima dei tuoi eventi e delle tue attività.</string>
+    <string name="channel_reminders">Promemoria</string>
+
+    <!-- data/notifications/QuestionnaireReminderReceiver.kt -->
+    <string name="qr_ready_title">Il tuo profilo è pronto da completare</string>
+    <string name="qr_ready_body">Tutti i %1$s passaggi sono salvati. Apri Myndora e completa il profilo quando vuoi.</string>
+    <string name="qr_start_title">Anche un piccolo inizio conta</string>
+    <string name="qr_start_body">Inizia il tuo profilo Myndora poche domande alla volta.</string>
+    <string name="qr_one_title">Ti manca una sola risposta</string>
+    <string name="qr_one_body">%1$s risposte sono salvate. Continua con l\'ultima domanda.</string>
+    <string name="qr_nearly_title">Il tuo profilo è quasi pronto</string>
+    <string name="qr_nearly_body">%1$s risposte su %2$s sono salvate. Ne mancano solo %3$s.</string>
+    <string name="qr_minutes_title">Continua quando hai %1$s min</string>
+    <string name="qr_minutes_body">%1$s risposte su %2$s sono salvate. Riprendi dalla prossima.</string>
+    <string name="qr_remind_3_days">Ricordamelo tra 3 giorni</string>
+    <string name="focus_invite_body">%1$s min · parte quando toccate entrambi avvia</string>
+    <string name="common_someone">Qualcuno</string>
+
+    <!-- data/local/PomodoroTimerService.kt -->
+    <string name="timer_channel_desc">Mostra l\'avanzamento del timer Pomodoro attivo</string>
+    <string name="timer_channel">Timer Pomodoro</string>
+    <string name="timer_title">Timer Myndora</string>
+    <string name="timer_ready">%1$s — Pronta</string>
+    <string name="timer_completed">%1$s — Completata!</string>
+    <string name="timer_paused">%1$s — In pausa (%2$s)</string>
+    <string name="timer_focus_session">Sessione di concentrazione</string>
+
+    <!-- data/local/FocusModeManager.kt -->
+    <string name="focus_condition_on">Sessione di concentrazione in corso</string>
+    <string name="focus_condition_off">Sessione di concentrazione terminata</string>
+
+    <!-- data/export/ProfilePdfExporter.kt -->
+    <string name="pdf_preferred_tone">Tono preferito</string>
+    <string name="pdf_hardest_part">La parte più difficile</string>
+    <string name="pdf_what_helps">Cosa aiuta</string>
+    <string name="pdf_med_status">Stato dei farmaci</string>
+    <string name="pdf_already_tried">Già provato</string>
+    <string name="pdf_work_setting">Ambiente di lavoro abituale</string>
+    <string name="pdf_when_missed">Quando qualcosa sfugge</string>
+    <string name="pdf_checkin_limit">Limite di controlli</string>
+    <string name="pdf_reminder_tone">Tono preferito dei promemoria</string>
+    <string name="pdf_hardest_regulate">Più difficile da regolare</string>
+    <string name="pdf_returning">Tornare a un\'attività</string>
+    <string name="pdf_plans_change">Quando i piani cambiano</string>
+    <string name="pdf_write_down">Ha bisogno di annotare le cose</string>
+    <string name="pdf_loses_track">Perde il filo dopo un\'interruzione</string>
+    <string name="pdf_also_applies">Riguarda anche</string>
+    <string name="pdf_presentation">Presentazione</string>
+    <string name="pdf_sleep_schedule">Orari del sonno</string>
+    <string name="pdf_chronotype">Cronotipo</string>
+    <string name="pdf_usual_sleep">Sonno abituale</string>
+    <string name="pdf_n_minutes">%1$s minuti</string>
+    <string name="pdf_most_productive">Momento più produttivo</string>
+    <string name="pdf_struggles">Difficoltà principali</string>
+    <string name="pdf_main_goals">Obiettivi principali</string>
+    <string name="pdf_main_goal">Obiettivo principale</string>
+    <string name="pdf_age_range">Fascia d\'età</string>
+    <string name="pdf_no_storage">Nessuno spazio di archiviazione disponibile</string>
+    <string name="pdf_write_downloads_failed">Impossibile scrivere in Download</string>
+    <string name="pdf_open_downloads_failed">Impossibile aprire Download</string>
+    <string name="pdf_create_failed">Impossibile creare il PDF</string>
+    <string name="pdf_disclaimer">Questo documento è un registro personale. Non è una valutazione medica e non deve essere usato per diagnosticare alcuna condizione.</string>
+    <string name="pdf_calories_total">Calorie totali</string>
+    <string name="pdf_exercise_total">Attività fisica totale</string>
+    <string name="pdf_sleep_night">Sonno per notte</string>
+    <string name="pdf_steps_day">Passi al giorno</string>
+    <string name="pdf_averages">Medie della settimana</string>
+    <string name="pdf_no_data">In questo periodo non sono stati registrati dati sul benessere.</string>
+    <string name="pdf_range">%1$s – %2$s · %3$s giorni su 7 con dati</string>
+    <string name="pdf_weekly_log">Registro settimanale del benessere</string>
+    <string name="pdf_survey_incomplete">Il questionario non è ancora stato completato.</string>
+    <string name="pdf_adhd_profile">Profilo ADHD</string>
+    <string name="pdf_who">A chi appartiene</string>
+    <string name="pdf_generated">Generato il %1$s</string>
+    <string name="pdf_heading">Myndora — Il mio profilo</string>
+    <string name="pdf_col_date">Data</string>
+    <string name="pdf_col_steps">Passi</string>
+    <string name="pdf_col_hr">FC</string>
+    <string name="pdf_col_rest_hr">FC riposo</string>
+    <string name="pdf_col_kcal">kcal</string>
+    <string name="pdf_col_sleep">Sonno</string>
+    <string name="pdf_col_exercise">Attiv.</string>
+
+    <!-- domain/scheduling/TimeSuggestion.kt -->
+    <string name="kind_breakfast">colazione</string>
+    <string name="kind_lunch">pranzo</string>
+    <string name="kind_dinner">cena</string>
+    <string name="kind_snack">pausa caffè</string>
+    <string name="kind_workout">allenamento</string>
+    <string name="kind_walk">passeggiata</string>
+    <string name="kind_deep_work">blocco di concentrazione</string>
+    <string name="kind_study">studio</string>
+    <string name="kind_meeting">riunione</string>
+    <string name="kind_errand">commissione</string>
+    <string name="kind_chore">faccende</string>
+    <string name="kind_appointment">appuntamento</string>
+    <string name="kind_medication">farmaci</string>
+    <string name="kind_social">incontro</string>
+    <string name="kind_leisure">relax</string>
+    <string name="kind_commute">spostamento</string>
+    <string name="kind_self_care">cura di sé</string>
+    <string name="kind_wind_down">relax serale</string>
+    <string name="kind_general">evento</string>
+    <string name="reason_more_in_tank">Avrai più energie</string>
+    <string name="reason_no_room_today">Oggi non c\'è spazio per questo</string>
+    <string name="reason_clearer_run">Più spazio libero rispetto a oggi</string>
+    <string name="reason_usual_time">Il tuo orario abituale: %1$s</string>
+    <string name="reason_close_to_last">Vicino a quando l\'hai fatto l\'ultima volta</string>
+    <string name="reason_right_after">Subito dopo %1$s</string>
+    <string name="reason_shorter_heavy">Sessione più breve: oggi è stata una giornata pesante</string>
+    <string name="reason_earlier_energy">Prima, finché hai ancora energie</string>
+    <string name="reason_focus_window">La tua fascia migliore per concentrarti</string>
+    <string name="reason_winds_down">Si chiude prima delle %1$s</string>
+    <string name="reason_free_both">Libero per voi due</string>
+    <string name="reason_typical_time">Orario tipico: %1$s</string>
+    <string name="reason_clear_gap">Lo spazio più libero della tua giornata</string>
+
+    <!-- data/ai/MistralAiClient.kt -->
+    <string name="ai_err_code">Qualcosa è andato storto (codice %1$s).</string>
+    <string name="ai_err_code_detail">Qualcosa è andato storto (codice %1$s): %2$s</string>
+    <string name="ai_err_unreachable">Impossibile raggiungere Mistral. Controlla la connessione.</string>
+    <string name="ai_err_hiccup">Mistral ha avuto un intoppo: riprova.</string>
+    <string name="ai_err_bad_request">Richiesta non valida (codice %1$s): %2$s</string>
+    <string name="ai_err_no_credit">Il credito dell\'account Mistral è esaurito: ricaricalo su console.mistral.ai.</string>
+    <string name="ai_err_key_invalid">La chiave API di Mistral non è valida o non ha credito.</string>
+    <string name="ai_err_rate">Troppe richieste: aspetta qualche secondo e riprova.</string>
+    <string name="ai_err_busy">Mistral è occupato in questo momento: aspetta un attimo e riprova.</string>
+    <string name="ai_err_network">Errore di rete</string>
+    <string name="ai_err_no_key">Manca la chiave API di Mistral: aggiungi MISTRAL_API_KEY a local.properties.</string>
+    <string name="ai_err_rejected">l\'assistente ha inviato qualcosa che l\'API ha rifiutato.</string>
+
+    <!-- data/repository/ConversationRepository.kt -->
+    <string name="ai_older_chats">Chat precedenti</string>
+
+    <!-- data/repository/MedicationTodoSyncer.kt -->
+    <string name="med_take">Prendere %1$s</string>
+    <string name="med_take_dose">Prendere %1$s %2$s</string>
+
+    <!-- data/repository/GoogleCalendarRepository.kt -->
+    <string name="cal_untitled_event">Evento senza titolo</string>
+
+    <!-- data/repository/TogetherRepository.kt -->
+    <string name="together_a_user">Un utente Myndora</string>
+
+    <!-- ui/together/AddConnectionScreen.kt -->
+    <string name="together_invite_hero_title">Invita qualcuno</string>
+    <string name="together_invite_hero_desc">Myndora Together funziona solo su invito. Crea un link privato e mandalo come preferisci: WhatsApp, Telegram, email o SMS.</string>
+    <string name="together_link_ready">Il tuo invito privato è pronto</string>
+    <string name="together_copy_link">Copia</string>
+    <string name="together_link_copied">Copiato</string>
+    <string name="together_share_invite">Condividi invito</string>
+    <string name="together_link_hint">Funziona una sola volta e scade tra 24 ore. Invialo solo alla persona che vuoi invitare.</string>
+    <string name="together_share_via">Invia l\'invito con</string>
+    <string name="together_share_message">Connettiamoci su Myndora! Tocca questo invito privato dal telefono. Se non si apre, copia tutto il messaggio e incollalo in Myndora → Together → Aggiungi qualcuno → Hai un invito? Funziona una sola volta e scade tra 24 ore.\n\n%1$s</string>
+    <string name="together_have_invite">Hai un invito?</string>
+    <string name="together_have_invite_desc">Incolla il link, o l\'intero messaggio che ti hanno inviato.</string>
+    <string name="together_paste_hint">Incolla qui l\'invito</string>
+    <string name="together_paste">Incolla</string>
+    <string name="together_open_invite">Apri invito</string>
+    <string name="together_not_invite">Non sembra un invito Myndora.</string>
+    <string name="together_beta_title">Trova persone dai tuoi contatti</string>
+    <string name="together_beta_badge">BETA</string>
+    <string name="together_beta_desc">Verifica il tuo numero per vedere quali contatti usano già Myndora. È ancora in fase di test.</string>
+
+    <!-- ui/plan: Myndora Plus (beta) -->
+    <string name="plan_name">Myndora Plus</string>
+    <string name="plan_beta_caps">PLUS · BETA</string>
+    <string name="plan_active">Attivo</string>
+    <string name="plan_tagline">L\'assistente nel Workspace e nel Calendario, e i tuoi dati di salute al tuo servizio.</string>
+    <string name="plan_price_nd">N/D</string>
+    <string name="plan_price_label">prezzo non ancora definito</string>
+    <string name="plan_free_in_beta">Gratis per tutta la beta</string>
+    <string name="plan_included_caps">COSA INCLUDE</string>
+    <string name="plan_new_caps">NOVITÀ DI QUESTA BETA</string>
+    <string name="plan_feature_workspace_ai">Assistente del Workspace</string>
+    <string name="plan_feature_workspace_ai_body">Parla con Myndora dal Workspace, a voce o sul dispositivo quando sei offline.</string>
+    <string name="plan_feature_calendar_ai">IA del Calendario</string>
+    <string name="plan_feature_calendar_ai_body">Aggiungi e pianifica eventi semplicemente dicendoli o scrivendoli.</string>
+    <string name="plan_feature_health">Health Connect</string>
+    <string name="plan_feature_health_body">Sonno, passi e battito dal telefono aiutano a organizzare la giornata e i suggerimenti.</string>
+    <string name="plan_feature_colors">I tuoi colori</string>
+    <string name="plan_feature_colors_body">Scegli due colori e Myndora costruisce la tavolozza di tutta l\'app attorno a loro.</string>
+    <string name="plan_new_free">Plus è gratis per chi si iscrive durante la beta.</string>
+    <string name="plan_new_price">Il prezzo finale non è ancora deciso. Il tuo feedback aiuta a stabilirlo.</string>
+    <string name="plan_new_rest_free">Tutto il resto di Myndora resta gratuito.</string>
+    <string name="plan_join">Unisciti alla beta</string>
+    <string name="plan_joined">Sei nella beta</string>
+    <string name="plan_join_offline">Connettiti a internet per unirti.</string>
+    <string name="plan_join_failed">Non è stato possibile unirsi ora. Riprova tra poco.</string>
+    <string name="plan_fine_print">Durante la beta non si paga nulla.</string>
+    <string name="plan_settings_join">Beta · iscrizione gratuita</string>
+    <string name="plan_settings_active">Attivo · beta</string>
+    <string name="plan_locked_cd">Funzione di Myndora Plus</string>
+    <string name="plan_badge_plus">PLUS</string>
+    <string name="plan_badge_cd">Membro di Myndora Plus</string>
+    <string name="plan_health_locked">Fa parte di Myndora Plus, gratis per tutta la beta.</string>
+    <string name="plan_colors_locked">Fa parte di Myndora Plus, gratis per tutta la beta.</string>
+
+    <!-- Together: aggiungi vicino -->
+    <string name="together_nearby_title">Aggiungi vicino</string>
+    <string name="together_nearby_card_desc">Aprite entrambi il radar e trovatevi via Bluetooth.</string>
+    <string name="together_nearby_searching">Cerco persone vicine…</string>
+    <string name="together_nearby_found">Tocca qualcuno per mandargli un invito</string>
+    <string name="together_nearby_hint">Anche l\'altra persona deve avere questa schermata aperta. Conferma l\'invito sul suo telefono.</string>
+    <string name="together_nearby_sending">Invio dell\'invito a %1$s…</string>
+    <string name="together_nearby_sent">Invito inviato. %1$s deve solo accettarlo.</string>
+    <string name="together_nearby_failed">Impossibile raggiungere %1$s. Riprova un po\' più vicino.</string>
+    <string name="together_nearby_permission">Myndora ha bisogno dell\'accesso a Bluetooth e dispositivi vicini per trovare chi ti sta accanto.</string>
+    <string name="together_nearby_allow">Consenti</string>
+    <string name="together_nearby_unavailable">La ricerca nelle vicinanze non è disponibile su questo telefono al momento.</string>
+    <string name="together_nearby_you">Tu</string>
+    <string name="together_nearby_visible">Visibile come %1$s finché questa schermata è aperta</string>
+    <string name="together_nearby_received">%1$s ti ha inviato un invito</string>
+    <string name="together_invite_accepted">%1$s ha accettato il tuo invito</string>
+    <string name="together_now_connected_body">Ora siete in contatto su Myndora Together.</string>
+    <string name="notif_channel_together">Myndora Together</string>
+    <string name="notif_channel_together_desc">Quando qualcuno accetta un invito che hai inviato</string>
+    <string name="settings_signing_out">Uscita in corso…</string>
+    <string name="settings_delete_profile">Elimina profilo</string>
+    <string name="settings_delete_profile_desc">Elimina per sempre il tuo account e tutto ciò che contiene: profilo, attività, calendario, sessioni di focus e connessioni. Non si può annullare.</string>
+    <string name="settings_delete_confirm_title">Eliminare il tuo profilo?</string>
+    <string name="settings_delete_type_prompt">Per confermare, scrivi le parole qui sotto.</string>
+    <string name="settings_delete_phrase">elimina il mio profilo</string>
+    <string name="settings_delete_forever">Elimina per sempre</string>
+    <string name="settings_delete_failed">Impossibile eliminare il profilo. Controlla la connessione e riprova.</string>
+    <string name="settings_deleting">Eliminazione…</string>
+    <string name="widget_nearby_add">Il mio codice QR</string>
+    <string name="settings_deactivate_profile">Disattiva profilo</string>
+    <string name="settings_deactivate_profile_desc">Prenditi una pausa senza perdere nulla. Le tue connessioni vedranno il profilo come disattivato. Accedi di nuovo quando vuoi per riattivarlo.</string>
+    <string name="settings_deactivate">Disattiva</string>
+    <string name="settings_deactivate_confirm_title">Disattivare il tuo profilo?</string>
+    <string name="settings_deactivate_confirm">Disattiva ed esci</string>
+    <string name="settings_deactivating">Disattivazione…</string>
+    <string name="settings_deactivate_failed">Impossibile disattivare il profilo. Controlla la connessione e riprova.</string>
+    <string name="settings_deactivate_instead">Non sei sicuro? Disattiva invece</string>
+    <string name="together_deactivated">Disattivato</string>
+    <string name="together_deactivated_desc">Questo profilo è disattivato per ora. Piani condivisi e sessioni di focus aspetteranno il suo ritorno.</string>
+    <string name="home_welcome_back">Che bello rivederti</string>
+    <string name="together_select_all">Seleziona tutto</string>
+    <string name="together_turn_all_off">Disattiva tutto</string>
+    <string name="together_all_shared">Ora condividi tutto con %1$s</string>
+    <string name="together_all_off">Non condividi più nulla con %1$s</string>
+    <string name="home_profile_reactivated">Il tuo profilo è di nuovo attivo.</string>
+    <string name="widget_nearby_add_blurb">Mostra il tuo codice o scansiona quello di un amico</string>
+    <string name="home_nearby_caps">IL MIO QR</string>
+    <string name="home_nearby_sub">Scansiona o condividi per aggiungere un amico</string>
+    <string name="together_qr_title">Il mio codice QR</string>
+    <string name="together_qr_open">Mostra il mio codice QR</string>
+    <string name="together_qr_scan">Scansiona</string>
+    <string name="together_qr_image">Codice QR per collegarsi con te</string>
+    <string name="together_qr_hint">Fai scansionare questo codice a un amico per collegarvi. Funziona una sola volta e scade dopo 24 ore.</string>
+    <string name="together_qr_not_invite">Questo codice QR non è un invito Myndora.</string>
+    <string name="together_qr_scanner_failed">Impossibile aprire lo scanner. Riprova tra poco.</string>
+    <string name="sound_offline_hint">Ogni suono si scarica una sola volta, poi funziona offline.</string>
+    <string name="sound_download_failed">Impossibile scaricare questo suono. Toccalo per riprovare.</string>
+    <string name="sound_credit">Suoni di Joseph Sardin, BigSoundBank.com (CC0)</string>
+    <string name="plan_feature_focus_together">Focus insieme</string>
+    <string name="plan_feature_focus_together_body">Avvia una stanza di concentrazione condivisa e lavora in compagnia di un amico in tempo reale.</string>
+    <string name="plan_feature_sounds">Tutti i suoni ambientali</string>
+    <string name="plan_feature_sounds_body">Foresta, oceano, camino, caffè, uccelli e vento per le tue sessioni di concentrazione.</string>
+    <string name="sound_unlock_title">Sblocca altri %1$d suoni</string>
+    <string name="sound_unlock_body">Foresta, oceano, camino, caffè, uccelli e vento. Inclusi in Myndora Plus, gratis durante la beta.</string>
+    <string name="sound_unlock_cta">Sblocca con Plus</string>
+</resources>

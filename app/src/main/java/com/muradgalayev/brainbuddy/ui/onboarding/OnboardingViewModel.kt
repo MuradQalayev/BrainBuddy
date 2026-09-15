@@ -47,6 +47,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.muradgalayev.brainbuddy.R
+import com.muradgalayev.brainbuddy.ui.utils.UiText
+import com.muradgalayev.brainbuddy.ui.utils.asUiText
+import com.muradgalayev.brainbuddy.ui.utils.uiText
 
 data class OnboardingUiState(
     val firstName: String = "",
@@ -108,7 +112,7 @@ sealed class LocationLookupStatus {
     data class NoMatch(val detected: String) : LocationLookupStatus()
     data object PermissionDenied : LocationLookupStatus()
     data object LocationServicesOff : LocationLookupStatus()
-    data class Error(val message: String) : LocationLookupStatus()
+    data class Error(val message: UiText) : LocationLookupStatus()
 }
 
 @HiltViewModel
@@ -145,40 +149,8 @@ class OnboardingViewModel @Inject constructor(
         val (firstName, lastName) = splitName(cachedAuth?.displayName)
 
         return if (cachedProfile != null) {
-            OnboardingUiState(
-                firstName = firstName,
-                lastName = lastName,
-                username = username,
-                ageRange = cachedProfile.ageRange,
-                diagnosisStatus = cachedProfile.diagnosisStatus,
-                primarySymptoms = cachedProfile.primarySymptoms.toSet(),
-                topGoals = cachedProfile.topGoals,
-                presentation = cachedProfile.presentation,
-                coOccurring = cachedProfile.coOccurring,
-                chronotype = cachedProfile.chronotype,
-                sleepScheduleOrigin = cachedProfile.sleepScheduleOrigin,
-                interruptionRecall = cachedProfile.interruptionRecall,
-                captureNeed = cachedProfile.captureNeed,
-                planChangeImpact = cachedProfile.planChangeImpact,
-                taskReturnEffort = cachedProfile.taskReturnEffort,
-                impulseAreas = cachedProfile.impulseAreas,
-                nudgeTone = cachedProfile.nudgeTone,
-                checkInCeiling = cachedProfile.checkInCeiling,
-                missedTaskResponse = cachedProfile.missedTaskResponse,
-                bodyDoublingInterest = cachedProfile.bodyDoublingInterest,
-                workEnvironment = cachedProfile.workEnvironment,
-                pastStrategies = cachedProfile.pastStrategies,
-                productiveTime = cachedProfile.productiveTime,
-                focusDurationMinutes = cachedProfile.focusDurationMinutes ?: 25,
-                sleepBedtime = cachedProfile.sleepBedtime,
-                sleepWakeTime = cachedProfile.sleepWakeTime,
-                medicationStatus = cachedProfile.medicationStatus,
-                medications = cachedProfile.medications,
-                copingStrategies = cachedProfile.copingStrategies.toSet(),
-                painPoint = cachedProfile.painPoint,
-                aiTone = cachedProfile.aiTonePreference,
+            cachedProfile.toSurveyAnswers(firstName = firstName, lastName = lastName, username = username).copy(
                 cities = cities,
-                cityId = cachedProfile.cityId,
                 isLoading = false,
                 isEditing = cachedProfile.surveyCompleted,
                 previousSurveyVersion = cachedProfile.surveyVersion,
@@ -291,14 +263,14 @@ class OnboardingViewModel @Inject constructor(
                         current.copy(locationStatus = LocationLookupStatus.LocationServicesOff)
                     is LocationCityOutcome.GeocoderUnavailable ->
                         current.copy(locationStatus = LocationLookupStatus.Error(
-                            "Address lookup isn't available on this device — pick your city manually."
+                            uiText(R.string.loc_geocoder_unavailable)
                         ))
                     is LocationCityOutcome.NoLocation ->
                         current.copy(locationStatus = LocationLookupStatus.Error(
-                            "Couldn't get a location fix. Try again in a moment."
+                            uiText(R.string.loc_no_fix)
                         ))
                     is LocationCityOutcome.Error ->
-                        current.copy(locationStatus = LocationLookupStatus.Error(outcome.message))
+                        current.copy(locationStatus = LocationLookupStatus.Error(outcome.message.asUiText()))
                     is LocationCityOutcome.Detected -> {
                         val match = matchCandidate(outcome.candidates, current.cities)
                         if (match != null) {
@@ -483,36 +455,38 @@ class OnboardingViewModel @Inject constructor(
     fun setAiTone(value: AiTone) = _state.update { it.copy(aiTone = value) }
 
     // validates what the chosen survey requires, then persists. sets submitSuccess so we can navigate
+    // what still blocks a submit, or null when the survey can be completed
+    private fun missingAnswers(s: OnboardingUiState, version: SurveyVersion): SurveyError? {
+        val usernameOk =
+            s.usernameAvailability == UsernameAvailability.Available ||
+                (s.usernameAvailability == UsernameAvailability.Idle && s.username.isNotBlank())
+        if (!usernameOk) return SurveyError(SurveyError.Kind.UsernameTaken)
+        // first-time onboarding still has to answer the required questions. when editing an already
+        // completed profile, allow partial saves: they might just want to update their city
+        if (s.isEditing) return null
+        if (s.firstName.isBlank()) {
+            return SurveyError(SurveyError.Kind.MissingAnswers, uiText(R.string.survey_detail_name))
+        }
+        if (s.ageRange.isBlank() || s.diagnosisStatus == null ||
+            s.primarySymptoms.isEmpty() || s.topGoals.isEmpty()
+        ) {
+            return SurveyError(SurveyError.Kind.MissingAnswers)
+        }
+        if (version == SurveyVersion.Deep &&
+            (s.productiveTime == null || s.medicationStatus == null || s.aiTone == null)
+        ) {
+            return SurveyError(SurveyError.Kind.MissingAnswers, uiText(R.string.survey_detail_deep_dive))
+        }
+        return null
+    }
+
     fun submit(version: SurveyVersion) {
         val s = _state.value
         if (s.isSubmitting) return
 
-        val usernameOk =
-            s.usernameAvailability == UsernameAvailability.Available ||
-                (s.usernameAvailability == UsernameAvailability.Idle && s.username.isNotBlank())
-        if (!usernameOk) {
-            _state.update { it.copy(submitError = SurveyError(SurveyError.Kind.UsernameTaken)) }
+        missingAnswers(s, version)?.let { error ->
+            _state.update { it.copy(submitError = error) }
             return
-        }
-        // first-time onboarding still has to answer the required questions. when editing an already
-        // completed profile, allow partial saves: they might just want to update their city
-        if (!s.isEditing) {
-            if (s.firstName.isBlank()) {
-                _state.update { it.copy(submitError = SurveyError(SurveyError.Kind.MissingAnswers, "your name")) }
-                return
-            }
-            if (s.ageRange.isBlank() || s.diagnosisStatus == null ||
-                s.primarySymptoms.isEmpty() || s.topGoals.isEmpty()
-            ) {
-                _state.update { it.copy(submitError = SurveyError(SurveyError.Kind.MissingAnswers)) }
-                return
-            }
-            if (version == SurveyVersion.Deep) {
-                if (s.productiveTime == null || s.medicationStatus == null || s.aiTone == null) {
-                    _state.update { it.copy(submitError = SurveyError(SurveyError.Kind.MissingAnswers, "the Deep Dive questions")) }
-                    return
-                }
-            }
         }
 
         _state.update { it.copy(isSubmitting = true, submitError = null) }
@@ -615,7 +589,7 @@ class OnboardingViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         isSubmitting = false,
-                        submitError = SurveyError(SurveyError.Kind.SaveFailed, e.message),
+                        submitError = SurveyError(SurveyError.Kind.SaveFailed, e.message?.asUiText()),
                     )
                 }
             }
@@ -628,6 +602,19 @@ class OnboardingViewModel @Inject constructor(
     fun saveDraft(version: SurveyVersion, onSaved: () -> Unit) {
         val s = _state.value
         if (s.isSubmitting) return
+        // nothing left to answer: that's a finished survey, whichever page it was left from. the
+        // question rail lets people answer the last page first, and only the Finish button on that
+        // page used to complete it, so a fully answered survey left via Save stayed a draft and the
+        // AI stayed locked behind '0 remaining'. same list Settings counts 'remaining' from, so the
+        // two can't disagree. submitting shows the finished panel instead of leaving, the right
+        // ending for someone who has just answered everything
+        if (!s.isEditing &&
+            questionnaireCompletion(s, version).all { it } &&
+            missingAnswers(s, version) == null
+        ) {
+            submit(version)
+            return
+        }
         _state.update { it.copy(isSubmitting = true, submitError = null) }
         viewModelScope.launch {
             try {
@@ -699,7 +686,7 @@ class OnboardingViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         isSubmitting = false,
-                        submitError = SurveyError(SurveyError.Kind.SaveFailed, e.message),
+                        submitError = SurveyError(SurveyError.Kind.SaveFailed, e.message?.asUiText()),
                     )
                 }
             }

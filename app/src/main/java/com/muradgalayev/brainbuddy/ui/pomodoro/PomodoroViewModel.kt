@@ -38,10 +38,16 @@ class PomodoroViewModel @Inject constructor(
     private val modeManager: ModeManager,
     private val pomodoroRepository: PomodoroRepository,
     private val calendarRepository: CalendarRepository,
+    private val ambientSoundPlayer: com.muradgalayev.brainbuddy.data.local.AmbientSoundPlayer,
+    private val planRepository: com.muradgalayev.brainbuddy.data.repository.PlanRepository,
     @ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
     val timerState = timerManager.state
+    // per-sound download state, so the sheet and pill can show progress on the first pick
+    val soundDownloads = ambientSoundPlayer.downloads
+    // Focus together and most sounds are Plus
+    val plan = planRepository.plan
     val pomodoroQueue = timerManager.queue
     private val spotifyPrefs = appContext.getSharedPreferences("pomodoro_music", Context.MODE_PRIVATE)
     private val _spotifyPlaylistLink = MutableStateFlow(spotifyPrefs.getString("spotify_playlist", "").orEmpty())
@@ -100,10 +106,55 @@ class PomodoroViewModel @Inject constructor(
         timerManager.onTimerStarted = {
             PomodoroTimerService.start(appContext)
         }
+        // started here as well as in the service, so picking a sound before Start already downloads it
+        ambientSoundPlayer.start()
     }
 
     fun start() {
         viewModelScope.launch { timerManager.startUsingEffectiveSettings() }
+    }
+
+    // set when the DND prompt sent someone to grant access, so coming back starts the session
+    private var startAfterPermission = false
+
+    // the Start button. before a focus session with Do Not Disturb off, asks whether to turn it on,
+    // but only the first few times: by then people know the icon at the top does it, and a question
+    // in front of every Start would be friction on the one tap that matters most
+    fun requestStart() {
+        val extra = _uiExtra.value
+        val focusSession = timerState.value.sessionType ==
+            com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionType.FOCUS
+        if (!focusSession || extra.focusModeEnabled || extra.focusModeControlledByMode) {
+            start()
+            return
+        }
+        viewModelScope.launch {
+            if (preferencesManager.dndStartPromptsShown() >= DND_START_PROMPT_LIMIT) {
+                timerManager.startUsingEffectiveSettings()
+                return@launch
+            }
+            preferencesManager.incrementDndStartPrompts()
+            _uiExtra.update { it.copy(showDndStartPrompt = true) }
+        }
+    }
+
+    // either answer starts the session. yes also turns the setting on, so it sticks for next time
+    fun answerDndStartPrompt(turnOn: Boolean) {
+        _uiExtra.update { it.copy(showDndStartPrompt = false) }
+        if (!turnOn) {
+            start()
+            return
+        }
+        viewModelScope.launch {
+            // awaited before starting: the session reads the setting as it starts
+            preferencesManager.setFocusModeEnabled(true)
+            if (focusModeManager.hasPermission()) {
+                timerManager.startUsingEffectiveSettings()
+            } else {
+                startAfterPermission = true
+                _uiExtra.update { it.copy(showPermissionDialog = true) }
+            }
+        }
     }
 
     fun pause() = timerManager.pause()
@@ -123,8 +174,13 @@ class PomodoroViewModel @Inject constructor(
     fun selectSessionType(type: com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionType) =
         timerManager.selectSessionType(type)
     fun selectAmbientSound(sound: AmbientSound?) {
+        // the sheet routes a locked tap to the plan screen, this only stops one slipping through
+        if (sound?.plus == true && planRepository.plan.value != com.muradgalayev.brainbuddy.domain.model.Plan.Plus) return
         timerManager.selectAmbientSound(sound)
+        ambientSoundPlayer.prepare(sound)
     }
+
+    fun retrySoundDownload(sound: AmbientSound) = ambientSoundPlayer.prepare(sound)
 
     fun setSpotifyPlaylistLink(link: String) {
         _spotifyPlaylistLink.value = link
@@ -158,8 +214,14 @@ class PomodoroViewModel @Inject constructor(
         _uiExtra.update { it.copy(showPermissionDialog = true) }
     }
 
+    // runs on 'Not now' and after returning from the access screen, granted or not. a session the
+    // DND prompt held back starts either way, it only waited so DND could come on with it
     fun dismissPermissionDialog() {
         _uiExtra.update { it.copy(showPermissionDialog = false) }
+        if (startAfterPermission) {
+            startAfterPermission = false
+            start()
+        }
     }
 
     fun refreshFocusModePermission() {
@@ -263,3 +325,6 @@ class PomodoroViewModel @Inject constructor(
         const val WEEK_DAYS = 7
     }
 }
+
+// how many focus sessions ask about Do Not Disturb before the app stops asking
+private const val DND_START_PROMPT_LIMIT = 5

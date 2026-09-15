@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.ui.calendar
 
+import com.muradgalayev.brainbuddy.ui.utils.resolve
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -90,6 +91,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.math.roundToInt
 import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 enum class CalendarMode { Monthly, Weekly }
 
@@ -148,6 +150,7 @@ fun CalendarScreen(
     onNavigateToPomodoro: () -> Unit = {},
     onOpenBreakdown: (eventId: String) -> Unit = {},
     onConnectPeople: () -> Unit = {},
+    onOpenPlan: () -> Unit = {},
     viewModel: CalendarViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -168,14 +171,16 @@ fun CalendarScreen(
     // AI stays locked until the survey is done. the assistant's whole value is the profile it
     // personalises from, and without it every reply is generic. same gate the nav button uses
     val surveyCompleted by calendarAiVm.surveyCompleted.collectAsState()
+    // and a Myndora Plus feature: locked, the pill stays and opens the plan screen instead
+    val plusActive = viewModel.plan.collectAsState().value == com.muradgalayev.brainbuddy.domain.model.Plan.Plus
     LaunchedEffect(Unit) { calendarAiVm.refreshSurveyCompleted() }
     var showCalendarAi by remember { mutableStateOf(false) }
     var showCalendarVoice by remember { mutableStateOf(false) }
     var showOfflineAssistant by remember { mutableStateOf(false) }
     // only the survey lock closes the assistant. losing the connection used to as well, which
     // shut the card mid-conversation every time the signal dipped
-    LaunchedEffect(surveyCompleted) {
-        if (!surveyCompleted) {
+    LaunchedEffect(surveyCompleted, plusActive) {
+        if (!surveyCompleted || !plusActive) {
             showCalendarAi = false
             showCalendarVoice = false
         }
@@ -200,7 +205,9 @@ fun CalendarScreen(
     // always the chat, connected or not. the card offers the switch to the on-device assistant
     // itself, so one button keeps one meaning instead of quietly becoming a different button
     val openCalendarAi = {
-        if (surveyCompleted) {
+        if (surveyCompleted && !plusActive) {
+            onOpenPlan()
+        } else if (surveyCompleted) {
             calendarAiVm.primeCalendarEventPrompt()
             showCalendarAi = true
         }
@@ -227,8 +234,9 @@ fun CalendarScreen(
         }
     }
 
-    LaunchedEffect(togetherShareMessage) {
-        val msg = togetherShareMessage
+    val shareMessageText = togetherShareMessage?.let { it.resolve() }
+    LaunchedEffect(shareMessageText) {
+        val msg = shareMessageText
         if (msg != null) {
             snackbarHostState.showSnackbar(msg)
             viewModel.clearTogetherShareMessage()
@@ -268,7 +276,7 @@ fun CalendarScreen(
             shareTargets = calendarShareTargets,
             onConnectPeople = onConnectPeople,
             suggestions = timeSuggestions,
-            suggestionNote = suggestionAvailabilityNote,
+            suggestionNote = suggestionAvailabilityNote?.resolve(),
             onSuggestionInputChanged = viewModel::onSuggestionInputChanged,
             onShareTargetsChanged = viewModel::onShareTargetsChanged,
             onSuggestionDateChange = viewModel::jumpToDate,
@@ -319,6 +327,7 @@ fun CalendarScreen(
                         onAiClick = openCalendarAi,
                         // visible and tappable whenever the survey is done
                         aiEnabled = surveyCompleted,
+                        aiLocked = !plusActive,
                         onAiButtonPositioned = { aiButtonBounds = it }
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -404,7 +413,7 @@ fun CalendarScreen(
                 containerColor = p.lavender,
                 contentColor = Color.White
             ) {
-                Icon(Icons.Outlined.Add, "Add task", Modifier.size(28.dp))
+                Icon(Icons.Outlined.Add, stringResource(R.string.qc_add_task), Modifier.size(28.dp))
             }
         }
     } else {
@@ -477,6 +486,7 @@ fun CalendarScreen(
                     onAiClick = openCalendarAi,
                     // see the landscape branch: offline restyles the pill, it doesn't remove it
                     aiEnabled = surveyCompleted,
+                    aiLocked = !plusActive,
                     onAiButtonPositioned = { aiButtonBounds = it }
                 )
 
@@ -552,7 +562,7 @@ fun CalendarScreen(
                 containerColor = p.lavender,
                 contentColor = Color.White,
             ) {
-                Icon(Icons.Outlined.Add, "Add task", Modifier.size(28.dp))
+                Icon(Icons.Outlined.Add, stringResource(R.string.qc_add_task), Modifier.size(28.dp))
             }
         }
 
@@ -609,6 +619,13 @@ fun CalendarScreen(
                 },
             )
         }
+        com.muradgalayev.brainbuddy.ui.navigation.DimAppChrome(
+            when {
+                showCalendarVoice -> 0.46f
+                showOfflineAssistant -> 0.32f
+                else -> 0f
+            },
+        )
         AnimatedVisibility(
             visible = showCalendarVoice,
             enter = fadeIn(tween(260)),
@@ -660,7 +677,7 @@ fun CalendarScreen(
 
         // first-visit intro: a round shape flies into the AI logo once the button has been measured
         val introTarget = aiButtonBounds
-        if (surveyCompleted && showAiIntro && introTarget != null) {
+        if (surveyCompleted && plusActive && showAiIntro && introTarget != null) {
             CalendarAiIntroOverlay(
                 targetCenter = introTarget.center - overlayOrigin,
                 targetRadius = minOf(introTarget.width, introTarget.height) / 2f,

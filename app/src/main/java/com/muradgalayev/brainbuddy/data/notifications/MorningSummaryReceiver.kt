@@ -76,7 +76,7 @@ class MorningSummaryReceiver : BroadcastReceiver() {
     }
 
     private fun postSummary(context: Context, titles: List<String>) {
-        val (heading, body) = ReminderCopy.morningSummary(titles)
+        val (heading, body) = ReminderCopy.morningSummary(context, titles)
 
         val tapIntent = PendingIntent.getActivity(
             context,

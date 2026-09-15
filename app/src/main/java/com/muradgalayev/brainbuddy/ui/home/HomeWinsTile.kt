@@ -29,6 +29,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.muradgalayev.brainbuddy.ui.theme.myndoraAccents
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // what you finished today. counting up, never down. deliberately not a streak and never a
 // percentage of some ideal day: a number that can go down turns the home screen into a
@@ -69,7 +71,7 @@ fun HomeWinsTile(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.EmojiEmotions, null, tint = accent, modifier = Modifier.size(19.dp))
                 Spacer(Modifier.width(7.dp))
-                HomeSectionLabel("TODAY'S PROGRESS", accent)
+                HomeSectionLabel(stringResource(R.string.wins_caps), accent)
             }
 
             // keeps the wording clear of the corner the companion occupies. text running under a face is
@@ -103,7 +105,7 @@ fun HomeWinsTile(
             }
 
             Text(
-                "Tap to say hi",
+                stringResource(R.string.wins_say_hi),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = accent.copy(alpha = .75f),
@@ -114,9 +116,10 @@ fun HomeWinsTile(
     }
 }
 
+@Composable
 private fun winsCaption(done: Int, total: Int): String = when {
-    total == 0 -> "Nothing on today"
-    done == 0 -> "Nothing yet — one counts"
-    done == total -> "Everything on today. Done."
-    else -> "done, out of $total"
+    total == 0 -> stringResource(R.string.home_nothing_today)
+    done == 0 -> stringResource(R.string.wins_nothing_yet)
+    done == total -> stringResource(R.string.wins_all_done)
+    else -> stringResource(R.string.wins_done_out_of, total)
 }

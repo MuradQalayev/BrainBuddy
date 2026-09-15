@@ -1,5 +1,9 @@
 package com.muradgalayev.brainbuddy.ui.calendar
 
+import com.muradgalayev.brainbuddy.ui.utils.resolve
+import androidx.compose.ui.res.stringResource
+import com.muradgalayev.brainbuddy.R
+import com.muradgalayev.brainbuddy.ui.utils.contentDescription
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -74,7 +78,7 @@ fun TimeSuggestionStrip(
                 Spacer(Modifier.width(6.dp))
                 Text(
                     // singular matters: 'Suggested times' over one chip reads as though two more failed to load
-                    text = if (suggestions.size == 1) "Suggested time" else "Suggested times",
+                    text = if (suggestions.size == 1) stringResource(R.string.suggest_time_one) else stringResource(R.string.suggest_time_many),
                     color = palette.muted,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
@@ -91,7 +95,7 @@ fun TimeSuggestionStrip(
                     suggestions,
                     key = { _, s -> "${s.date}#${s.startMinutes}" },
                 ) { index, suggestion ->
-                    val dayLabel = suggestion.dayLabel(selectedDate, today)
+                    val dayLabel = suggestion.dayLabel(selectedDate, today)?.resolve()
                     SuggestionChip(
                         palette = palette,
                         suggestion = suggestion,
@@ -148,15 +152,15 @@ private fun SuggestionChip(
             .padding(horizontal = 14.dp, vertical = 10.dp)
             // one announcement for the whole chip: a screen reader hitting the time and the reason as two
             // nodes would read the day as a list of numbers
-            .semantics {
-                contentDescription = buildString {
+            .contentDescription(
+                buildString {
                     // the day comes first for a screen reader too, 'moves this to tomorrow' is the part that
                     // changes what tapping does
                     if (dayLabel != null) append("$dayLabel, ")
-                    append("${suggestion.startLabel} to ${suggestion.endLabel}. ")
-                    append(suggestion.reasonText)
+                    append(stringResource(R.string.suggest_range_cd, suggestion.startLabel, suggestion.endLabel))
+                    append(suggestion.reasonText.resolve())
                 }
-            },
+            ),
     ) {
         if (dayLabel != null) {
             Text(
@@ -176,7 +180,7 @@ private fun SuggestionChip(
         )
         Spacer(Modifier.height(3.dp))
         Text(
-            text = suggestion.reasonText,
+            text = suggestion.reasonText.resolve(),
             color = palette.muted,
             fontSize = 11.sp,
             lineHeight = 14.sp,

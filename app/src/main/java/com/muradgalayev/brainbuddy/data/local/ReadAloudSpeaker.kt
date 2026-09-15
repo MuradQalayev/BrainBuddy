@@ -66,6 +66,10 @@ class ReadAloudSpeaker @Inject constructor(
             ensureEngine()
             return
         }
+        // the app can change language while this singleton lives on, so the voice follows it per tap
+        // rather than keeping whatever was current when the engine started
+        val locale = AppLocale.voiceLocale(context)
+        if (locale != voiceLocale) applyLanguage(active, locale)
         // QUEUE_FLUSH: the newest tap is the only one worth hearing, and queueing would make the voice
         // run further and further behind a user moving quickly
         active.speak(trimmed, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID)
@@ -81,19 +85,24 @@ class ReadAloudSpeaker @Inject constructor(
         engineReady.set(false)
         engine = TextToSpeech(context.applicationContext) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                val result = runCatching { engine?.setLanguage(Locale.getDefault()) }.getOrNull()
-                if (result == TextToSpeech.LANG_MISSING_DATA ||
-                    result == TextToSpeech.LANG_NOT_SUPPORTED
-                ) {
-                    // fall back rather than fail: a device without the local voice can still read English aloud
-                    runCatching { engine?.setLanguage(Locale.US) }
-                }
+                engine?.let { applyLanguage(it, AppLocale.voiceLocale(context)) }
                 engineReady.set(true)
             } else {
                 Log.w(TAG, "Text-to-speech unavailable (status=$status)")
                 shutdown()
             }
         }
+    }
+
+    @Volatile private var voiceLocale: Locale? = null
+
+    private fun applyLanguage(tts: TextToSpeech, locale: Locale) {
+        val result = runCatching { tts.setLanguage(locale) }.getOrNull()
+        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            // fall back rather than fail: a device without the local voice can still read English aloud
+            runCatching { tts.setLanguage(Locale.US) }
+        }
+        voiceLocale = locale
     }
 
     private fun shutdown() {

@@ -1,5 +1,9 @@
 package com.muradgalayev.brainbuddy.ui.home
 
+import com.muradgalayev.brainbuddy.ui.utils.uiText
+import com.muradgalayev.brainbuddy.ui.utils.asUiText
+import com.muradgalayev.brainbuddy.ui.utils.UiText
+import com.muradgalayev.brainbuddy.R
 import com.muradgalayev.brainbuddy.domain.model.CalendarEvent
 import com.muradgalayev.brainbuddy.domain.model.TodoItem
 import java.time.Duration
@@ -92,38 +96,42 @@ fun selectNextUp(items: List<HomeAgendaItem>, now: LocalDateTime): HomeAgendaIte
 private const val LATE_GRACE_MINUTES = 45L
 
 // 'in 40 min', 'Happening now', '15 min late', the countdown line on the Next up card
-fun countdownLabel(item: HomeAgendaItem, now: LocalDateTime): String {
-    val start = item.start ?: return "Anytime today"
+fun countdownLabel(item: HomeAgendaItem, now: LocalDateTime): UiText {
+    val start = item.start ?: return uiText(R.string.agenda_anytime_today)
     val end = item.end
 
     if (!start.isAfter(now) && end != null && end.isAfter(now)) {
         val left = Duration.between(now, end).toMinutes()
-        return if (left < 1) "Wrapping up" else "${humanDuration(left)} left"
+        return if (left < 1) uiText(R.string.agenda_wrapping_up)
+        else uiText(R.string.agenda_left, humanDuration(left))
     }
     if (start.isAfter(now)) {
         val until = Duration.between(now, start).toMinutes()
-        return if (until < 1) "Starting now" else "in ${humanDuration(until)}"
+        return if (until < 1) uiText(R.string.agenda_starting_now)
+        else uiText(R.string.agenda_in, humanDuration(until))
     }
     val late = Duration.between(end ?: start, now).toMinutes()
-    return if (late < 1) "Now" else "${humanDuration(late)} late"
+    return if (late < 1) uiText(R.string.agenda_now)
+    else uiText(R.string.agenda_late, humanDuration(late))
 }
 
 // '14:00-14:30', or just the start for something with no end of its own
-fun timeRangeLabel(item: HomeAgendaItem): String {
-    val start = item.start ?: return "Anytime"
+fun timeRangeLabel(item: HomeAgendaItem): UiText {
+    val start = item.start ?: return uiText(R.string.agenda_anytime)
     val startLabel = start.toLocalTime().format(ClockFormat)
-    val end = item.end?.takeIf { it.isAfter(start) } ?: return startLabel
-    return "$startLabel–${end.toLocalTime().format(ClockFormat)}"
+    val end = item.end?.takeIf { it.isAfter(start) } ?: return startLabel.asUiText()
+    return "$startLabel–${end.toLocalTime().format(ClockFormat)}".asUiText()
 }
 
 private val ClockFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
 // minutes as something readable at a glance: '45 min', '2 h', '1 h 20'
-fun humanDuration(totalMinutes: Long): String {
-    if (totalMinutes < 60) return "$totalMinutes min"
+fun humanDuration(totalMinutes: Long): UiText {
+    if (totalMinutes < 60) return uiText(R.string.common_minutes_short, totalMinutes)
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
-    return if (minutes == 0L) "$hours h" else "$hours h $minutes"
+    return if (minutes == 0L) uiText(R.string.duration_hours, hours)
+    else uiText(R.string.duration_hours_minutes, hours, minutes)
 }
 
 // how many rows the ribbon splits into where things collide. two, and not negotiable by the

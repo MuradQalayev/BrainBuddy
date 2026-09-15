@@ -52,6 +52,8 @@ import com.muradgalayev.brainbuddy.domain.model.AdhdSymptom
 import com.muradgalayev.brainbuddy.domain.model.DiagnosisStatus
 import com.muradgalayev.brainbuddy.domain.model.SurveyVersion
 import com.muradgalayev.brainbuddy.domain.model.TopGoal
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun QuickSetupScreen(
@@ -82,46 +84,46 @@ fun QuickSetupScreen(
                 savedOfflineOnly = state.savedOfflineOnly,
             )
             else -> SwipeQuestionnaire(
-                title = "Let's get to know you",
+                title = stringResource(R.string.onboarding_get_to_know_you),
                 pageCount = complete.size,
                 completed = complete,
                 onExit = saveAndExit,
                 isSubmitting = state.isSubmitting,
-                submitLabel = if (state.isEditing) "Save changes" else "Finish setup",
+                submitLabel = if (state.isEditing) stringResource(R.string.common_save_changes) else stringResource(R.string.onboarding_finish_setup),
                 onSubmit = { viewModel.submit(SurveyVersion.Quick) },
                 onSaveExit = saveAndExit,
                 // editing an existing profile has nothing to skip
                 onSkip = if (state.isEditing) null else saveAndSkip,
             ) { page ->
                 when (page) {
-                    0 -> SurveyQuestionPage("Personal info", "Tell us what we should call you.") {
+                    0 -> SurveyQuestionPage(stringResource(R.string.onboarding_personal_info), stringResource(R.string.onboarding_personal_info_sub)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            LabeledTextField(state.firstName, viewModel::setFirstName, "First name", Modifier.weight(1f))
-                            LabeledTextField(state.lastName, viewModel::setLastName, "Surname", Modifier.weight(1f))
+                            LabeledTextField(state.firstName, viewModel::setFirstName, stringResource(R.string.auth_first_name), Modifier.weight(1f))
+                            LabeledTextField(state.lastName, viewModel::setLastName, stringResource(R.string.onboarding_surname), Modifier.weight(1f))
                         }
                         Spacer(Modifier.height(12.dp))
                         UsernameField(state.username, state.usernameAvailability, viewModel::setUsername)
                     }
-                    1 -> SurveyQuestionPage("Where do you live?", "We use this to show relevant care in your area.") {
+                    1 -> SurveyQuestionPage(stringResource(R.string.onboarding_where_live), stringResource(R.string.onboarding_where_live_sub)) {
                         UseCurrentLocationRow(state.locationStatus, viewModel::useCurrentLocation)
                         Spacer(Modifier.height(16.dp))
-                        SingleChipGrid(state.cities, state.cities.firstOrNull { it.id == state.cityId }, { it.name }) { viewModel.setCity(it.id) }
+                        SingleChipGrid(state.cities, state.cities.firstOrNull { it.id == state.cityId }, { it.name }, onSelect = { viewModel.setCity(it.id) })
                     }
-                    2 -> SurveyQuestionPage("Your age range", "Choose the range that fits you.") {
-                        SingleChipGrid(AGE_RANGES, state.ageRange.takeIf(String::isNotEmpty), { it }, viewModel::setAgeRange)
+                    2 -> SurveyQuestionPage(stringResource(R.string.onboarding_age_range), stringResource(R.string.onboarding_age_range_sub)) {
+                        SingleChipGrid(AGE_RANGES, state.ageRange.takeIf(String::isNotEmpty), { ageRangeLabel(it) }, viewModel::setAgeRange)
                     }
-                    3 -> SurveyQuestionPage("Diagnosis", "This helps tailor advice to you.") {
-                        SingleChipGrid(DiagnosisStatus.OPTIONS, state.diagnosisStatus, { it.label }, viewModel::setDiagnosisStatus)
+                    3 -> SurveyQuestionPage(stringResource(R.string.onboarding_diagnosis), stringResource(R.string.onboarding_diagnosis_sub)) {
+                        SingleChipGrid(DiagnosisStatus.OPTIONS, state.diagnosisStatus, { stringResource(it.labelRes) }, viewModel::setDiagnosisStatus)
                     }
-                    4 -> SurveyQuestionPage("What feels hardest?", "Pick all that apply.") {
-                        ChipGrid(AdhdSymptom.entries.toList(), state.primarySymptoms, { it.label }, viewModel::toggleSymptom)
+                    4 -> SurveyQuestionPage(stringResource(R.string.onboarding_hardest), stringResource(R.string.onboarding_pick_all)) {
+                        ChipGrid(AdhdSymptom.entries.toList(), state.primarySymptoms, { stringResource(it.labelRes) }, viewModel::toggleSymptom)
                     }
-                    else -> SurveyQuestionPage("What do you want to get better at?", "Pick up to three — we'll shape Myndora around them.") {
+                    else -> SurveyQuestionPage(stringResource(R.string.onboarding_improve), stringResource(R.string.onboarding_improve_sub)) {
                         CappedChipGrid(
                             options = TopGoal.entries.toList(),
                             selected = state.topGoals,
                             max = AdhdProfile.MAX_TOP_GOALS,
-                            label = { it.label },
+                            label = { stringResource(it.labelRes) },
                             onToggle = viewModel::toggleTopGoal,
                         )
                     }
@@ -157,7 +159,7 @@ fun SurveyQuestionPage(title: String, subtitle: String, content: @Composable Col
             shape = RoundedCornerShape(50),
         ) {
             Text(
-                text = "MAKE IT YOURS",
+                text = stringResource(R.string.onboarding_make_it_yours_caps),
                 modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
@@ -216,7 +218,7 @@ fun NiceWorkPanel(onContinue: () -> Unit, savedOfflineOnly: Boolean = false) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = Icons.Rounded.Check,
-                    contentDescription = "Completed",
+                    contentDescription = stringResource(R.string.onboarding_completed),
                     tint = Color.White,
                     modifier = Modifier.size(62.dp),
                 )
@@ -224,13 +226,13 @@ fun NiceWorkPanel(onContinue: () -> Unit, savedOfflineOnly: Boolean = false) {
         }
         Spacer(Modifier.height(28.dp))
         Text(
-            "Nice work!",
+            stringResource(R.string.onboarding_nice_work),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
         )
         Spacer(Modifier.height(12.dp))
         Text(
-            "Your Myndora experience is ready.",
+            stringResource(R.string.onboarding_ready),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         // saying 'ready' when the answers are still only on the phone would be a small lie, and the
@@ -252,7 +254,7 @@ fun NiceWorkPanel(onContinue: () -> Unit, savedOfflineOnly: Boolean = false) {
                 )
                 Spacer(Modifier.size(8.dp))
                 Text(
-                    "Saved on this device — it'll upload when you're back online",
+                    stringResource(R.string.onboarding_saved_offline),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -260,7 +262,7 @@ fun NiceWorkPanel(onContinue: () -> Unit, savedOfflineOnly: Boolean = false) {
         }
         Spacer(Modifier.height(28.dp))
         Button(onClick = onContinue, modifier = Modifier.fillMaxWidth().height(54.dp)) {
-            Text("Continue")
+            Text(stringResource(R.string.common_continue))
         }
     }
 }

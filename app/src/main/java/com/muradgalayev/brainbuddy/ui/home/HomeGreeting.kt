@@ -1,6 +1,7 @@
 package com.muradgalayev.brainbuddy.ui.home
 
 import java.time.LocalTime
+import com.muradgalayev.brainbuddy.R
 
 // the sign-off at the foot of home. it exists to make the screen feel like it noticed you
 // turned up, so a single fixed line would defeat the point, and by the third visit it reads as
@@ -29,48 +30,48 @@ fun dayBandFor(time: LocalTime): DayBand = when (time.hour) {
 
 // {name} is a slot rather than a suffix, because the name doesn't always land at the end.
 // every line is written to survive the name being missing
-private val GreetingPool: Map<DayBand, List<String>> = mapOf(
+private val GreetingPool: Map<DayBand, List<Int>> = mapOf(
     DayBand.EarlyMorning to listOf(
-        "Good morning, {name}",
-        "Early start, {name}",
-        "Up with the sun, {name}",
-        "Morning, {name} — take it slow",
-        "The quiet hours, {name}",
+        R.string.greet_good_morning,
+        R.string.greet_early_start,
+        R.string.greet_up_with_sun,
+        R.string.greet_morning_slow,
+        R.string.greet_quiet_hours,
     ),
     DayBand.Morning to listOf(
-        "Good morning, {name}",
-        "Morning, {name}",
-        "Fresh page, {name}",
-        "Hey {name}, let's begin",
-        "Rise and shine, {name}",
+        R.string.greet_good_morning,
+        R.string.greet_morning,
+        R.string.greet_fresh_page,
+        R.string.greet_lets_begin,
+        R.string.greet_rise_shine,
     ),
     DayBand.Afternoon to listOf(
-        "Good afternoon, {name}",
-        "Afternoon, {name}",
-        "Halfway there, {name}",
-        "Still going, {name}",
-        "Hey {name}, keep it steady",
+        R.string.greet_good_afternoon,
+        R.string.greet_afternoon,
+        R.string.greet_halfway,
+        R.string.greet_still_going,
+        R.string.greet_keep_steady,
     ),
     DayBand.Evening to listOf(
-        "Good evening, {name}",
-        "Evening, {name}",
-        "Winding down, {name}",
-        "Long day, {name}?",
-        "Hey {name}, easy does it",
+        R.string.greet_good_evening,
+        R.string.greet_evening,
+        R.string.greet_winding_down,
+        R.string.greet_long_day,
+        R.string.greet_easy_does_it,
     ),
     DayBand.Night to listOf(
-        "Good night, {name}",
-        "Late one, {name}",
-        "Time to rest, {name}",
-        "Almost bedtime, {name}",
-        "Night, {name}",
+        R.string.greet_good_night,
+        R.string.greet_late_one,
+        R.string.greet_time_to_rest,
+        R.string.greet_almost_bedtime,
+        R.string.greet_night,
     ),
     DayBand.LateNight to listOf(
-        "Night owl, {name}",
-        "Still up, {name}?",
-        "Burning the midnight oil, {name}",
-        "The world's asleep, {name}",
-        "Rest soon, {name}",
+        R.string.greet_night_owl,
+        R.string.greet_still_up,
+        R.string.greet_midnight_oil,
+        R.string.greet_world_asleep,
+        R.string.greet_rest_soon,
     ),
 )
 
@@ -86,9 +87,10 @@ private fun personalise(template: String, name: String?): String =
 // picks the greeting for a time, personalised with a name. seed chooses which phrasing within
 // the band, and the caller holds it steady for a visit so the line doesn't reshuffle under the
 // user while they're reading it. any Int works, it's folded into range here
-fun homeGreeting(time: LocalTime, name: String?, seed: Int): String {
+// lookup reads a template by id, Resources::getString in the app and strings.xml in the tests
+fun homeGreeting(time: LocalTime, name: String?, seed: Int, lookup: (Int) -> String): String {
     val pool = GreetingPool.getValue(dayBandFor(time))
-    return personalise(pool[Math.floorMod(seed, pool.size)], name)
+    return personalise(lookup(pool[Math.floorMod(seed, pool.size)]), name)
 }
 
 // the greeting wants 'Murad', not 'Murad Galayev', and falls back through username then email

@@ -20,9 +20,11 @@ import java.time.OffsetDateTime
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.muradgalayev.brainbuddy.R
 
 @Singleton
 class ConversationRepository @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val remote: SupabaseAiMessageDataSource,
     private val authRepository: AuthRepository,
     private val preferencesManager: PreferencesManager,
@@ -155,7 +157,7 @@ class ConversationRepository @Inject constructor(
                         id = id,
                         title = storedTitle
                             ?: firstUser?.text?.take(48)?.trim()?.ifBlank { null }
-                            ?: if (id == LEGACY_CONVERSATION_ID) "Older chats" else "New chat",
+                            ?: if (id == LEGACY_CONVERSATION_ID) context.getString(R.string.ai_older_chats) else context.getString(R.string.ai_new_chat),
                         messageCount = msgs.count {
                             it.role.equals("USER", ignoreCase = true) ||
                                 it.role.equals("ASSISTANT", ignoreCase = true)

@@ -52,6 +52,8 @@ import com.muradgalayev.brainbuddy.data.repository.FocusSession
 import com.muradgalayev.brainbuddy.ui.accessibility.animationsOn
 import com.muradgalayev.brainbuddy.ui.accessibility.speaking
 import kotlinx.coroutines.delay
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // what the Pomodoro screen becomes while a shared session owns the clock. it shows the time
 // and nothing that changes it, and that distinction is the point: the problem was never a
@@ -168,7 +170,7 @@ fun SharedSessionPanel(
         Spacer(Modifier.height(24.dp))
 
         Text(
-            text = if (onBreak) "On a break together" else "Focusing together",
+            text = if (onBreak) stringResource(R.string.focus_break_together_plain) else stringResource(R.string.focus_focusing_together),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = colors.onSurface,
@@ -204,18 +206,18 @@ fun SharedSessionPanel(
         Spacer(Modifier.height(32.dp))
 
         Button(
-            onClick = speaking("Open the focus room", onOpenRoom),
+            onClick = speaking(stringResource(R.string.focus_open_room), onOpenRoom),
             modifier = Modifier.fillMaxWidth().height(54.dp),
             shape = RoundedCornerShape(16.dp),
         ) {
-            Text("Open the focus room", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.focus_open_room), fontWeight = FontWeight.Bold)
         }
 
         Spacer(Modifier.height(10.dp))
         Text(
             // says why the controls are missing. without it, the absence reads as something broken rather
             // than something deliberate
-            text = "Controls live in the room so you both stay in step",
+            text = stringResource(R.string.focus_controls_room),
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant.copy(alpha = 0.8f),
         )

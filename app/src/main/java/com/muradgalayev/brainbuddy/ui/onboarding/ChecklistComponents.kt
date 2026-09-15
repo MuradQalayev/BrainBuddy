@@ -26,15 +26,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun ChecklistHeader(completedCount: Int, total: Int) {
     Column {
-        Text("Let's set up", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text("Complete your checklist below.", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.checklist_lets_set_up), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.checklist_complete_below), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(12.dp))
         Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.primary.copy(alpha = .12f)) {
-            Text("$completedCount of $total done", Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.checklist_progress, completedCount, total), Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.primary)
         }
     }
 }

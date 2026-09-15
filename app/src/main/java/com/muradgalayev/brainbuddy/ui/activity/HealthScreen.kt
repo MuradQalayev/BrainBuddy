@@ -1,5 +1,7 @@
 package com.muradgalayev.brainbuddy.ui.activity
 
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -89,7 +91,7 @@ fun HealthScreen(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             WellnessBackButton(onBack)
             Text(
-                "Health",
+                stringResource(R.string.widget_health),
                 Modifier.weight(1f).padding(start = 14.dp),
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
@@ -116,12 +118,12 @@ fun HealthScreen(
         HealthDoor(
             accent = MedicationAccent,
             icon = { Icon(Icons.Rounded.Medication, null, tint = MedicationAccent, modifier = Modifier.size(22.dp)) },
-            title = "Medications",
+            title = stringResource(R.string.ws_medications),
             line = when {
-                medications.isEmpty() -> "Add what you take and when"
-                scheduled == 0 -> "Nothing scheduled today"
-                taken == scheduled -> "All $scheduled taken today"
-                else -> "$taken of $scheduled taken today"
+                medications.isEmpty() -> stringResource(R.string.health_add_meds)
+                scheduled == 0 -> stringResource(R.string.health_nothing_today)
+                taken == scheduled -> stringResource(R.string.health_all_taken, scheduled)
+                else -> stringResource(R.string.health_taken_of, taken, scheduled)
             },
             onClick = onMedications,
         ) {
@@ -133,7 +135,7 @@ fun HealthScreen(
         HealthDoor(
             accent = HealthAccent,
             icon = { Icon(Icons.Rounded.Favorite, null, tint = HealthAccent, modifier = Modifier.size(20.dp)) },
-            title = "Health Connect",
+            title = stringResource(R.string.settings_health_connect),
             line = healthSummaryLine(healthState),
             onClick = onHealthConnect,
         ) {
@@ -143,11 +145,12 @@ fun HealthScreen(
 }
 
 // one number, chosen so the card answers 'do I need to open this?' on its own
+@Composable
 private fun healthSummaryLine(state: HealthConnectUiState): String {
-    if (!state.connected) return "Connect steps, sleep and activity"
-    val steps = state.todaySteps?.let { "${"%,d".format(it.toInt())} steps" }
-    val sleep = state.lastSleepHours?.let { "${"%.1f".format(it)}h sleep" }
-    return listOfNotNull(steps, sleep).joinToString(" · ").ifEmpty { "No readings yet today" }
+    if (!state.connected) return stringResource(R.string.health_connect_line)
+    val steps = state.todaySteps?.let { stringResource(R.string.health_steps_count, "%,d".format(it.toInt())) }
+    val sleep = state.lastSleepHours?.let { stringResource(R.string.health_sleep_hours, "%.1f".format(it)) }
+    return listOfNotNull(steps, sleep).joinToString(" · ").ifEmpty { stringResource(R.string.health_no_readings) }
 }
 
 @Composable

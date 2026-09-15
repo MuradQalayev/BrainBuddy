@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.ui.more
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.muradgalayev.brainbuddy.ui.navigation.Screen
+import com.muradgalayev.brainbuddy.R
 
 @Composable
 fun MoreScreen(
@@ -33,7 +35,7 @@ fun MoreScreen(
             .padding(horizontal = 20.dp, vertical = 28.dp)
     ) {
         Text(
-            text = "More",
+            text = stringResource(R.string.nav_more),
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -56,13 +58,13 @@ fun MoreScreen(
                 ) {
                     Icon(
                         painter = painterResource(id = screen.icon),
-                        contentDescription = screen.label,
+                        contentDescription = stringResource(screen.labelRes),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
-                        text = screen.label,
+                        text = stringResource(screen.labelRes),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )

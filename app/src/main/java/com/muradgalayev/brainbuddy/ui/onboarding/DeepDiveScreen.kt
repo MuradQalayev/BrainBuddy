@@ -66,6 +66,8 @@ import com.muradgalayev.brainbuddy.domain.model.SurveyVersion
 import com.muradgalayev.brainbuddy.domain.model.TopGoal
 import com.muradgalayev.brainbuddy.ui.sharedcomponents.TimePickerDialog
 import com.muradgalayev.brainbuddy.ui.sharedcomponents.TimePickerField
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun DeepDiveScreen(
@@ -93,36 +95,43 @@ fun DeepDiveScreen(
             state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
             state.submitSuccess -> NiceWorkPanel(onDone)
             else -> SwipeQuestionnaire(
-                title = "Grow your profile",
+                title = stringResource(R.string.deep_grow_profile),
                 pageCount = 27,
                 completed = complete,
                 onExit = saveAndExit,
                 isSubmitting = state.isSubmitting,
-                submitLabel = if (state.isEditing) "Save profile" else "Finish my profile",
+                submitLabel = if (state.isEditing) stringResource(R.string.deep_save_profile) else stringResource(R.string.deep_finish_profile),
                 onSubmit = { viewModel.submit(SurveyVersion.Deep) },
                 onSaveExit = saveAndExit,
                 // editing an existing profile has nothing to skip
                 onSkip = if (state.isEditing) null else saveAndSkip,
             ) { page ->
                 when (page) {
-                    0 -> SurveyQuestionPage("Personal info", "Tell us what we should call you.") {
+                    0 -> SurveyQuestionPage(stringResource(R.string.onboarding_personal_info), stringResource(R.string.onboarding_personal_info_sub)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            LabeledTextField(state.firstName, viewModel::setFirstName, "First name", Modifier.weight(1f))
-                            LabeledTextField(state.lastName, viewModel::setLastName, "Surname", Modifier.weight(1f))
+                            LabeledTextField(state.firstName, viewModel::setFirstName, stringResource(R.string.auth_first_name), Modifier.weight(1f))
+                            LabeledTextField(state.lastName, viewModel::setLastName, stringResource(R.string.onboarding_surname), Modifier.weight(1f))
                         }
                         Spacer(Modifier.height(12.dp))
                         UsernameField(state.username, state.usernameAvailability, viewModel::setUsername)
                     }
-                    1 -> SurveyQuestionPage("Where do you live?", "We use this to show relevant care in your area.") {
+                    1 -> SurveyQuestionPage(stringResource(R.string.onboarding_where_live), stringResource(R.string.onboarding_where_live_sub)) {
                         UseCurrentLocationRow(state.locationStatus, viewModel::useCurrentLocation)
                         Spacer(Modifier.height(16.dp))
-                        SingleChipGrid(state.cities, state.cities.firstOrNull { it.id == state.cityId }, { it.name }) { viewModel.setCity(it.id) }
+                        SingleChipGrid(state.cities, state.cities.firstOrNull { it.id == state.cityId }, { it.name }, onSelect = { viewModel.setCity(it.id) })
                     }
-                    2 -> SurveyQuestionPage("Your age range", "Choose the range that fits you.") {
-                        SingleChipGrid(AGE_RANGES, state.ageRange.takeIf(String::isNotEmpty), { it }, viewModel::setAgeRange)
+                    2 -> SurveyQuestionPage(stringResource(R.string.onboarding_age_range), stringResource(R.string.onboarding_age_range_sub)) {
+                        SingleChipGrid(AGE_RANGES, state.ageRange.takeIf(String::isNotEmpty), { ageRangeLabel(it) }, viewModel::setAgeRange)
                     }
-                    3 -> SurveyQuestionPage("Diagnosis", "This helps us personalize guidance without assumptions.") {
-                        SingleChipGrid(DiagnosisStatus.OPTIONS, state.diagnosisStatus, { it.label }, viewModel::setDiagnosisStatus)
+                    3 -> SurveyQuestionPage(stringResource(R.string.onboarding_diagnosis), stringResource(R.string.deep_diagnosis_sub)) {
+                        // 'diagnosed' opens the presentation question below, so it stays on the page for that
+                        SingleChipGrid(
+                            DiagnosisStatus.OPTIONS,
+                            state.diagnosisStatus,
+                            { stringResource(it.labelRes) },
+                            viewModel::setDiagnosisStatus,
+                            advanceOn = { it != DiagnosisStatus.Diagnosed },
+                        )
                         // N2 lives here rather than on its own page: it's a follow-up to one specific answer, so for
                         // everyone else a separate page was a blank screen to swipe past, and for the people it does
                         // apply to it belongs next to the answer that prompted it
@@ -134,52 +143,52 @@ fun DeepDiveScreen(
                             Column {
                                 Spacer(Modifier.height(22.dp))
                                 Text(
-                                    "Which presentation?",
+                                    stringResource(R.string.deep_which_presentation),
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
                                 Spacer(Modifier.height(4.dp))
                                 Text(
-                                    "Optional — skip if you'd rather not say.",
+                                    stringResource(R.string.deep_optional_skip),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Spacer(Modifier.height(12.dp))
-                                SingleChipGrid(AdhdPresentation.entries.toList(), state.presentation, { it.label }, viewModel::setPresentation)
+                                SingleChipGrid(AdhdPresentation.entries.toList(), state.presentation, { stringResource(it.labelRes) }, viewModel::setPresentation)
                             }
                         }
                     }
-                    4 -> SurveyQuestionPage("Does anything else apply?", "Optional. This changes what we suggest, it isn't a diagnosis.") {
-                        ChipGrid(CoOccurringCondition.entries.toList(), state.coOccurring.toSet(), { it.label }, viewModel::toggleCoOccurring)
+                    4 -> SurveyQuestionPage(stringResource(R.string.deep_anything_else), stringResource(R.string.deep_anything_else_sub)) {
+                        ChipGrid(CoOccurringCondition.entries.toList(), state.coOccurring.toSet(), { stringResource(it.labelRes) }, viewModel::toggleCoOccurring)
                     }
-                    5 -> SurveyQuestionPage("What feels hardest?", "Choose everything that sounds familiar.") {
-                        ChipGrid(AdhdSymptom.entries.toList(), state.primarySymptoms, { it.label }, viewModel::toggleSymptom)
+                    5 -> SurveyQuestionPage(stringResource(R.string.onboarding_hardest), stringResource(R.string.deep_hardest_sub)) {
+                        ChipGrid(AdhdSymptom.entries.toList(), state.primarySymptoms, { stringResource(it.labelRes) }, viewModel::toggleSymptom)
                     }
-                    6 -> SurveyQuestionPage("What do you want to get better at?", "Pick up to three.") {
+                    6 -> SurveyQuestionPage(stringResource(R.string.onboarding_improve), stringResource(R.string.deep_pick_three)) {
                         CappedChipGrid(
                             options = TopGoal.entries.toList(),
                             selected = state.topGoals,
                             max = AdhdProfile.MAX_TOP_GOALS,
-                            label = { it.label },
+                            label = { stringResource(it.labelRes) },
                             onToggle = viewModel::toggleTopGoal,
                         )
                     }
-                    7 -> SurveyQuestionPage("Your best time", "When does focus usually come most naturally?") {
-                        SingleChipGrid(ProductiveTime.entries.toList(), state.productiveTime, { it.label }, viewModel::setProductiveTime)
+                    7 -> SurveyQuestionPage(stringResource(R.string.deep_best_time), stringResource(R.string.deep_best_time_sub)) {
+                        SingleChipGrid(ProductiveTime.entries.toList(), state.productiveTime, { stringResource(it.labelRes) }, viewModel::setProductiveTime)
                     }
-                    8 -> SurveyQuestionPage("When do you feel most like yourself?", "Most alert, clearest-headed.") {
-                        SingleChipGrid(Chronotype.entries.toList(), state.chronotype, { it.label }, viewModel::setChronotype)
+                    8 -> SurveyQuestionPage(stringResource(R.string.deep_most_yourself), stringResource(R.string.deep_most_yourself_sub)) {
+                        SingleChipGrid(Chronotype.entries.toList(), state.chronotype, { stringResource(it.labelRes) }, viewModel::setChronotype)
                     }
-                    9 -> SurveyQuestionPage("Your focus stretch", "How long can you usually focus before needing a reset?") {
-                        Text("${state.focusDurationMinutes} minutes", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    9 -> SurveyQuestionPage(stringResource(R.string.deep_focus_stretch), stringResource(R.string.deep_focus_stretch_sub)) {
+                        Text(stringResource(R.string.pdf_n_minutes, state.focusDurationMinutes), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                         Slider(state.focusDurationMinutes.toFloat(), { viewModel.setFocusDuration(it.toInt()) }, valueRange = 5f..90f, steps = 16)
                     }
-                    10 -> SurveyQuestionPage("Your sleep rhythm", "Optional — a rough time is completely fine.") {
+                    10 -> SurveyQuestionPage(stringResource(R.string.deep_sleep_rhythm), stringResource(R.string.deep_sleep_rhythm_sub)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             TimePickerField(
                                 value = state.sleepBedtime,
-                                label = "Bedtime",
+                                label = stringResource(R.string.deep_bedtime),
                                 placeholder = "23:00",
                                 mutedColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 accentColor = MaterialTheme.colorScheme.primary,
@@ -190,7 +199,7 @@ fun DeepDiveScreen(
                             )
                             TimePickerField(
                                 value = state.sleepWakeTime,
-                                label = "Wake-up",
+                                label = stringResource(R.string.deep_wake_up),
                                 placeholder = "07:30",
                                 mutedColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 accentColor = MaterialTheme.colorScheme.primary,
@@ -201,11 +210,18 @@ fun DeepDiveScreen(
                             )
                         }
                     }
-                    11 -> SurveyQuestionPage("Is that schedule your choice?", "Or is it shaped by work, family or other obligations?") {
-                        SingleChipGrid(SleepScheduleOrigin.entries.toList(), state.sleepScheduleOrigin, { it.label }, viewModel::setSleepScheduleOrigin)
+                    11 -> SurveyQuestionPage(stringResource(R.string.deep_schedule_choice), stringResource(R.string.deep_schedule_choice_sub)) {
+                        SingleChipGrid(SleepScheduleOrigin.entries.toList(), state.sleepScheduleOrigin, { stringResource(it.labelRes) }, viewModel::setSleepScheduleOrigin)
                     }
-                    12 -> SurveyQuestionPage("Medication", "This stays private and helps reminders fit your routine.") {
-                        SingleChipGrid(MedicationStatus.entries.toList(), state.medicationStatus, { it.label }, viewModel::setMedicationStatus)
+                    12 -> SurveyQuestionPage(stringResource(R.string.deep_medication), stringResource(R.string.deep_medication_sub)) {
+                        // 'yes' opens the medication list, which still needs filling in
+                        SingleChipGrid(
+                            MedicationStatus.entries.toList(),
+                            state.medicationStatus,
+                            { stringResource(it.labelRes) },
+                            viewModel::setMedicationStatus,
+                            advanceOn = { it != MedicationStatus.Yes },
+                        )
                         if (state.medicationStatus == MedicationStatus.Yes) {
                             Spacer(Modifier.height(16.dp))
                             MedicationListSection(
@@ -221,55 +237,55 @@ fun DeepDiveScreen(
                             )
                         }
                     }
-                    13 -> SurveyQuestionPage("Interrupted mid-task?", "How often do you lose track of what you were doing?") {
-                        SingleChipGrid(InterruptionRecall.entries.toList(), state.interruptionRecall, { it.label }, viewModel::setInterruptionRecall)
+                    13 -> SurveyQuestionPage(stringResource(R.string.deep_interrupted), stringResource(R.string.deep_interrupted_sub)) {
+                        SingleChipGrid(InterruptionRecall.entries.toList(), state.interruptionRecall, { stringResource(it.labelRes) }, viewModel::setInterruptionRecall)
                     }
-                    14 -> SurveyQuestionPage("Do you have to write things down?", "Or will you likely forget them?") {
-                        SingleChipGrid(CaptureNeed.entries.toList(), state.captureNeed, { it.label }, viewModel::setCaptureNeed)
+                    14 -> SurveyQuestionPage(stringResource(R.string.deep_write_down), stringResource(R.string.deep_write_down_sub)) {
+                        SingleChipGrid(CaptureNeed.entries.toList(), state.captureNeed, { stringResource(it.labelRes) }, viewModel::setCaptureNeed)
                     }
-                    15 -> SurveyQuestionPage("When plans change unexpectedly", "How does that land for you?") {
-                        SingleChipGrid(PlanChangeImpact.entries.toList(), state.planChangeImpact, { it.label }, viewModel::setPlanChangeImpact)
+                    15 -> SurveyQuestionPage(stringResource(R.string.deep_plans_change), stringResource(R.string.deep_plans_change_sub)) {
+                        SingleChipGrid(PlanChangeImpact.entries.toList(), state.planChangeImpact, { stringResource(it.labelRes) }, viewModel::setPlanChangeImpact)
                     }
-                    16 -> SurveyQuestionPage("Getting back to a task", "After you've been pulled away from it.") {
-                        SingleChipGrid(TaskReturnEffort.entries.toList(), state.taskReturnEffort, { it.label }, viewModel::setTaskReturnEffort)
+                    16 -> SurveyQuestionPage(stringResource(R.string.deep_back_to_task), stringResource(R.string.deep_back_to_task_sub)) {
+                        SingleChipGrid(TaskReturnEffort.entries.toList(), state.taskReturnEffort, { stringResource(it.labelRes) }, viewModel::setTaskReturnEffort)
                     }
-                    17 -> SurveyQuestionPage("Hardest to hold back?", "Choose anything that sounds familiar.") {
-                        ChipGrid(ImpulseArea.entries.toList(), state.impulseAreas.toSet(), { it.label }, viewModel::toggleImpulseArea)
+                    17 -> SurveyQuestionPage(stringResource(R.string.deep_hold_back), stringResource(R.string.deep_hold_back_sub)) {
+                        ChipGrid(ImpulseArea.entries.toList(), state.impulseAreas.toSet(), { stringResource(it.labelRes) }, viewModel::toggleImpulseArea)
                     }
-                    18 -> SurveyQuestionPage("How should reminders sound?", "You can change this at any time.") {
-                        SingleChipGrid(NudgeTone.entries.toList(), state.nudgeTone, { it.label }, viewModel::setNudgeTone)
+                    18 -> SurveyQuestionPage(stringResource(R.string.deep_reminder_sound), stringResource(R.string.deep_change_any_time)) {
+                        SingleChipGrid(NudgeTone.entries.toList(), state.nudgeTone, { stringResource(it.labelRes) }, viewModel::setNudgeTone)
                     }
-                    19 -> SurveyQuestionPage("How much is too much?", "We'll treat this as a ceiling, never a target.") {
-                        SingleChipGrid(CheckInCeiling.entries.toList(), state.checkInCeiling, { it.label }, viewModel::setCheckInCeiling)
+                    19 -> SurveyQuestionPage(stringResource(R.string.deep_too_much), stringResource(R.string.deep_too_much_sub)) {
+                        SingleChipGrid(CheckInCeiling.entries.toList(), state.checkInCeiling, { stringResource(it.labelRes) }, viewModel::setCheckInCeiling)
                     }
-                    20 -> SurveyQuestionPage("When you miss something", "What would actually help in that moment?") {
-                        SingleChipGrid(MissedTaskResponse.entries.toList(), state.missedTaskResponse, { it.label }, viewModel::setMissedTaskResponse)
+                    20 -> SurveyQuestionPage(stringResource(R.string.deep_miss_something), stringResource(R.string.deep_miss_something_sub)) {
+                        SingleChipGrid(MissedTaskResponse.entries.toList(), state.missedTaskResponse, { stringResource(it.labelRes) }, viewModel::setMissedTaskResponse)
                     }
-                    21 -> SurveyQuestionPage("Working alongside someone?", "Some people focus better with company, even virtually.") {
-                        SingleChipGrid(BodyDoublingInterest.entries.toList(), state.bodyDoublingInterest, { it.label }, viewModel::setBodyDoublingInterest)
+                    21 -> SurveyQuestionPage(stringResource(R.string.deep_alongside), stringResource(R.string.deep_alongside_sub)) {
+                        SingleChipGrid(BodyDoublingInterest.entries.toList(), state.bodyDoublingInterest, { stringResource(it.labelRes) }, viewModel::setBodyDoublingInterest)
                     }
-                    22 -> SurveyQuestionPage("Where do you get things done?", "Your usual spot, not your ideal one.") {
-                        SingleChipGrid(WorkEnvironment.entries.toList(), state.workEnvironment, { it.label }, viewModel::setWorkEnvironment)
+                    22 -> SurveyQuestionPage(stringResource(R.string.deep_where_done), stringResource(R.string.deep_where_done_sub)) {
+                        SingleChipGrid(WorkEnvironment.entries.toList(), state.workEnvironment, { stringResource(it.labelRes) }, viewModel::setWorkEnvironment)
                     }
-                    23 -> SurveyQuestionPage("What have you already tried?", "So we don't suggest things that didn't work.") {
-                        ChipGrid(PastStrategy.entries.toList(), state.pastStrategies.toSet(), { it.label }, viewModel::togglePastStrategy)
+                    23 -> SurveyQuestionPage(stringResource(R.string.deep_tried), stringResource(R.string.deep_tried_sub)) {
+                        ChipGrid(PastStrategy.entries.toList(), state.pastStrategies.toSet(), { stringResource(it.labelRes) }, viewModel::togglePastStrategy)
                     }
-                    24 -> SurveyQuestionPage("What already helps?", "Choose anything that is part of your routine.") {
-                        ChipGrid(CopingStrategy.entries.toList(), state.copingStrategies, { it.label }, viewModel::toggleCopingStrategy)
+                    24 -> SurveyQuestionPage(stringResource(R.string.deep_already_helps), stringResource(R.string.deep_already_helps_sub)) {
+                        ChipGrid(CopingStrategy.entries.toList(), state.copingStrategies, { stringResource(it.labelRes) }, viewModel::toggleCopingStrategy)
                     }
-                    25 -> SurveyQuestionPage("Your biggest pain point", "Optional — describe what is difficult in your own words.") {
+                    25 -> SurveyQuestionPage(stringResource(R.string.deep_pain_point), stringResource(R.string.deep_pain_point_sub)) {
                         OutlinedTextField(
                             value = state.painPoint,
                             onValueChange = viewModel::setPainPoint,
-                            placeholder = { Text("For example: I can't get started in the morning") },
+                            placeholder = { Text(stringResource(R.string.deep_pain_point_placeholder)) },
                             modifier = Modifier.fillMaxWidth().height(130.dp),
                             shape = RoundedCornerShape(18.dp),
                             colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary),
                         )
                         Text("${state.painPoint.length} / 280", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    else -> SurveyQuestionPage("Choose my voice", "How should Myndora speak with you?") {
-                        SingleChipGrid(AiTone.entries.toList(), state.aiTone, { it.label }, viewModel::setAiTone)
+                    else -> SurveyQuestionPage(stringResource(R.string.deep_choose_voice), stringResource(R.string.deep_choose_voice_sub)) {
+                        SingleChipGrid(AiTone.entries.toList(), state.aiTone, { stringResource(it.labelRes) }, viewModel::setAiTone)
                     }
                 }
             }
@@ -296,7 +312,7 @@ fun DeepDiveScreen(
         val parts = current.split(":")
         val fallbackHour = if (target == "bedtime") 23 else 7
         TimePickerDialog(
-            title = if (target == "bedtime") "Choose bedtime" else "Choose wake-up time",
+            title = if (target == "bedtime") stringResource(R.string.deep_choose_bedtime) else stringResource(R.string.deep_choose_wake),
             initialHour = parts.getOrNull(0)?.toIntOrNull() ?: fallbackHour,
             initialMinute = parts.getOrNull(1)?.toIntOrNull() ?: 0,
             onConfirm = { hour, minute ->

@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import com.muradgalayev.brainbuddy.data.local.TimerState
 import com.muradgalayev.brainbuddy.ui.pomodoro.ControlCircle
 import com.muradgalayev.brainbuddy.ui.pomodoro.GradientCircleButton
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun BottomControls(
@@ -47,7 +49,7 @@ fun BottomControls(
             TimerState.IDLE -> {
                 GradientCircleButton(
                     icon = Icons.Rounded.PlayArrow,
-                    label = "Start",
+                    label = stringResource(R.string.common_start),
                     gradient = accentGradient,
                     size = 72,
                     onClick = onStart,
@@ -55,33 +57,33 @@ fun BottomControls(
                 )
             }
             TimerState.RUNNING -> {
-                ControlCircle(Icons.Rounded.Refresh, "Reset", onReset,
+                ControlCircle(Icons.Rounded.Refresh, stringResource(R.string.common_reset), onReset,
                     MaterialTheme.colorScheme.onSurfaceVariant,
                     MaterialTheme.colorScheme.surfaceContainerHigh)
                 Spacer(modifier = Modifier.width(20.dp))
-                GradientCircleButton(Icons.Rounded.Pause, "Pause", accentGradient, 72, onPause)
+                GradientCircleButton(Icons.Rounded.Pause, stringResource(R.string.common_pause), accentGradient, 72, onPause)
                 Spacer(modifier = Modifier.width(20.dp))
-                ControlCircle(Icons.Rounded.SkipNext, "Skip", onSkip,
+                ControlCircle(Icons.Rounded.SkipNext, stringResource(R.string.common_skip), onSkip,
                     MaterialTheme.colorScheme.onSurfaceVariant,
                     MaterialTheme.colorScheme.surfaceContainerHigh)
             }
             TimerState.PAUSED -> {
-                ControlCircle(Icons.Rounded.Stop, "Stop", onStop,
+                ControlCircle(Icons.Rounded.Stop, stringResource(R.string.common_stop), onStop,
                     MaterialTheme.colorScheme.error,
                     MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f))
                 Spacer(modifier = Modifier.width(20.dp))
-                GradientCircleButton(Icons.Rounded.PlayArrow, "Resume", accentGradient, 72, onResume)
+                GradientCircleButton(Icons.Rounded.PlayArrow, stringResource(R.string.common_resume), accentGradient, 72, onResume)
                 Spacer(modifier = Modifier.width(20.dp))
-                ControlCircle(Icons.Rounded.Refresh, "Reset", onReset,
+                ControlCircle(Icons.Rounded.Refresh, stringResource(R.string.common_reset), onReset,
                     MaterialTheme.colorScheme.onSurfaceVariant,
                     MaterialTheme.colorScheme.surfaceContainerHigh)
             }
             TimerState.COMPLETED -> {
-                ControlCircle(Icons.Rounded.Refresh, "Restart", onReset,
+                ControlCircle(Icons.Rounded.Refresh, stringResource(R.string.focus_restart), onReset,
                     MaterialTheme.colorScheme.onSurfaceVariant,
                     MaterialTheme.colorScheme.surfaceContainerHigh)
                 Spacer(modifier = Modifier.width(20.dp))
-                GradientCircleButton(Icons.Rounded.SkipNext, "Next", accentGradient, 72, onSkip)
+                GradientCircleButton(Icons.Rounded.SkipNext, stringResource(R.string.common_next), accentGradient, 72, onSkip)
             }
         }
     }

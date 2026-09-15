@@ -169,5 +169,58 @@ object ActivityClassifier {
             "wind down", "winddown", "bedtime", "bed", "sleep", "night routine",
             "lights out", "read before bed",
         )
+
+        // Italian, for people who write their calendar in it. same rules: lowercase, single-spaced,
+        // and both spellings where a phone keyboard commonly drops the accent
+        add(ActivityKind.Breakfast, "colazione", "prima colazione", "caffè del mattino", "caffe del mattino")
+        add(ActivityKind.Lunch, "pranzo", "pausa pranzo")
+        add(ActivityKind.Dinner, "cena", "cenare", "preparare la cena", "cucinare")
+        add(ActivityKind.Snack, "merenda", "spuntino", "caffè", "caffe", "pausa caffè", "pausa caffe", "aperitivo")
+        add(
+            ActivityKind.Workout,
+            "palestra", "allenamento", "allenarsi", "corsa", "correre", "nuoto", "piscina", "calcetto",
+            "calcio", "tennis", "pilates", "spinning", "bici", "ciclismo",
+        )
+        add(ActivityKind.Walk, "passeggiata", "camminata", "portare fuori il cane", "giro col cane", "escursione")
+        add(
+            ActivityKind.DeepWork,
+            "lavoro concentrato", "concentrazione", "scrivere", "progetto", "tesi", "programmare",
+            "relazione", "presentazione",
+        )
+        add(
+            ActivityKind.Study,
+            "studio", "studiare", "lezione", "università", "universita", "esame", "ripasso", "compiti",
+            "corso",
+        )
+        add(
+            ActivityKind.Meeting,
+            "riunione", "incontro di lavoro", "call", "chiamata", "videochiamata", "colloquio",
+            "meeting con il cliente",
+        )
+        add(
+            ActivityKind.Errand,
+            "commissioni", "commissione", "spesa", "fare la spesa", "supermercato", "banca", "posta",
+            "ufficio postale", "farmacia", "ritirare", "parrucchiere", "barbiere",
+        )
+        add(
+            ActivityKind.Chore,
+            "pulizie", "pulire", "bucato", "lavatrice", "piatti", "lavare i piatti", "stirare", "riordinare",
+            "faccende", "spazzatura",
+        )
+        add(
+            ActivityKind.Appointment,
+            "appuntamento", "visita", "visita medica", "dottore", "medico", "dentista", "analisi",
+            "esami del sangue", "psicologo", "psicologa", "terapia", "fisioterapia", "veterinario",
+        )
+        add(ActivityKind.Medication, "farmaco", "farmaci", "medicina", "medicine", "pillola", "prendere le medicine")
+        add(
+            ActivityKind.Social,
+            "festa", "compleanno", "uscita", "uscire", "amici", "cena con amici", "pranzo con amici",
+            "vedere", "appuntamento romantico", "matrimonio", "cena di famiglia",
+        )
+        add(ActivityKind.Leisure, "relax", "film", "serie", "videogiochi", "leggere", "lettura", "hobby", "musica")
+        add(ActivityKind.Commute, "viaggio", "treno", "aeroporto", "tragitto", "portare i bambini a scuola")
+        add(ActivityKind.SelfCare, "meditazione", "meditare", "yoga", "diario", "stretching", "cura di sé", "cura di se")
+        add(ActivityKind.WindDown, "andare a letto", "letto", "dormire", "routine serale", "nanna")
     }
 }

@@ -45,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.muradgalayev.brainbuddy.domain.model.ShareScope
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // back arrow, title and scrolling body, matching the settings sub-pages
 @Composable
@@ -69,7 +71,7 @@ fun TogetherScaffold(
             IconButton(onClick = onBack) {
                 Icon(
                     Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.common_back),
                     tint = colors.onSurface,
                 )
             }
@@ -284,14 +286,14 @@ fun ScopeToggleRow(
     ) {
         Column(Modifier.weight(1f)) {
             Text(
-                scope.label,
+                stringResource(scope.labelRes),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = colors.onSurface,
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                scope.description,
+                stringResource(scope.descriptionRes),
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
             )

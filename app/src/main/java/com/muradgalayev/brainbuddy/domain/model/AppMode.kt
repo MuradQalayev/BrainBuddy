@@ -136,7 +136,10 @@ object BuiltInModes {
         accent = "focus",
         isBuiltIn = true,
         sortIndex = 0,
-        schedule = ModeSchedule(days = ModeSchedule.WEEKDAYS, startMinute = 9 * 60, endMinute = 17 * 60),
+        // shipped with the schedule off. a new account turning on Do Not Disturb at 9:00 on its own
+        // looked like the app misbehaving to someone who never chose it. the hours are pre-filled so
+        // switching it on is one toggle
+        schedule = ModeSchedule(days = ModeSchedule.WEEKDAYS, startMinute = 9 * 60, endMinute = 17 * 60, enabled = false),
         overrides = ModeOverrides(
             ringer = RingerSetting.VIBRATE,
             doNotDisturb = true,
@@ -162,7 +165,7 @@ object BuiltInModes {
         sortIndex = 1,
         // 24:00 is a valid exclusive end. 23:59 would leave the last minute of Saturday and Sunday
         // outside a mode described as all-day
-        schedule = ModeSchedule(days = ModeSchedule.WEEKEND, startMinute = 0, endMinute = 24 * 60),
+        schedule = ModeSchedule(days = ModeSchedule.WEEKEND, startMinute = 0, endMinute = 24 * 60, enabled = false),
         overrides = ModeOverrides(
             ringer = RingerSetting.NORMAL,
             doNotDisturb = false,
@@ -338,6 +341,24 @@ private fun LocalDateTime.atScheduleBoundaries(zone: ZoneId): List<ZonedDateTime
     val transitionInstant: Instant = zone.rules.getTransition(this)?.instant
         ?: return listOf(atZone(zone))
     return listOf(transitionInstant.atZone(zone))
+}
+
+// why a mode is on, for the one short line under its name: a manual pick stays until it's
+// changed, a schedule says when it stops
+sealed interface ModeStatus {
+    data object Manual : ModeStatus
+    data object AllDay : ModeStatus
+    data class Until(val time: LocalTime) : ModeStatus
+}
+
+fun modeStatus(mode: AppMode, selection: ModeSelection): ModeStatus? {
+    if (selection is ModeSelection.Manual && selection.modeId == mode.id) return ModeStatus.Manual
+    val schedule = mode.schedule ?: return null
+    return when {
+        schedule.startMinute == 0 && schedule.endMinute >= MINUTES_PER_DAY -> ModeStatus.AllDay
+        schedule.endMinute >= MINUTES_PER_DAY -> ModeStatus.Until(LocalTime.MIDNIGHT)
+        else -> ModeStatus.Until(schedule.endMinute.asLocalTime())
+    }
 }
 
 private const val MINUTES_PER_DAY = 24 * 60

@@ -69,6 +69,8 @@ import com.muradgalayev.brainbuddy.ui.sharedcomponents.ColorOption
 import com.muradgalayev.brainbuddy.ui.sharedcomponents.TimePickerDialog
 import com.muradgalayev.brainbuddy.ui.sharedcomponents.TimePickerField
 import com.muradgalayev.brainbuddy.ui.sharedcomponents.swipeToSwitch
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -177,9 +179,9 @@ fun AddTaskDialog(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = when {
-                                isEditing -> "Edit event"
-                                audience == EventAudience.Together -> "Event for someone"
-                                else -> "New event"
+                                isEditing -> stringResource(R.string.cal_edit_event)
+                                audience == EventAudience.Together -> stringResource(R.string.cal_event_for_someone)
+                                else -> stringResource(R.string.cal_new_event)
                             },
                             color = palette.ink,
                             fontSize = 22.sp,
@@ -196,7 +198,7 @@ fun AddTaskDialog(
                     IconButton(onClick = onDismiss) {
                         Icon(
                             imageVector = Icons.Rounded.Close,
-                            contentDescription = "Close",
+                            contentDescription = stringResource(R.string.common_close),
                             tint = palette.muted,
                         )
                     }
@@ -223,7 +225,7 @@ fun AddTaskDialog(
                 if (audience == EventAudience.Together && shareTargets.isEmpty()) {
                     Spacer(Modifier.height(16.dp))
                     NoConnectionsNotice(
-                        itemNoun = "event",
+                        kind = com.muradgalayev.brainbuddy.ui.together.SharedItemKind.EVENT,
                         accent = palette.lavender,
                         ink = palette.ink,
                         muted = palette.muted,
@@ -241,7 +243,7 @@ fun AddTaskDialog(
                         palette = palette,
                         targets = shareTargets,
                         selected = alsoAddFor,
-                        heading = "Who is this for?",
+                        heading = stringResource(R.string.cal_who_for),
                         required = true,
                         addToMyCalendar = addToMyCalendar,
                         showMineToggle = true,
@@ -258,8 +260,8 @@ fun AddTaskDialog(
                     palette = palette,
                     value = title,
                     onValueChange = { title = it },
-                    label = "Event name",
-                    placeholder = "e.g. Team standup",
+                    label = stringResource(R.string.cal_event_name),
+                    placeholder = stringResource(R.string.cal_event_name_hint),
                     imeAction = ImeAction.Next
                 )
 
@@ -269,8 +271,8 @@ fun AddTaskDialog(
                     palette = palette,
                     value = description,
                     onValueChange = { description = it },
-                    label = "Description (optional)",
-                    placeholder = "e.g. Weekly sync with the team",
+                    label = stringResource(R.string.cal_description_optional),
+                    placeholder = stringResource(R.string.cal_description_hint),
                     imeAction = ImeAction.Next
                 )
 
@@ -280,8 +282,8 @@ fun AddTaskDialog(
                     palette = palette,
                     value = location,
                     onValueChange = { location = it },
-                    label = "Location (optional)",
-                    placeholder = "e.g. Office, Zoom, Park…",
+                    label = stringResource(R.string.cal_location_optional),
+                    placeholder = stringResource(R.string.cal_location_hint),
                     imeAction = ImeAction.Next
                 )
 
@@ -291,7 +293,7 @@ fun AddTaskDialog(
                     palette = palette,
                     value = link,
                     onValueChange = { link = it },
-                    label = "Link (optional)",
+                    label = stringResource(R.string.cal_link_optional),
                     placeholder = "https://meet.google.com/…",
                     imeAction = ImeAction.Next
                 )
@@ -300,7 +302,7 @@ fun AddTaskDialog(
 
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     Text(
-                        text = "Time",
+                        text = stringResource(R.string.cal_time),
                         color = palette.muted,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
@@ -349,7 +351,7 @@ fun AddTaskDialog(
                     Box(Modifier.weight(1f)) {
                         TimePickerField(
                             value = startTime,
-                            label = "Start",
+                            label = stringResource(R.string.common_start),
                             placeholder = "09:00",
                             mutedColor = palette.muted,
                             accentColor = palette.lavender,
@@ -366,7 +368,7 @@ fun AddTaskDialog(
                     Box(Modifier.weight(1f)) {
                         TimePickerField(
                             value = endTime,
-                            label = "End",
+                            label = stringResource(R.string.cal_end),
                             placeholder = "10:00",
                             mutedColor = palette.muted,
                             accentColor = palette.lavender,
@@ -389,8 +391,8 @@ fun AddTaskDialog(
                     else (e.first * 60 + e.second) > (s.first * 60 + s.second)
                 }
                 val timeError = when {
-                    !timesProvided -> "Pick a start and end time"
-                    !endAfterStart -> "End time must be after start time"
+                    !timesProvided -> stringResource(R.string.cal_pick_times)
+                    !endAfterStart -> stringResource(R.string.cal_end_after_start)
                     else -> null
                 }
                 if (timeError != null) {
@@ -405,7 +407,7 @@ fun AddTaskDialog(
                 Spacer(Modifier.height(18.dp))
 
                 Text(
-                    text = "Color",
+                    text = stringResource(R.string.cal_color),
                     color = palette.muted,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium
@@ -439,7 +441,7 @@ fun AddTaskDialog(
                         palette = palette,
                         targets = shareTargets,
                         selected = alsoAddFor,
-                        heading = "Also add to",
+                        heading = stringResource(R.string.cal_also_add_to),
                         required = false,
                         addToMyCalendar = true,
                         showMineToggle = false,
@@ -471,7 +473,7 @@ fun AddTaskDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = palette.pillBg),
                         elevation = null,
                     ) {
-                        Text("Cancel", color = palette.ink, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.common_cancel), color = palette.ink, fontWeight = FontWeight.SemiBold)
                     }
                     // primary, add / save
                     Button(
@@ -502,14 +504,14 @@ fun AddTaskDialog(
                             .firstOrNull { it.userId in alsoAddFor }?.name
                         Text(
                             when {
-                                isEditing -> "Save changes"
-                                alsoAddFor.isEmpty() -> "Add event"
+                                isEditing -> stringResource(R.string.common_save_changes)
+                                alsoAddFor.isEmpty() -> stringResource(R.string.qc_add_event)
                                 !addToMyCalendar && alsoAddFor.size == 1 && targetName != null ->
-                                    "Add for $targetName"
-                                !addToMyCalendar -> "Add for ${alsoAddFor.size} people"
+                                    stringResource(R.string.cal_add_for, targetName)
+                                !addToMyCalendar -> stringResource(R.string.cal_add_for_people, alsoAddFor.size)
                                 alsoAddFor.size == 1 && targetName != null ->
-                                    "Add for us both"
-                                else -> "Add for ${alsoAddFor.size + 1} calendars"
+                                    stringResource(R.string.cal_add_for_both)
+                                else -> stringResource(R.string.cal_add_for_calendars, alsoAddFor.size + 1)
                             },
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
@@ -523,7 +525,7 @@ fun AddTaskDialog(
     if (showStartPicker) {
         val (h0, m0) = parseHourMinute(startTime) ?: (9 to 0)
         TimePickerDialog(
-            title = "Select start time",
+            title = stringResource(R.string.cal_select_start),
             initialHour = h0,
             initialMinute = m0,
             onConfirm = { h, m ->
@@ -546,7 +548,7 @@ fun AddTaskDialog(
             ?: parseHourMinute(startTime)?.let { ((it.first + 1).coerceAtMost(23)) to it.second }
             ?: (10 to 0)
         TimePickerDialog(
-            title = "Select end time",
+            title = stringResource(R.string.cal_select_end),
             initialHour = h0,
             initialMinute = m0,
             onConfirm = { h, m ->
@@ -594,7 +596,7 @@ private fun AudienceSwitcher(
     ) {
         AudienceSegment(
             palette = palette,
-            label = "For myself",
+            label = stringResource(R.string.cal_for_myself),
             icon = Icons.Rounded.Person,
             selected = audience == EventAudience.Mine,
             modifier = Modifier.weight(1f),
@@ -602,7 +604,7 @@ private fun AudienceSwitcher(
         )
         AudienceSegment(
             palette = palette,
-            label = "For someone",
+            label = stringResource(R.string.cal_for_someone),
             icon = Icons.Rounded.Diversity3,
             selected = audience == EventAudience.Together,
             modifier = Modifier.weight(1f),
@@ -759,7 +761,7 @@ private fun AudiencePickerSection(
         if (required && selected.isEmpty()) {
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Pick at least one person.",
+                text = stringResource(R.string.cal_pick_person),
                 color = palette.muted,
                 fontSize = 11.sp,
             )
@@ -805,7 +807,7 @@ private fun AudiencePickerSection(
                 Spacer(Modifier.width(11.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = "Add to my calendar too",
+                        text = stringResource(R.string.cal_add_mine_too),
                         color = palette.ink,
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -813,9 +815,9 @@ private fun AudiencePickerSection(
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = if (addToMyCalendar) {
-                            "It'll be on your day as well"
+                            stringResource(R.string.cal_on_your_day)
                         } else {
-                            "Only they will get this event"
+                            stringResource(R.string.cal_only_they)
                         },
                         color = palette.muted,
                         fontSize = 11.sp,
@@ -829,8 +831,7 @@ private fun AudiencePickerSection(
         if (selected.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "They'll see this event on their calendar. They still can't see " +
-                    "anything else of yours.",
+                text = stringResource(R.string.cal_they_see),
                 color = palette.muted,
                 fontSize = 11.sp,
                 lineHeight = 15.sp,

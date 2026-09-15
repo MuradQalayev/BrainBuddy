@@ -59,6 +59,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.muradgalayev.brainbuddy.ui.accessibility.animationsOn
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // edit mode for the home screen. Home is the screen people open by reflex, and reflex is the
 // whole point, so what belongs on it can't be a decision Myndora makes on the user's behalf.
@@ -150,7 +152,7 @@ fun RemoveBadge(visible: Boolean, onClick: () -> Unit, modifier: Modifier = Modi
         ) {
             Icon(
                 Icons.Rounded.Close,
-                "Remove from home",
+                stringResource(R.string.home_remove_widget),
                 tint = MaterialTheme.colorScheme.onError,
                 modifier = Modifier.size(16.dp),
             )
@@ -176,13 +178,13 @@ fun GhostTile(widget: HomeWidget, onRestore: () -> Unit, modifier: Modifier = Mo
         Icon(widget.icon, null, tint = muted.copy(alpha = .7f), modifier = Modifier.size(20.dp))
         Spacer(Modifier.height(6.dp))
         Text(
-            widget.label,
+            stringResource(widget.labelRes),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             color = muted,
         )
         Text(
-            "Tap to add",
+            stringResource(R.string.home_tap_to_add),
             style = MaterialTheme.typography.labelSmall,
             color = muted.copy(alpha = .75f),
         )
@@ -222,7 +224,7 @@ fun ResizeBadge(
         ) {
             Icon(
                 if (span == WidgetSpan.Full) Icons.Rounded.CloseFullscreen else Icons.Rounded.OpenInFull,
-                if (span == WidgetSpan.Full) "Make half width" else "Make full width",
+                if (span == WidgetSpan.Full) stringResource(R.string.home_half_width) else stringResource(R.string.home_full_width),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(15.dp),
             )
@@ -255,7 +257,7 @@ fun DragHandle(visible: Boolean, dragging: Boolean, modifier: Modifier = Modifie
         ) {
             Icon(
                 Icons.Rounded.DragIndicator,
-                "Drag to reorder",
+                stringResource(R.string.home_drag_reorder),
                 tint = if (dragging) MaterialTheme.colorScheme.onPrimary
                 else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(16.dp),
@@ -315,9 +317,9 @@ fun CustomiseBar(
         Spacer(Modifier.width(7.dp))
         Text(
             when {
-                locked -> "Home layout locked"
-                editing -> "Done"
-                else -> "Customise home"
+                locked -> stringResource(R.string.home_layout_locked)
+                editing -> stringResource(R.string.common_done)
+                else -> stringResource(R.string.home_customise)
             },
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,

@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.ui.navigation
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Spring
@@ -26,15 +27,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.toSize
 
 // Compose port of the modern-mobile-menu InteractiveMenu. the selected-item highlight is
 // deliberately not drawn here: a per-item pill meant the outgoing one faded out while the
@@ -51,7 +50,7 @@ fun InteractiveMenuRow(
     accentColor: Color = MaterialTheme.colorScheme.primary,
     inactiveColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     slotIndexOffset: Int = 0,
-    onSlotBounds: (Int, Rect) -> Unit = { _, _ -> },
+    onSlotBounds: (Int, LayoutCoordinates) -> Unit = { _, _ -> },
 ) {
     Row(
         modifier = modifier,
@@ -126,7 +125,7 @@ fun InteractiveMenuItem(
     modifier: Modifier = Modifier,
     accentColor: Color = MaterialTheme.colorScheme.primary,
     inactiveColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    onSlotBounds: (Rect) -> Unit = {},
+    onSlotBounds: (LayoutCoordinates) -> Unit = {},
 ) {
     val iconBounce = remember { Animatable(0f) }
     LaunchedEffect(active) {
@@ -178,10 +177,8 @@ fun InteractiveMenuItem(
             modifier = Modifier
                 .size(44.dp)
                 // reported before the graphicsLayer, so the scale animation never feeds back into the slot
-                // geometry the sliding highlight is aiming at
-                .onGloballyPositioned { coords ->
-                    onSlotBounds(Rect(coords.positionInRoot(), coords.size.toSize()))
-                }
+                // geometry the sliding highlight is aiming at. the bar turns these into its own coordinates
+                .onGloballyPositioned { coords -> onSlotBounds(coords) }
                 .graphicsLayer {
                     scaleX = selectedScale
                     scaleY = selectedScale
@@ -190,7 +187,7 @@ fun InteractiveMenuItem(
         ) {
             Icon(
                 painter = painterResource(id = screen.icon),
-                contentDescription = screen.label,
+                contentDescription = stringResource(screen.labelRes),
                 tint = resolvedIconColor,
                 modifier = Modifier
                     .size(22.dp)

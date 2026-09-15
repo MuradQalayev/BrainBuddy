@@ -42,6 +42,7 @@ class SyncCoordinator @Inject constructor(
     private val togetherRepository: TogetherRepository,
     private val habitTimingRepository: HabitTimingRepository,
     private val medicationLogRepository: MedicationLogRepository,
+    private val planRepository: com.muradgalayev.brainbuddy.data.repository.PlanRepository,
     private val authRepository: AuthRepository,
     private val googleCalendarTokenStore: GoogleCalendarTokenStore,
     private val networkObserver: NetworkObserver,
@@ -101,6 +102,8 @@ class SyncCoordinator @Inject constructor(
                     }
                 },
                 async { runCatching { modeRepository.sync() } },
+                // which features are unlocked. read-only, the server owns the plan
+                async { runCatching { planRepository.refresh() } },
                 async { runCatching { adhdProfileRepository.pushPendingProfile() } },
                 async { runCatching { adhdProfileRepository.refreshSurveyCompletedCache() } },
                 async { runCatching { pullLinkedGoogleEmail() } },
@@ -113,6 +116,16 @@ class SyncCoordinator @Inject constructor(
                 // whatever happened to be true at grant time
                 async { runCatching { togetherRepository.refreshWellnessSnapshots() } },
             ).awaitAll()
+        }
+    }
+
+    // a connection just added or removed something on this user's calendar or list, announced by
+    // push. pulls only that one, rather than the whole syncAll a push could otherwise trigger
+    fun syncAfterTogetherChange(kind: String?) {
+        scope.launch {
+            runCatching {
+                if (kind == "todo") todoRepository.sync() else calendarRepository.sync()
+            }
         }
     }
 

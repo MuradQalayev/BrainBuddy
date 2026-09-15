@@ -61,6 +61,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.muradgalayev.brainbuddy.domain.model.SubtaskKind
 import kotlin.math.roundToInt
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // full-screen plan for one calendar event: build the breakdown, then work through it. this
 // used to live inside the task card as an expanding rail plus a bottom-sheet editor, and both
@@ -98,7 +100,7 @@ fun TaskBreakdownScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "This event no longer exists.",
+                        text = stringResource(R.string.bd_event_gone),
                         color = palette.muted,
                         fontSize = 14.sp,
                     )
@@ -192,11 +194,11 @@ private fun BreakdownTopBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Rounded.ArrowBack, contentDescription = "Back", tint = palette.ink)
+            Icon(Icons.Rounded.ArrowBack, contentDescription = stringResource(R.string.common_back), tint = palette.ink)
         }
         Spacer(Modifier.width(4.dp))
         Text(
-            text = "Breakdown",
+            text = stringResource(R.string.bd_title),
             color = palette.ink,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
@@ -213,10 +215,10 @@ private fun BreakdownTopBar(
 @Composable
 private fun SaveStatusPill(palette: CalendarPalette, accent: Color, saveState: PlanSaveState) {
     val label = when (saveState) {
-        PlanSaveState.SAVED -> "Saved"
-        PlanSaveState.PENDING -> "Unsaved edits"
-        PlanSaveState.SAVING -> "Saving…"
-        PlanSaveState.JUST_SAVED -> "Plan saved"
+        PlanSaveState.SAVED -> stringResource(R.string.bd_saved)
+        PlanSaveState.PENDING -> stringResource(R.string.bd_unsaved)
+        PlanSaveState.SAVING -> stringResource(R.string.common_saving)
+        PlanSaveState.JUST_SAVED -> stringResource(R.string.bd_plan_saved)
     }
     val tint = when (saveState) {
         PlanSaveState.PENDING -> palette.muted
@@ -277,8 +279,7 @@ private fun BreakdownHero(palette: CalendarPalette, state: BreakdownUiState) {
                 if (state.stations.isNotEmpty()) {
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        text = "${state.doneCount} of ${state.stations.size} done · " +
-                            "${state.doneMinutes}/${state.allocatedMinutes} min",
+                        text = stringResource(R.string.bd_progress, state.doneCount, state.stations.size, state.doneMinutes, state.allocatedMinutes),
                         color = palette.muted,
                         fontSize = 12.sp,
                     )
@@ -355,7 +356,7 @@ private fun ProgressRing(
         if (isComplete) {
             Icon(
                 Icons.Rounded.Check,
-                contentDescription = "Plan complete",
+                contentDescription = stringResource(R.string.bd_plan_complete),
                 tint = accent,
                 modifier = Modifier.size(30.dp),
             )
@@ -373,8 +374,8 @@ private fun ProgressRing(
 @Composable
 private fun AllocationChip(palette: CalendarPalette, accent: Color, leftoverMinutes: Int) {
     val over = leftoverMinutes < 0
-    val text = if (over) "${-leftoverMinutes} min over the event"
-    else "$leftoverMinutes min unplanned"
+    val text = if (over) stringResource(R.string.bd_over, -leftoverMinutes)
+    else stringResource(R.string.bd_unplanned, leftoverMinutes)
     val tint = if (over) palette.flagRed else accent
     Box(
         modifier = Modifier
@@ -398,7 +399,7 @@ private fun EmptyPlanPrompt(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "Break it into steps",
+            text = stringResource(R.string.bd_break_it),
             color = palette.ink,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
@@ -406,8 +407,8 @@ private fun EmptyPlanPrompt(
         Spacer(Modifier.height(4.dp))
         Text(
             text = if (totalMinutes > 0)
-                "Split these $totalMinutes minutes into smaller stations you can tick off."
-            else "Add stations you can tick off one at a time.",
+                stringResource(R.string.bd_split_minutes, totalMinutes)
+            else stringResource(R.string.bd_add_stations),
             color = palette.muted,
             fontSize = 13.sp,
             lineHeight = 18.sp,
@@ -415,10 +416,10 @@ private fun EmptyPlanPrompt(
         Spacer(Modifier.height(14.dp))
 
         val presets = listOf(
-            SplitPreset.HALVES to "In half",
-            SplitPreset.THIRDS to "In thirds",
-            SplitPreset.QUARTERS to "In quarters",
-            SplitPreset.POMODORO to "Pomodoro",
+            SplitPreset.HALVES to stringResource(R.string.bd_halves),
+            SplitPreset.THIRDS to stringResource(R.string.bd_thirds),
+            SplitPreset.QUARTERS to stringResource(R.string.bd_quarters),
+            SplitPreset.POMODORO to stringResource(R.string.intake_coping_pomodoro),
         )
         presets.chunked(2).forEach { row ->
             Row(
@@ -444,20 +445,21 @@ private fun EmptyPlanPrompt(
         OutlinedAction(
             palette = palette,
             icon = Icons.Outlined.Add,
-            label = "Add a station manually",
+            label = stringResource(R.string.bd_add_manual),
             onClick = onAddStation,
             modifier = Modifier.fillMaxWidth(),
         )
     }
 }
 
+@Composable
 private fun presetSubtitle(preset: SplitPreset, totalMinutes: Int): String {
     if (totalMinutes <= 0) return ""
     return when (preset) {
-        SplitPreset.HALVES -> "2 × ${totalMinutes / 2}m"
-        SplitPreset.THIRDS -> "3 × ${totalMinutes / 3}m"
-        SplitPreset.QUARTERS -> "4 × ${totalMinutes / 4}m"
-        SplitPreset.POMODORO -> "25m + 5m breaks"
+        SplitPreset.HALVES -> stringResource(R.string.bd_preset_halves, totalMinutes / 2)
+        SplitPreset.THIRDS -> stringResource(R.string.bd_preset_thirds, totalMinutes / 3)
+        SplitPreset.QUARTERS -> stringResource(R.string.bd_preset_quarters, totalMinutes / 4)
+        SplitPreset.POMODORO -> stringResource(R.string.bd_preset_pomodoro)
     }
 }
 
@@ -535,7 +537,7 @@ private fun StationRow(
                 if (station.completed) {
                     Icon(
                         Icons.Rounded.Check,
-                        contentDescription = "Mark not done",
+                        contentDescription = stringResource(R.string.bd_mark_not_done),
                         tint = Color.White,
                         modifier = Modifier.size(15.dp),
                     )
@@ -586,7 +588,7 @@ private fun StationRow(
                 ) {
                     Column {
                         Text(
-                            text = "NEXT UP",
+                            text = stringResource(R.string.home_next_up_caps),
                             color = stationTint,
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
@@ -614,7 +616,7 @@ private fun StationRow(
                         decorationBox = { inner ->
                             if (station.title.isEmpty()) {
                                 Text(
-                                    text = "Name this step…",
+                                    text = stringResource(R.string.bd_name_step),
                                     color = palette.muted.copy(alpha = 0.6f),
                                     fontSize = 15.sp,
                                 )
@@ -625,7 +627,7 @@ private fun StationRow(
                     IconButton(onClick = onRemove, modifier = Modifier.size(28.dp)) {
                         Icon(
                             Icons.Rounded.Close,
-                            contentDescription = "Remove station",
+                            contentDescription = stringResource(R.string.bd_remove_station),
                             tint = palette.muted.copy(alpha = 0.7f),
                             modifier = Modifier.size(16.dp),
                         )
@@ -656,14 +658,14 @@ private fun StationRow(
                     Spacer(Modifier.weight(1f))
                     ReorderButton(
                         icon = Icons.Rounded.KeyboardArrowUp,
-                        description = "Move up",
+                        description = stringResource(R.string.bd_move_up),
                         enabled = canMoveUp,
                         tint = palette.muted,
                         onClick = onMoveUp,
                     )
                     ReorderButton(
                         icon = Icons.Rounded.KeyboardArrowDown,
-                        description = "Move down",
+                        description = stringResource(R.string.bd_move_down),
                         enabled = canMoveDown,
                         tint = palette.muted,
                         onClick = onMoveDown,
@@ -690,7 +692,7 @@ private fun MinuteStepper(
         IconButton(onClick = { onAdjust(-5) }, modifier = Modifier.size(28.dp)) {
             Icon(
                 Icons.Rounded.Remove,
-                contentDescription = "5 minutes less",
+                contentDescription = stringResource(R.string.bd_5_less),
                 tint = tint,
                 modifier = Modifier.size(14.dp),
             )
@@ -706,7 +708,7 @@ private fun MinuteStepper(
         IconButton(onClick = { onAdjust(5) }, modifier = Modifier.size(28.dp)) {
             Icon(
                 Icons.Outlined.Add,
-                contentDescription = "5 minutes more",
+                contentDescription = stringResource(R.string.bd_5_more),
                 tint = tint,
                 modifier = Modifier.size(14.dp),
             )
@@ -735,7 +737,7 @@ private fun RunStationChip(tint: Color, onClick: () -> Unit) {
         // 'Start', not 'Focus': KindChip sits right beside this and already says Focus or Break for
         // the station's type, and two adjacent chips reading Focus would be unreadable
         Text(
-            text = "Start",
+            text = stringResource(R.string.common_start),
             color = tint,
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
@@ -768,7 +770,7 @@ private fun KindChip(
             Spacer(Modifier.width(4.dp))
         }
         Text(
-            text = if (isBreak) "Break" else "Focus",
+            text = if (isBreak) stringResource(R.string.bd_break) else stringResource(R.string.home_focus_widget),
             color = if (isBreak) tint else palette.ink,
             fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
@@ -828,7 +830,7 @@ private fun PlanActions(
                     )
                     Spacer(Modifier.width(7.dp))
                     Text(
-                        text = "Start focus session",
+                        text = stringResource(R.string.bd_start_focus),
                         color = Color.White,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -843,7 +845,7 @@ private fun PlanActions(
         Text(
             // stated outright rather than implied. someone who sees a Save button will otherwise assume
             // the opposite, that leaving without pressing it loses work
-            text = "Your plan saves itself as you edit.",
+            text = stringResource(R.string.bd_autosave),
             color = palette.muted,
             fontSize = 11.sp,
             modifier = Modifier.fillMaxWidth(),
@@ -855,14 +857,14 @@ private fun PlanActions(
             OutlinedAction(
                 palette = palette,
                 icon = Icons.Outlined.Add,
-                label = "Add station",
+                label = stringResource(R.string.bd_add_station),
                 onClick = onAddStation,
                 modifier = Modifier.weight(1f),
             )
             OutlinedAction(
                 palette = palette,
                 icon = Icons.Rounded.Close,
-                label = "Clear plan",
+                label = stringResource(R.string.bd_clear_plan),
                 onClick = onClearPlan,
                 modifier = Modifier.weight(1f),
             )
@@ -908,9 +910,9 @@ private fun SavePlanButton(
             Spacer(Modifier.width(7.dp))
             Text(
                 text = when (saveState) {
-                    PlanSaveState.SAVING -> "Saving…"
-                    PlanSaveState.JUST_SAVED -> "Plan saved"
-                    else -> "Save plan"
+                    PlanSaveState.SAVING -> stringResource(R.string.common_saving)
+                    PlanSaveState.JUST_SAVED -> stringResource(R.string.bd_plan_saved)
+                    else -> stringResource(R.string.bd_save_plan)
                 },
                 color = accent,
                 fontSize = 14.sp,

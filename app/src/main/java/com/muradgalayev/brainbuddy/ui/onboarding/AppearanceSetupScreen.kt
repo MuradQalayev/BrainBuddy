@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
@@ -45,8 +46,11 @@ import com.muradgalayev.brainbuddy.data.local.FontSize
 import com.muradgalayev.brainbuddy.data.local.ThemeMode
 import com.muradgalayev.brainbuddy.ui.settings.AppearancePreferencesViewModel
 import com.muradgalayev.brainbuddy.ui.settings.PillOption
+import com.muradgalayev.brainbuddy.ui.settings.components.LanguageCards
 import com.muradgalayev.brainbuddy.ui.settings.components.ThemePicker
 import com.muradgalayev.brainbuddy.ui.theme.fontFamilyOf
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // first screen after sign-up: how Myndora should look and read. it comes before the ADHD
 // questionnaire rather than after it for two reasons. the questionnaire is the longest stretch
@@ -68,6 +72,13 @@ fun AppearanceSetupScreen(
 
     val colors = MaterialTheme.colorScheme
 
+    // Do not let an automatically scheduled Work/Weekend mode mask or reject the choices on this
+    // screen. The user's mode selection itself is untouched and resumes after Continue.
+    DisposableEffect(Unit) {
+        viewModel.setAppearanceSetupActive(true)
+        onDispose { viewModel.setAppearanceSetupActive(false) }
+    }
+
     Box(Modifier.fillMaxSize().background(colors.background)) {
         Column(
             modifier = Modifier
@@ -79,47 +90,53 @@ fun AppearanceSetupScreen(
         ) {
             Column {
                 Text(
-                    text = "Make it yours",
+                    text = stringResource(R.string.setup_make_it_yours),
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = colors.onSurface,
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "Set how Myndora looks and reads before anything else. " +
-                        "The whole app changes as you choose, and none of it is permanent — " +
-                        "it all lives in Settings afterwards.",
+                    text = stringResource(R.string.setup_appearance_intro),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                 )
             }
 
+            // language before anything else: every card below reads in whatever is picked here
+            SetupCard(
+                title = stringResource(R.string.language_title),
+                blurb = stringResource(R.string.language_setup_blurb),
+            ) {
+                LanguageCards()
+            }
+
             // brightness first: the colour preview below has to resolve light or dark before it can show
             // anything truthful
             SetupCard(
-                title = "Light or dark",
-                blurb = "Auto follows your phone's own setting.",
+                title = stringResource(R.string.setup_light_or_dark),
+                blurb = stringResource(R.string.setup_light_or_dark_blurb),
             ) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     PillOption(
-                        label = "Light",
+                        label = stringResource(R.string.common_light),
                         icon = Icons.Outlined.LightMode,
                         selected = themeMode == ThemeMode.Light,
                         onClick = { viewModel.setThemeMode(ThemeMode.Light) },
                         modifier = Modifier.weight(1f),
                     )
                     PillOption(
-                        label = "Dark",
+                        label = stringResource(R.string.common_dark),
                         icon = Icons.Outlined.DarkMode,
                         selected = themeMode == ThemeMode.Dark,
                         onClick = { viewModel.setThemeMode(ThemeMode.Dark) },
                         modifier = Modifier.weight(1f),
                     )
                     PillOption(
-                        label = "Auto",
+                        label = stringResource(R.string.common_auto),
                         icon = Icons.Outlined.Brightness4,
                         selected = themeMode == ThemeMode.System,
                         onClick = { viewModel.setThemeMode(ThemeMode.System) },
@@ -139,29 +156,28 @@ fun AppearanceSetupScreen(
             )
 
             SetupCard(
-                title = "Typeface",
-                blurb = "Each is shown in its own lettering — pick the one that's easiest " +
-                    "to read, not the one that looks nicest.",
+                title = stringResource(R.string.setup_typeface),
+                blurb = stringResource(R.string.setup_typeface_blurb),
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     FontOption(
                         mode = FontMode.Arial,
                         name = "Arial",
-                        blurb = "Familiar and neutral.",
+                        blurb = stringResource(R.string.setup_font_arial_blurb),
                         selected = fontMode == FontMode.Arial,
                         onClick = { viewModel.setFontMode(FontMode.Arial) },
                     )
                     FontOption(
                         mode = FontMode.Atkinson,
                         name = "Atkinson Hyperlegible",
-                        blurb = "Letters that usually collide — I, l, 1, O, 0 — are drawn apart.",
+                        blurb = stringResource(R.string.setup_font_atkinson_blurb),
                         selected = fontMode == FontMode.Atkinson,
                         onClick = { viewModel.setFontMode(FontMode.Atkinson) },
                     )
                     FontOption(
                         mode = FontMode.OpenDyslexic,
                         name = "OpenDyslexic",
-                        blurb = "Weighted bottoms hold each letter the right way up.",
+                        blurb = stringResource(R.string.setup_font_dyslexic_blurb),
                         selected = fontMode == FontMode.OpenDyslexic,
                         onClick = { viewModel.setFontMode(FontMode.OpenDyslexic) },
                     )
@@ -169,27 +185,27 @@ fun AppearanceSetupScreen(
             }
 
             SetupCard(
-                title = "Text size",
-                blurb = "This page resizes with it, so what you see is what you get.",
+                title = stringResource(R.string.setup_text_size),
+                blurb = stringResource(R.string.setup_text_size_blurb),
             ) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     PillOption(
-                        label = "Small",
+                        label = stringResource(R.string.common_small),
                         selected = fontSize == FontSize.Small,
                         onClick = { viewModel.setFontSize(FontSize.Small) },
                         modifier = Modifier.weight(1f),
                     )
                     PillOption(
-                        label = "Medium",
+                        label = stringResource(R.string.common_medium),
                         selected = fontSize == FontSize.Medium,
                         onClick = { viewModel.setFontSize(FontSize.Medium) },
                         modifier = Modifier.weight(1f),
                     )
                     PillOption(
-                        label = "Large",
+                        label = stringResource(R.string.common_large),
                         selected = fontSize == FontSize.Large,
                         onClick = { viewModel.setFontSize(FontSize.Large) },
                         modifier = Modifier.weight(1f),
@@ -205,7 +221,7 @@ fun AppearanceSetupScreen(
                 shape = RoundedCornerShape(18.dp),
             ) {
                 Text(
-                    text = "Continue",
+                    text = stringResource(R.string.common_continue),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                 )
@@ -335,7 +351,7 @@ private fun FontOption(
                 if (selected) {
                     Icon(
                         imageVector = Icons.Rounded.Check,
-                        contentDescription = "Selected",
+                        contentDescription = stringResource(R.string.common_selected),
                         tint = colors.onPrimary,
                         modifier = Modifier.size(14.dp),
                     )

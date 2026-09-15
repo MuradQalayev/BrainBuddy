@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.ui.pomodoro.dialogs
 
+import com.muradgalayev.brainbuddy.ui.utils.resolve
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -43,6 +44,7 @@ import com.muradgalayev.brainbuddy.domain.model.PomodoroSession
 import com.muradgalayev.brainbuddy.ui.pomodoro.FocusHistory
 import com.muradgalayev.brainbuddy.ui.pomodoro.formatFocusMinutes
 import com.muradgalayev.brainbuddy.ui.pomodoro.utils.formatSessionTime
+import androidx.compose.ui.res.stringResource
 
 private val ChartHeight = 104.dp
 
@@ -90,13 +92,13 @@ fun PomodoroHistorySheet(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = "Focus history",
+                        text = stringResource(R.string.focus_history_sheet_title),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = "Last 7 days",
+                        text = stringResource(R.string.focus_last_7),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -115,20 +117,20 @@ fun PomodoroHistorySheet(
 
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 HistoryStat(
-                    value = history.weekTotalLabel,
-                    label = "this week",
+                    value = history.weekTotalLabel.resolve(),
+                    label = stringResource(R.string.focus_this_week),
                     accentColor = accentColor,
                     modifier = Modifier.weight(1f),
                 )
                 HistoryStat(
-                    value = history.bestDayLabel,
-                    label = "best day",
+                    value = history.bestDayLabel.resolve(),
+                    label = stringResource(R.string.focus_best_day),
                     accentColor = accentColor,
                     modifier = Modifier.weight(1f),
                 )
                 HistoryStat(
                     value = "${history.week.count { it.minutes > 0 }}",
-                    label = "active days",
+                    label = stringResource(R.string.focus_active_days),
                     accentColor = accentColor,
                     modifier = Modifier.weight(1f),
                 )
@@ -137,7 +139,7 @@ fun PomodoroHistorySheet(
             Spacer(Modifier.height(26.dp))
 
             Text(
-                text = "Recent sessions",
+                text = stringResource(R.string.focus_recent_sessions),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -254,7 +256,7 @@ private fun StreakBadge(days: Int, accentColor: Color) {
         )
         Spacer(Modifier.width(5.dp))
         Text(
-            text = "$days day streak",
+            text = stringResource(R.string.focus_streak, days),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             color = accentColor,
@@ -323,7 +325,7 @@ private fun SessionRow(session: PomodoroSession) {
 
         Column(Modifier.weight(1f)) {
             Text(
-                text = if (isFocus) "Focus" else "Break",
+                text = if (isFocus) stringResource(R.string.home_focus_widget) else stringResource(R.string.bd_break),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -336,7 +338,7 @@ private fun SessionRow(session: PomodoroSession) {
         }
 
         Text(
-            text = formatFocusMinutes(minutes),
+            text = formatFocusMinutes(minutes).resolve(),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
             color = dotColor,
@@ -372,7 +374,7 @@ private fun EmptyHistoryState() {
         Spacer(Modifier.height(12.dp))
 
         Text(
-            text = "No sessions yet",
+            text = stringResource(R.string.focus_no_sessions),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -381,7 +383,7 @@ private fun EmptyHistoryState() {
         Spacer(Modifier.height(4.dp))
 
         Text(
-            text = "Finish a focus session and it will show up here.",
+            text = stringResource(R.string.focus_no_sessions_body2),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

@@ -37,6 +37,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.muradgalayev.brainbuddy.ui.theme.myndoraAccents
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // three durations, one tap each. the Pomodoro screen already does this properly, but it asks
 // you to go there, pick a length and press play, and picking a length is exactly the decision
@@ -54,25 +56,25 @@ fun HomeFocusTile(
 
     HomeCard(modifier = modifier, accent = accents.support, onClick = if (running) onOpen else null) {
         Column(
-            Modifier.fillMaxSize().padding(16.dp),
+            Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     Modifier
-                        .size(38.dp)
+                        .size(32.dp)
                         .clip(HomeInnerShape)
                         .background(accents.support.copy(alpha = .14f))
                         .border(1.dp, accents.support.copy(alpha = .18f), HomeInnerShape),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Rounded.Timer, null, tint = accents.support, modifier = Modifier.size(19.dp))
+                    Icon(Icons.Rounded.Timer, null, tint = accents.support, modifier = Modifier.size(17.dp))
                 }
-                Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.width(8.dp))
                 Column {
-                    HomeSectionLabel("FOCUS", accents.support)
+                    HomeSectionLabel(stringResource(R.string.home_focus_caps), accents.support)
                     Text(
-                        if (running) "Session running" else "Pick a block",
+                        if (running) stringResource(R.string.home_session_running) else stringResource(R.string.home_pick_block),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -85,7 +87,7 @@ fun HomeFocusTile(
                     Icon(Icons.Rounded.PlayArrow, null, tint = accents.support, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        "Open timer",
+                        stringResource(R.string.home_open_timer),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = accents.support,

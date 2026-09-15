@@ -117,6 +117,9 @@ dependencies {
     implementation(libs.supabase.auth)
     implementation(libs.supabase.storage)
     implementation(libs.supabase.functions)
+    // live changes to your own calendar and list while the app is open
+    implementation(libs.supabase.realtime)
+    implementation(libs.ktor.client.okhttp)
     implementation(libs.image.cropper)
     implementation(libs.ktor.client.android)
     implementation(libs.kotlinx.serialization.json)
@@ -136,12 +139,17 @@ dependencies {
     implementation(libs.maps.compose)
     implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
+    // Together's nearby add: finds another phone with the radar open over Bluetooth / Wi-Fi
+    implementation(libs.play.services.nearby)
     // health connect, optional and read-only
     implementation(libs.androidx.health.connect)
     // firebase cloud messaging
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("androidx.core:core-ktx:1.13.1")
+    // Together's QR add: zxing draws the code, the Play services scanner reads one without a camera permission
+    implementation(libs.zxing.core)
+    implementation(libs.play.services.code.scanner)
     // testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

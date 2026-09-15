@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.ui.navigation
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -50,6 +51,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.layout.LayoutCoordinates
+import com.muradgalayev.brainbuddy.ui.accessibility.animationsOn
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -60,6 +64,9 @@ import androidx.compose.ui.zIndex
 import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -95,30 +102,53 @@ fun BottomNavBar(
     hasActiveAiChat: Boolean = false,
     aiEnabled: Boolean = true,
     onDragStateChanged: (Boolean) -> Unit = {},
+    // shrunk while the page is being scrolled down. touching the bar asks for it back at full size
+    compact: Boolean = false,
+    onExpand: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // the connection is deliberately not reflected here. the button used to go grey and open a
     // different panel offline, so its appearance and its behaviour both changed under the user
     // on a flaky network. it always opens the assistant now, and the assistant offers the switch
     val speakingAi = speaking(
-        if (aiEnabled) "AI assistant" else "AI assistant, locked until the survey is finished",
+        if (aiEnabled) stringResource(R.string.nav_ai_assistant) else stringResource(R.string.nav_ai_locked),
         onAiClick,
     )
     var moreExpanded by remember { mutableStateOf(false) }
     var dragIndex by remember { mutableStateOf<Int?>(null) }
+    var barPressed by remember { mutableStateOf(false) }
     var barWidthPx by remember { mutableStateOf(1) }
     // geometry for the sliding highlight. slot bounds and the bar origin are both in root
     // coordinates, and the difference is what the highlight translates by
     val slotBounds = remember { mutableStateMapOf<Int, Rect>() }
-    var barOrigin by remember { mutableStateOf(Offset.Zero) }
+    // kept in the bar's own coordinates. root coordinates include the pill's shrink scale, and the
+    // highlight is drawn inside that same scaled layer, so it got scaled twice and sat off-centre
+    val slotCoords = remember { mutableMapOf<Int, LayoutCoordinates>() }
+    val barCoords = remember { arrayOfNulls<LayoutCoordinates>(1) }
+    val syncSlotBounds = remember<() -> Unit> {
+        {
+            val bar = barCoords[0]
+            if (bar != null && bar.isAttached) {
+                slotCoords.forEach { (index, coords) ->
+                    if (coords.isAttached) {
+                        val rect = bar.localBoundingBoxOf(coords, clipBounds = false)
+                        if (slotBounds[index] != rect) slotBounds[index] = rect
+                    }
+                }
+            }
+        }
+    }
     var indicatorSlot by remember { mutableStateOf<Rect?>(null) }
     var indicatorPlaced by remember { mutableStateOf(false) }
     val indicatorX = remember { Animatable(0f) }
     val indicatorY = remember { Animatable(0f) }
     val density = LocalDensity.current
     // onGloballyPositioned fires every layout pass, writing only real changes keeps it out of the frame loop
-    val reportSlotBounds = remember<(Int, Rect) -> Unit> {
-        { index, rect -> if (slotBounds[index] != rect) slotBounds[index] = rect }
+    val reportSlotBounds = remember<(Int, LayoutCoordinates) -> Unit> {
+        { index, coords ->
+            slotCoords[index] = coords
+            syncSlotBounds()
+        }
     }
     val haptics = LocalHapticFeedback.current
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
@@ -221,7 +251,7 @@ fun BottomNavBar(
                                         ) {
                                             Icon(
                                                 painter = painterResource(id = screen.icon),
-                                                contentDescription = screen.label,
+                                                contentDescription = stringResource(screen.labelRes),
                                                 tint = if (isActive)
                                                     MaterialTheme.colorScheme.primary
                                                 else
@@ -232,7 +262,7 @@ fun BottomNavBar(
                                     }
                                     Spacer(modifier = Modifier.width(14.dp))
                                     Text(
-                                        text = screen.label,
+                                        text = stringResource(screen.labelRes),
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
                                         color = if (isActive)
@@ -337,11 +367,11 @@ fun BottomNavBar(
             // the real layout instead of re-deriving it from weights, and the bar's own origin turns
             // them into offsets we can translate by
             val targetSlot = slotBounds[visualIndex]
-            LaunchedEffect(targetSlot, barOrigin) {
+            LaunchedEffect(targetSlot) {
                 val slot = targetSlot ?: return@LaunchedEffect
                 indicatorSlot = slot
-                val x = slot.left - barOrigin.x
-                val y = slot.top - barOrigin.y
+                val x = slot.left
+                val y = slot.top
                 if (!indicatorPlaced) {
                     // first layout: appear in place rather than flying in from the corner
                     indicatorX.snapTo(x)
@@ -360,11 +390,34 @@ fun BottomNavBar(
                 label = "navIndicatorAlpha",
             )
 
+            // the pill swells slightly under a finger and a little more once a hold turns into a drag,
+            // so it feels like something you're holding rather than a flat strip of buttons
+            // a touch on a shrunk bar grows it back, and the tap still goes through to the tab
+            LaunchedEffect(barPressed) { if (barPressed) onExpand() }
+            val barScale by animateFloatAsState(
+                targetValue = when {
+                    // reduce motion keeps the bar one size: no shrinking on scroll, no swelling under a finger
+                    !animationsOn() -> 1f
+                    dragIndex != null -> 1.06f
+                    barPressed -> 1.03f
+                    compact -> 0.86f
+                    else -> 1f
+                },
+                animationSpec = spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMediumLow),
+                label = "navBarPress",
+            )
+
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
                     .padding(horizontal = 18.dp, vertical = 8.dp)
+                    .graphicsLayer {
+                        scaleX = barScale
+                        scaleY = barScale
+                        // shrink towards the bottom edge so the small bar hugs the screen instead of floating up
+                        transformOrigin = TransformOrigin(0.5f, 1f)
+                    }
                     .shadow(
                         elevation = 18.dp,
                         shape = pillShape,
@@ -379,7 +432,24 @@ fun BottomNavBar(
                     modifier = Modifier
                         .fillMaxWidth()
                         .onSizeChanged { barWidthPx = it.width.coerceAtLeast(1) }
-                        .onGloballyPositioned { barOrigin = it.positionInRoot() }
+                        .onGloballyPositioned {
+                            barCoords[0] = it
+                            syncSlotBounds()
+                        }
+                        // watches the finger without consuming anything, the taps and the drag below still get it
+                        .pointerInput(Unit) {
+                            awaitEachGesture {
+                                awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                                barPressed = true
+                                try {
+                                    do {
+                                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                                    } while (event.changes.any { it.pressed })
+                                } finally {
+                                    barPressed = false
+                                }
+                            }
+                        }
                         .pointerInput(items, aiEnabled) {
                             detectDragGesturesAfterLongPress(
                                 onDragStart = { offset ->
@@ -432,7 +502,8 @@ fun BottomNavBar(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                    val handleClick: (Screen) -> Unit = speakingWith({ it.label }) { screen ->
+                    val navResources = androidx.compose.ui.platform.LocalContext.current.resources
+                    val handleClick: (Screen) -> Unit = speakingWith({ navResources.getString(it.labelRes) }) { screen ->
                         if (screen is Screen.More) {
                             moreExpanded = !moreExpanded
                         } else {
@@ -495,8 +566,8 @@ fun BottomNavBar(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_ai),
-                                contentDescription = if (aiEnabled) "AI Assistant"
-                                else "AI Assistant (finish the survey to unlock)",
+                                contentDescription = if (aiEnabled) stringResource(R.string.nav_ai_assistant)
+                                else stringResource(R.string.nav_ai_locked),
                                 tint = if (aiEnabled) navAccent else AiDisabledIcon,
                                 modifier = Modifier
                                     .size(26.dp)

@@ -20,6 +20,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun MyndoraLoader(
@@ -54,7 +55,7 @@ fun MyndoraLoader(
     ) {
         Icon(
             painter = painterResource(id = R.drawable.ic_ai),
-            contentDescription = "Loading",
+            contentDescription = stringResource(R.string.common_loading_plain),
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
                 .size(size)

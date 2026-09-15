@@ -56,6 +56,8 @@ import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Phone
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.PhotoCamera
+import androidx.compose.material.icons.rounded.DeleteForever
+import androidx.compose.material.icons.rounded.PauseCircle
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Palette
@@ -142,9 +144,15 @@ import com.muradgalayev.brainbuddy.ui.modes.modeIcon
 import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
-fun CustomizationScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
+fun CustomizationScreen(
+    onBack: () -> Unit,
+    onOpenPlan: () -> Unit,
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
     val activeMode by viewModel.activeMode.collectAsState()
     var entryMode by remember {
         mutableStateOf<com.muradgalayev.brainbuddy.domain.model.AppMode?>(null)
@@ -159,6 +167,7 @@ fun CustomizationScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
     val reduceMotion by viewModel.reduceMotion.collectAsState()
     val appTheme by viewModel.appTheme.collectAsState()
     val customThemeSpec by viewModel.customThemeSpec.collectAsState()
+    val plusActive = viewModel.plan.collectAsState().value == com.muradgalayev.brainbuddy.domain.model.Plan.Plus
     val context = LocalContext.current
 
     // the StateFlow starts with a null seed while Room and DataStore warm up. resolve the real
@@ -175,7 +184,7 @@ fun CustomizationScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
     }
 
     if (!modeGateResolved) {
-        SettingsSubScaffold(title = "Customization", onBack = onBack) {
+        SettingsSubScaffold(title = stringResource(R.string.settings_customization), onBack = onBack) {
             Box(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 56.dp),
                 contentAlignment = Alignment.Center,
@@ -191,7 +200,7 @@ fun CustomizationScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
     // defence in depth for restored or deep navigation. the Settings row normally blocks the
     // route with a notice, but the destination also has to be unable to mutate base settings
     lockedMode?.let { mode ->
-        SettingsSubScaffold(title = "Customization", onBack = onBack) {
+        SettingsSubScaffold(title = stringResource(R.string.settings_customization), onBack = onBack) {
             val accent = modeAccentColor(mode.accent)
             Surface(
                 shape = RoundedCornerShape(28.dp),
@@ -223,15 +232,14 @@ fun CustomizationScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
                     }
                     Spacer(Modifier.height(18.dp))
                     Text(
-                        "${mode.name} mode is active",
+                        stringResource(R.string.settings_mode_active, mode.name),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Customization isn't available in this mode. Turn it off or edit " +
-                            "the mode first so its look and layout stay predictable.",
+                        stringResource(R.string.settings_customization_locked),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -243,7 +251,7 @@ fun CustomizationScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
                         colors = ButtonDefaults.buttonColors(containerColor = accent),
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                     ) {
-                        Text("Back to settings", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.settings_back_to_settings), fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -251,11 +259,11 @@ fun CustomizationScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
         return
     }
 
-    SettingsSubScaffold(title = "Customization", onBack = onBack) {
+    SettingsSubScaffold(title = stringResource(R.string.settings_customization), onBack = onBack) {
         SettingsDetailHero(
             icon = Icons.Rounded.Palette,
-            title = "Make Myndora yours",
-            description = "Shape the colors, type and shortcuts around how you think.",
+            title = stringResource(R.string.settings_make_yours),
+            description = stringResource(R.string.settings_make_yours_desc),
             accent = MaterialTheme.colorScheme.primary,
         )
         AppearanceRow(
@@ -280,6 +288,8 @@ fun CustomizationScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
             themeMode = themeMode,
             onSelectBuiltIn = { viewModel.setAppTheme(it) },
             onCustomChange = { viewModel.setCustomTheme(it) },
+            customUnlocked = plusActive,
+            onCustomLocked = onOpenPlan,
         )
 
         // here rather than under Myndora AI: it has nothing to do with the assistant's voice, it
@@ -292,16 +302,16 @@ fun CustomizationScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(
-                            "Speak what I tap",
+                            stringResource(R.string.settings_speak_tap),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
                             if (readAloudTaps)
-                                "Buttons, tabs and cards say their name as you tap them"
+                                stringResource(R.string.settings_speak_tap_on)
                             else
-                                "Tapping around Myndora stays silent",
+                                stringResource(R.string.settings_speak_tap_off),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -316,8 +326,7 @@ fun CustomizationScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
                 if (readAloudTaps) {
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        "This covers Myndora's own screens. To have every app read " +
-                            "aloud, turn on Select to Speak in Android's accessibility settings.",
+                        stringResource(R.string.settings_speak_tap_note),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -333,7 +342,7 @@ fun CustomizationScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
                         },
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                     ) {
-                        Text("Open accessibility settings")
+                        Text(stringResource(R.string.settings_open_accessibility))
                     }
                 }
             }
@@ -374,16 +383,16 @@ private fun MotionSetting(
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "Reduce motion",
+                        stringResource(R.string.settings_reduce_motion),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
                         if (reduceMotion)
-                            "Things appear instead of moving"
+                            stringResource(R.string.settings_reduce_motion_on)
                         else
-                            "Things slide, grow and settle as they change",
+                            stringResource(R.string.settings_reduce_motion_off),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -394,8 +403,7 @@ private fun MotionSetting(
             if (reduceMotion) {
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "Anything that drifts, pulses or breathes on its own stops. " +
-                        "Screens still change when you tap — they just change straight away.",
+                    stringResource(R.string.settings_reduce_motion_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -413,7 +421,7 @@ fun NotificationsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
     val pomodoroNudgeTime by viewModel.pomodoroNudgeTime.collectAsState()
     val pomodoroBreakReminders by viewModel.pomodoroBreakReminders.collectAsState()
 
-    SettingsSubScaffold(title = "Notifications", onBack = onBack) {
+    SettingsSubScaffold(title = stringResource(R.string.settings_notifications), onBack = onBack) {
         Surface(
             shape = RoundedCornerShape(26.dp),
             color = Color.Transparent,
@@ -452,14 +460,14 @@ fun NotificationsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
                 Spacer(Modifier.width(15.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "Stay informed, not overwhelmed",
+                        stringResource(R.string.settings_notif_hero),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Choose only the moments when a gentle reminder genuinely helps.",
+                        stringResource(R.string.settings_notif_hero_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -552,16 +560,16 @@ fun AiSettingsScreen(
         }
     }
 
-    SettingsSubScaffold(title = "Myndora AI", onBack = onBack) {
+    SettingsSubScaffold(title = stringResource(R.string.ai_myndora_ai), onBack = onBack) {
         SettingsDetailHero(
             icon = Icons.Rounded.AutoAwesome,
-            title = "Your assistant, your voice",
-            description = "Choose when Myndora speaks and how its answers sound.",
+            title = stringResource(R.string.settings_ai_hero),
+            description = stringResource(R.string.settings_ai_hero_desc),
             accent = MaterialTheme.colorScheme.primary,
         )
         AiSettingsSectionLabel(
-            title = "Voice & sound",
-            subtitle = "Choose when Myndora speaks and how it sounds.",
+            title = stringResource(R.string.settings_voice_sound),
+            subtitle = stringResource(R.string.settings_voice_sound_desc),
         )
         Surface(
             shape = RoundedCornerShape(24.dp),
@@ -573,14 +581,14 @@ fun AiSettingsScreen(
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "Spoken responses",
+                        stringResource(R.string.settings_spoken_responses),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        if (spokenResponses) "Live assistant answers with text and voice"
-                        else "Live assistant answers silently with text only",
+                        if (spokenResponses) stringResource(R.string.settings_spoken_on)
+                        else stringResource(R.string.settings_spoken_off),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -602,14 +610,14 @@ fun AiSettingsScreen(
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "Smart Search read aloud",
+                        stringResource(R.string.settings_chat_read_aloud),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        if (chatReadAloud) "New Myndora chat answers play automatically"
-                        else "Chat stays silent unless you tap its speaker button",
+                        if (chatReadAloud) stringResource(R.string.settings_chat_read_on)
+                        else stringResource(R.string.settings_chat_read_off),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -622,7 +630,7 @@ fun AiSettingsScreen(
         }
 
         Text(
-            "Choose a voice",
+            stringResource(R.string.settings_choose_voice),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = if (voiceEnabled) MaterialTheme.colorScheme.onSurface
@@ -634,11 +642,12 @@ fun AiSettingsScreen(
             color = MaterialTheme.colorScheme.surfaceContainer,
         ) {
             Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                val voiceSample = stringResource(R.string.settings_voice_sample)
                 MyndoraVoiceProfiles.forEachIndexed { index, profile ->
                     val voice = voices.getOrNull(index)
                     VoiceChoiceRow(
                         title = profile.name,
-                        subtitle = profile.description,
+                        subtitle = stringResource(profile.descriptionRes),
                         selected = voice != null && selectedVoice == voice.name,
                         enabled = voiceEnabled && voice != null,
                         onClick = {
@@ -648,7 +657,7 @@ fun AiSettingsScreen(
                             engine?.setPitch(profile.pitch)
                             engine?.setSpeechRate(profile.rate)
                             engine?.speak(
-                                "Hi, I'm Myndora. How can I help?",
+                                voiceSample,
                                 TextToSpeech.QUEUE_FLUSH,
                                 null,
                                 "voice_preview",
@@ -663,7 +672,7 @@ fun AiSettingsScreen(
                     ) {
                         CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
                         Text(
-                            "Preparing voice previews…",
+                            stringResource(R.string.settings_preparing_voices),
                             modifier = Modifier.padding(start = 10.dp),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -671,7 +680,7 @@ fun AiSettingsScreen(
                     }
                 } else if (voices.isEmpty()) {
                     Text(
-                        "Your device’s system voice will be used.",
+                        stringResource(R.string.settings_system_voice),
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -681,8 +690,8 @@ fun AiSettingsScreen(
         }
 
         AiSettingsSectionLabel(
-            title = "Personalization & privacy",
-            subtitle = "You decide whether wellness data can shape AI suggestions.",
+            title = stringResource(R.string.settings_privacy),
+            subtitle = stringResource(R.string.settings_privacy_desc),
         )
 
         Surface(
@@ -717,7 +726,7 @@ fun AiSettingsScreen(
                 }
                 Spacer(Modifier.width(13.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Wellness personalization", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.settings_wellness_personalization), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(4.dp))
                     Text(
                         when {
@@ -725,10 +734,10 @@ fun AiSettingsScreen(
                             // off: the decision is an account-level record now and would otherwise follow the user to a
                             // new device after they believed they had revoked it
                             !healthState.connected && healthPersonalization ->
-                                "Allowed • paused until Health Connect is reconnected"
-                            !healthState.connected -> "Connect Health Connect to make this available"
-                            healthPersonalization -> "On • recent wellness summaries can personalize AI"
-                            else -> "Off • health data is not included in AI requests"
+                                stringResource(R.string.settings_wellness_paused)
+                            !healthState.connected -> stringResource(R.string.settings_wellness_connect_first)
+                            healthPersonalization -> stringResource(R.string.settings_wellness_on)
+                            else -> stringResource(R.string.settings_wellness_off)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -749,14 +758,14 @@ fun AiSettingsScreen(
         }
 
         AiSettingsSectionLabel(
-            title = "Feature preview",
-            subtitle = "A quick visual guide to Smart Search read aloud.",
+            title = stringResource(R.string.settings_feature_preview),
+            subtitle = stringResource(R.string.settings_feature_preview_desc),
         )
 
         SmartSearchFeaturePreview()
 
         Text(
-            "These settings are stored only on this device. Your onboarding survey can update the spoken-response preference later.",
+            stringResource(R.string.settings_ai_local_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -765,10 +774,10 @@ fun AiSettingsScreen(
     if (showHealthConsent) {
         AlertDialog(
             onDismissRequest = { showHealthConsent = false },
-            title = { Text("Use wellness data with AI?", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.settings_wellness_dialog_title), fontWeight = FontWeight.Bold) },
             text = {
                 Text(
-                    "Myndora will include recent summaries of your selected Health Connect data in AI requests to personalize focus, timing, workload, and break suggestions. Raw records are not sent. This is wellness guidance, not medical advice. You can turn it off anytime.",
+                    stringResource(R.string.settings_wellness_dialog_body),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },
@@ -776,10 +785,10 @@ fun AiSettingsScreen(
                 Button(onClick = {
                     viewModel.setAiHealthPersonalization(true)
                     showHealthConsent = false
-                }) { Text("Allow personalization") }
+                }) { Text(stringResource(R.string.settings_allow_personalization)) }
             },
             dismissButton = {
-                TextButton(onClick = { showHealthConsent = false }) { Text("Not now") }
+                TextButton(onClick = { showHealthConsent = false }) { Text(stringResource(R.string.common_not_now)) }
             },
         )
     }
@@ -865,12 +874,12 @@ private fun SmartSearchFeaturePreview() {
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "See it in action",
+                        stringResource(R.string.settings_see_in_action),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        "Watch how to find and use read aloud",
+                        stringResource(R.string.settings_see_in_action_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -890,7 +899,7 @@ private fun SmartSearchFeaturePreview() {
                     painter = androidx.compose.ui.res.painterResource(
                         com.muradgalayev.brainbuddy.R.drawable.voice_assistant_reference,
                     ),
-                    contentDescription = "Preview showing the read-answer-aloud button",
+                    contentDescription = stringResource(R.string.settings_read_aloud_preview_cd),
                     contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                     modifier = Modifier
                         .fillMaxSize()
@@ -929,7 +938,7 @@ private fun SmartSearchFeaturePreview() {
                         shadowElevation = 4.dp,
                     ) {
                         Text(
-                            "READ ALOUD",
+                            stringResource(R.string.settings_read_aloud_caps),
                             modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.ExtraBold,
@@ -1007,7 +1016,7 @@ fun LinkedAccountsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hilt
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        SettingsSubScaffold(title = "Linked accounts", onBack = onBack) {
+        SettingsSubScaffold(title = stringResource(R.string.settings_linked_accounts), onBack = onBack) {
             ConnectedServicesHero(
                 connected = linkedGoogleEmail != null,
             )
@@ -1038,8 +1047,14 @@ fun LinkedAccountsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hilt
 }
 
 @Composable
-fun LinkedDevicesScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
+fun LinkedDevicesScreen(
+    onBack: () -> Unit,
+    onOpenPlan: () -> Unit = {},
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
     val state by viewModel.healthConnectState.collectAsState()
+    // connecting is a Myndora Plus feature. an existing connection keeps working either way
+    val plusActive = viewModel.plan.collectAsState().value == com.muradgalayev.brainbuddy.domain.model.Plan.Plus
     val healthPersonalization by viewModel.aiHealthPersonalization.collectAsState(initial = false)
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
@@ -1049,7 +1064,7 @@ fun LinkedDevicesScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
         PermissionController.createRequestPermissionResultContract(),
     ) { granted ->
         viewModel.refreshHealthConnect()
-        scope.launch { snackbar.showSnackbar("Health access updated") }
+        scope.launch { snackbar.showSnackbar(context.getString(R.string.settings_health_updated)) }
         if (granted.isNotEmpty() && !healthPersonalization) {
             showAiWellnessInvite = true
         }
@@ -1063,7 +1078,7 @@ fun LinkedDevicesScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
     }
 
     val connect: () -> Unit = {
-        when (state.availability) {
+        if (!plusActive) onOpenPlan() else when (state.availability) {
             HealthConnectAvailability.AVAILABLE -> {
                 viewModel.prepareHealthConnect()
                 permissionLauncher.launch(viewModel.healthConnectPermissions)
@@ -1071,13 +1086,13 @@ fun LinkedDevicesScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
             HealthConnectAvailability.INSTALL_OR_UPDATE -> installHealthConnect(context)
             HealthConnectAvailability.NOT_SUPPORTED -> {
                 scope.launch {
-                    snackbar.showSnackbar("Health Connect is not supported on this device")
+                    snackbar.showSnackbar(context.getString(R.string.settings_health_unsupported))
                 }
             }
         }
     }
 
-    SettingsSubScaffold(title = "Linked devices", onBack = onBack) {
+    SettingsSubScaffold(title = stringResource(R.string.settings_linked_devices), onBack = onBack) {
         Surface(
             shape = RoundedCornerShape(28.dp),
             color = Color.Transparent,
@@ -1145,14 +1160,17 @@ fun LinkedDevicesScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
                 }
                 Spacer(Modifier.height(15.dp))
                 Text(
-                    if (state.connected) "Health data connected" else "Connect Health Connect",
+                    if (state.connected) stringResource(R.string.settings_health_connected) else stringResource(R.string.ai_chip_connect_health),
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    if (state.connected) "Your wellness insights are ready for Myndora."
-                    else "Share selected wellness data privately.",
+                    when {
+                        state.connected -> stringResource(R.string.settings_health_ready)
+                        !plusActive -> stringResource(R.string.plan_health_locked)
+                        else -> stringResource(R.string.settings_health_share)
+                    },
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1198,10 +1216,10 @@ fun LinkedDevicesScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
                     modifier = Modifier.size(34.dp),
                 )
             },
-            title = { Text("Let Myndora personalize gently?", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.settings_personalize_gently), fontWeight = FontWeight.Bold) },
             text = {
                 Text(
-                    "Myndora can use compact wellness summaries to adjust focus, workload, timing, and break suggestions. Raw Health Connect records are not sent, and this is never used for diagnosis. You can change this anytime in Myndora AI settings.",
+                    stringResource(R.string.settings_personalize_gently_body),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },
@@ -1209,10 +1227,10 @@ fun LinkedDevicesScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltV
                 Button(onClick = {
                     viewModel.setAiHealthPersonalization(true)
                     showAiWellnessInvite = false
-                }) { Text("Allow personalization") }
+                }) { Text(stringResource(R.string.settings_allow_personalization)) }
             },
             dismissButton = {
-                TextButton(onClick = { showAiWellnessInvite = false }) { Text("Not now") }
+                TextButton(onClick = { showAiWellnessInvite = false }) { Text(stringResource(R.string.common_not_now)) }
             },
         )
     }
@@ -1292,10 +1310,10 @@ private fun HealthConnectCard(
                     )
                     Text(
                         when {
-                            state.connected -> "Read-only wellness insights are connected"
-                            state.availability == HealthConnectAvailability.INSTALL_OR_UPDATE -> "Install or update to connect"
-                            state.availability == HealthConnectAvailability.NOT_SUPPORTED -> "Not supported on this device"
-                            else -> "Optional steps and heart-rate context"
+                            state.connected -> stringResource(R.string.settings_health_readonly)
+                            state.availability == HealthConnectAvailability.INSTALL_OR_UPDATE -> stringResource(R.string.settings_health_install)
+                            state.availability == HealthConnectAvailability.NOT_SUPPORTED -> stringResource(R.string.settings_health_not_supported)
+                            else -> stringResource(R.string.settings_health_optional)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.onSurfaceVariant,
@@ -1304,7 +1322,7 @@ private fun HealthConnectCard(
                 if (state.connected) {
                     Surface(shape = CircleShape, color = colors.tertiary.copy(alpha = .16f)) {
                         Text(
-                            "Live",
+                            stringResource(R.string.settings_live),
                             modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
@@ -1324,7 +1342,7 @@ private fun HealthConnectCard(
                 if (!state.allPermissionsGranted) {
                     Spacer(Modifier.height(12.dp))
                     Button(onClick = onConnect, modifier = Modifier.fillMaxWidth()) {
-                        Text("Allow additional health insights")
+                        Text(stringResource(R.string.settings_allow_more_health))
                     }
                 }
                 if (state.error != null) {
@@ -1347,11 +1365,11 @@ private fun HealthConnectCard(
                         )
                         Spacer(Modifier.width(7.dp))
                     }
-                    Text(if (state.disconnecting) "Disconnecting…" else "Disconnect")
+                    Text(if (state.disconnecting) stringResource(R.string.settings_disconnecting) else stringResource(R.string.settings_disconnect))
                 }
             } else if (state.availability == HealthConnectAvailability.AVAILABLE) {
                 Text(
-                    "You choose each permission. Myndora requests read access only and does not upload these records.",
+                    stringResource(R.string.settings_health_permissions_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                 )
@@ -1359,11 +1377,11 @@ private fun HealthConnectCard(
                 Button(onClick = onConnect, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Rounded.Add, contentDescription = null)
                     Spacer(Modifier.width(7.dp))
-                    Text("Connect Health Connect")
+                    Text(stringResource(R.string.ai_chip_connect_health))
                 }
             } else if (state.availability == HealthConnectAvailability.INSTALL_OR_UPDATE) {
                 Button(onClick = onInstall, modifier = Modifier.fillMaxWidth()) {
-                    Text("Install or update Health Connect")
+                    Text(stringResource(R.string.settings_install_health))
                 }
             }
         }
@@ -1401,7 +1419,7 @@ private fun HealthPermissionBreakdown(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "What you've allowed",
+                stringResource(R.string.settings_what_allowed),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = colors.onSurfaceVariant,
@@ -1416,7 +1434,7 @@ private fun HealthPermissionBreakdown(
                 },
             ) {
                 Text(
-                    "$grantedCount of ${permissionLabels.size}",
+                    stringResource(R.string.count_of, grantedCount, permissionLabels.size),
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
@@ -1427,8 +1445,8 @@ private fun HealthPermissionBreakdown(
             Spacer(Modifier.weight(1f))
             Icon(
                 Icons.Rounded.ExpandMore,
-                contentDescription = if (expanded) "Hide the data types"
-                else "Show the data types",
+                contentDescription = if (expanded) stringResource(R.string.settings_hide_data_types)
+                else stringResource(R.string.settings_show_data_types),
                 tint = colors.onSurfaceVariant,
                 modifier = Modifier.size(20.dp).rotate(chevronRotation),
             )
@@ -1453,14 +1471,14 @@ private fun HealthPermissionBreakdown(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            info.label,
+                            stringResource(info.labelRes),
                             style = MaterialTheme.typography.bodySmall,
                             color = if (isGranted) colors.onSurface else colors.onSurfaceVariant,
                         )
                         if (isGranted && info.needsDevice) {
                             Spacer(Modifier.width(6.dp))
                             Text(
-                                "· needs a watch",
+                                stringResource(R.string.settings_needs_watch),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = colors.onSurfaceVariant.copy(alpha = .7f),
                             )
@@ -1492,7 +1510,7 @@ private fun HealthStepsFeature(today: Long?, last7Days: Long?) {
                 }
             }
             Column(Modifier.weight(1f).padding(start = 15.dp)) {
-                Text("TODAY'S STEPS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = colors.onPrimary.copy(alpha = .72f))
+                Text(stringResource(R.string.settings_todays_steps), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = colors.onPrimary.copy(alpha = .72f))
                 Text(
                     today?.let { "%,d".format(it) } ?: "—",
                     style = MaterialTheme.typography.headlineMedium,
@@ -1503,7 +1521,7 @@ private fun HealthStepsFeature(today: Long?, last7Days: Long?) {
             if (last7Days != null) {
                 Surface(shape = RoundedCornerShape(14.dp), color = colors.onPrimary.copy(alpha = .12f)) {
                     Column(Modifier.padding(horizontal = 12.dp, vertical = 9.dp), horizontalAlignment = Alignment.End) {
-                        Text("7 DAYS", style = MaterialTheme.typography.labelSmall, color = colors.onPrimary.copy(alpha = .7f))
+                        Text(stringResource(R.string.settings_7_days), style = MaterialTheme.typography.labelSmall, color = colors.onPrimary.copy(alpha = .7f))
                         Text("%,d".format(last7Days), fontWeight = FontWeight.Bold, color = colors.onPrimary)
                     }
                 }
@@ -1605,10 +1623,10 @@ private fun HealthAiPersonalizationCard(enabled: Boolean, onChange: (Boolean) ->
             }
             Spacer(Modifier.width(13.dp))
             Column(Modifier.weight(1f)) {
-                Text("Personalize Myndora AI", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.settings_personalize_ai), fontWeight = FontWeight.Bold)
                 Text(
-                    if (enabled) "On • wellness summaries can shape suggestions"
-                    else "Optional • use summaries for focus and break suggestions",
+                    if (enabled) stringResource(R.string.settings_personalize_on)
+                    else stringResource(R.string.settings_personalize_optional),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1679,15 +1697,15 @@ private fun ConnectedServicesHero(connected: Boolean) {
             }
             Spacer(Modifier.height(15.dp))
             Text(
-                if (connected) "Calendars connected" else "Bring your plans together",
+                if (connected) stringResource(R.string.settings_calendars_connected) else stringResource(R.string.settings_bring_plans),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = colors.onSurface,
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                if (connected) "Myndora and Google Calendar are ready to sync."
-                else "Link Google Calendar to carry Myndora plans wherever you go.",
+                if (connected) stringResource(R.string.settings_calendar_ready)
+                else stringResource(R.string.settings_link_calendar),
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -1778,7 +1796,7 @@ private fun SyncFrequencyCard(
                 }
                 Spacer(Modifier.width(13.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Your sync rhythm", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+                    Text(stringResource(R.string.settings_sync_rhythm), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
                     Text(
                         syncFrequencyDescription(selected),
                         style = MaterialTheme.typography.bodySmall,
@@ -1791,7 +1809,7 @@ private fun SyncFrequencyCard(
                 Column(horizontalAlignment = Alignment.End) {
                     Surface(shape = RoundedCornerShape(12.dp), color = colors.primary) {
                         Text(
-                            selected.label,
+                            stringResource(selected.labelRes),
                             Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
@@ -1801,7 +1819,7 @@ private fun SyncFrequencyCard(
                     Spacer(Modifier.height(5.dp))
                     Icon(
                         Icons.Rounded.KeyboardArrowDown,
-                        contentDescription = if (expanded) "Collapse sync options" else "Expand sync options",
+                        contentDescription = if (expanded) stringResource(R.string.settings_collapse_sync) else stringResource(R.string.settings_expand_sync),
                         modifier = Modifier.size(20.dp).rotate(if (expanded) 180f else 0f),
                         tint = colors.onSurfaceVariant,
                     )
@@ -1814,7 +1832,7 @@ private fun SyncFrequencyCard(
             ) {
                 Column(Modifier.padding(top = 18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        "How closely should your calendars move together?",
+                        stringResource(R.string.settings_sync_question),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = colors.onSurfaceVariant,
@@ -1845,10 +1863,12 @@ private fun SyncFrequencyCard(
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = buildString {
-                            append("Last sync: ")
                             append(
-                                if (lastSyncedAt == null) "not yet — background sync hasn't run"
-                                else formatRelativeSync(lastSyncedAt)
+                                stringResource(
+                                    R.string.settings_last_sync,
+                                    if (lastSyncedAt == null) stringResource(R.string.settings_sync_never)
+                                    else formatRelativeSync(lastSyncedAt),
+                                )
                             )
                             lastSyncResult?.let { append(" · $it") }
                         },
@@ -1862,19 +1882,24 @@ private fun SyncFrequencyCard(
 }
 
 // '12 minutes ago' / '6 hours ago' / '3 days ago', enough to judge the cadence
+@Composable
 private fun formatRelativeSync(atMillis: Long): String {
     val deltaMs = (System.currentTimeMillis() - atMillis).coerceAtLeast(0L)
     val minutes = deltaMs / 60_000L
     return when {
-        minutes < 1 -> "just now"
-        minutes < 60 -> "$minutes minute${if (minutes == 1L) "" else "s"} ago"
+        minutes < 1 -> stringResource(R.string.sync_just_now)
+        minutes < 60 ->
+            if (minutes == 1L) stringResource(R.string.sync_minute_ago)
+            else stringResource(R.string.sync_minutes_ago, minutes)
         minutes < 60 * 24 -> {
             val hours = minutes / 60
-            "$hours hour${if (hours == 1L) "" else "s"} ago"
+            if (hours == 1L) stringResource(R.string.sync_hour_ago)
+            else stringResource(R.string.sync_hours_ago, hours)
         }
         else -> {
             val days = minutes / (60 * 24)
-            "$days day${if (days == 1L) "" else "s"} ago"
+            if (days == 1L) stringResource(R.string.sync_day_ago)
+            else stringResource(R.string.sync_days_ago, days)
         }
     }
 }
@@ -1918,10 +1943,10 @@ private fun SyncRhythmTile(
                     fontWeight = FontWeight.Black,
                     color = if (selected) colors.onPrimary else colors.primary,
                 )
-                if (selected) Icon(Icons.Rounded.Check, "Selected", tint = colors.onPrimary, modifier = Modifier.size(18.dp))
+                if (selected) Icon(Icons.Rounded.Check, stringResource(R.string.common_selected), tint = colors.onPrimary, modifier = Modifier.size(18.dp))
             }
             Column {
-                Text(frequency.label, fontWeight = FontWeight.Bold, color = if (selected) colors.onPrimary else colors.onSurface)
+                Text(stringResource(frequency.labelRes), fontWeight = FontWeight.Bold, color = if (selected) colors.onPrimary else colors.onSurface)
                 Text(
                     syncFrequencyDescription(frequency),
                     style = MaterialTheme.typography.labelSmall,
@@ -1933,24 +1958,30 @@ private fun SyncRhythmTile(
     }
 }
 
+@Composable
 private fun syncFrequencyMark(frequency: CalendarSyncFrequency): String = when (frequency) {
-    CalendarSyncFrequency.MANUAL -> "TAP"
+    CalendarSyncFrequency.MANUAL -> stringResource(R.string.sync_mark_manual)
     CalendarSyncFrequency.WEEKLY -> "7D"
     CalendarSyncFrequency.DAILY -> "1D"
     CalendarSyncFrequency.TWICE_DAILY -> "2×"
     CalendarSyncFrequency.EVERY_6H -> "6H"
 }
 
+@Composable
 private fun syncFrequencyDescription(frequency: CalendarSyncFrequency): String = when (frequency) {
-    CalendarSyncFrequency.MANUAL -> "Only when you choose Sync now"
-    CalendarSyncFrequency.WEEKLY -> "A quiet refresh once each week"
-    CalendarSyncFrequency.DAILY -> "Keep tomorrow’s plans up to date"
-    CalendarSyncFrequency.TWICE_DAILY -> "Refresh around morning and evening"
-    CalendarSyncFrequency.EVERY_6H -> "Keep changes closely aligned"
+    CalendarSyncFrequency.MANUAL -> stringResource(R.string.sync_desc_manual)
+    CalendarSyncFrequency.WEEKLY -> stringResource(R.string.sync_desc_weekly)
+    CalendarSyncFrequency.DAILY -> stringResource(R.string.sync_desc_daily)
+    CalendarSyncFrequency.TWICE_DAILY -> stringResource(R.string.sync_desc_twice)
+    CalendarSyncFrequency.EVERY_6H -> stringResource(R.string.sync_desc_6h)
 }
 
 @Composable
-fun EditProfileScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
+fun EditProfileScreen(
+    onBack: () -> Unit,
+    onAccountDeleted: () -> Unit = {},
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
     val colors = MaterialTheme.colorScheme
     val profile by viewModel.profile.collectAsState()
     val saving by viewModel.profileSaving.collectAsState()
@@ -1958,6 +1989,13 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
     val saveMessage by viewModel.profileSaveMessage.collectAsState()
     val location by viewModel.profileLocation.collectAsState()
     val snackbar = remember { SnackbarHostState() }
+
+    val deletion by viewModel.accountDeletion.collectAsState()
+    val accountGone by viewModel.loggedOut.collectAsState()
+    var deleteDialogOpen by remember { mutableStateOf(false) }
+    val deactivation by viewModel.accountDeactivation.collectAsState()
+    var deactivateDialogOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(accountGone) { if (accountGone) onAccountDeleted() }
 
     var name by remember { mutableStateOf(profile.name.orEmpty()) }
     var username by remember { mutableStateOf(profile.username.orEmpty()) }
@@ -2002,9 +2040,11 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
     // debounced, and Save depends on it, but the status only shows once the field differs
     val usernameChanged = !username.trim().equals(profile.username.orEmpty().trim(), ignoreCase = true)
     LaunchedEffect(username) { viewModel.onEditingUsername(username) }
+    // the view model resolves its messages in the app's language, so compare against the same
+    val profileUpdated = stringResource(R.string.settings_profile_updated)
     LaunchedEffect(saveMessage) {
         val msg = saveMessage ?: return@LaunchedEffect
-        if (msg == "Profile updated") {
+        if (msg == profileUpdated) {
             viewModel.clearProfileSaveMessage()
             onBack()
         } else {
@@ -2018,10 +2058,10 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
         !usernameChanged -> null
         else -> when (availability) {
         UsernameAvailability.Idle -> null
-        UsernameAvailability.Checking -> "Checking…"
-        UsernameAvailability.Available -> "Available"
-        UsernameAvailability.Taken -> "Already taken"
-        UsernameAvailability.Invalid -> "Use 3–20 letters, numbers or underscores"
+        UsernameAvailability.Checking -> stringResource(R.string.common_checking)
+        UsernameAvailability.Available -> stringResource(R.string.username_available)
+        UsernameAvailability.Taken -> stringResource(R.string.username_taken)
+        UsernameAvailability.Invalid -> stringResource(R.string.username_invalid)
         }
     }
     val statusColor = when (availability) {
@@ -2033,11 +2073,10 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
         (availability == UsernameAvailability.Available || availability == UsernameAvailability.Idle)
 
     Box(modifier = Modifier.fillMaxSize()) {
-        SettingsSubScaffold(title = "Edit profile", onBack = onBack) {
+        SettingsSubScaffold(title = stringResource(R.string.settings_edit_profile), onBack = onBack) {
             SettingsDetailHero(
                 icon = Icons.Rounded.ManageAccounts,
-                title = "Your Myndora identity",
-                description = "Keep your profile details current and recognizably yours.",
+                title = stringResource(R.string.settings_identity),
                 accent = MaterialTheme.colorScheme.primary,
             )
             // avatar with change-photo button
@@ -2069,7 +2108,7 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
                                     .data(profile.avatarUrl)
                                     .crossfade(true)
                                     .build(),
-                                contentDescription = "Profile picture",
+                                contentDescription = stringResource(R.string.settings_profile_picture),
                                 modifier = Modifier.size(96.dp).clip(CircleShape),
                             )
                         } else {
@@ -2103,7 +2142,7 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
                     ) {
                         Icon(
                             Icons.Rounded.PhotoCamera,
-                            contentDescription = "Change photo",
+                            contentDescription = stringResource(R.string.settings_change_photo),
                             tint = colors.onPrimary,
                             modifier = Modifier.size(16.dp),
                         )
@@ -2111,7 +2150,7 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "Change photo",
+                    text = stringResource(R.string.settings_change_photo),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = colors.primary,
@@ -2122,7 +2161,7 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Name") },
+                label = { Text(stringResource(R.string.med_name)) },
                 leadingIcon = { Icon(Icons.Rounded.Person, contentDescription = null) },
                 singleLine = true,
                 enabled = !saving,
@@ -2140,7 +2179,7 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
                         username = it
                         viewModel.onEditingUsername(it)
                     },
-                    label = { Text("Username") },
+                    label = { Text(stringResource(R.string.username_label)) },
                     leadingIcon = { Icon(Icons.Rounded.AlternateEmail, contentDescription = null) },
                     singleLine = true,
                     enabled = !saving,
@@ -2166,9 +2205,9 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
             OutlinedTextField(
                 value = phone,
                 onValueChange = { phone = it },
-                label = { Text("Phone (optional)") },
+                label = { Text(stringResource(R.string.settings_phone_optional)) },
                 leadingIcon = { Icon(Icons.Rounded.Phone, contentDescription = null) },
-                placeholder = { Text("e.g. +1 555 123 4567") },
+                placeholder = { Text(stringResource(R.string.settings_phone_placeholder)) },
                 singleLine = true,
                 enabled = !saving,
                 shape = RoundedCornerShape(16.dp),
@@ -2182,13 +2221,13 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
             OutlinedTextField(
                 value = profile.email.orEmpty(),
                 onValueChange = {},
-                label = { Text("Email") },
+                label = { Text(stringResource(R.string.common_email)) },
                 leadingIcon = { Icon(Icons.Rounded.Email, contentDescription = null) },
                 readOnly = true,
                 enabled = false,
                 singleLine = true,
                 shape = RoundedCornerShape(16.dp),
-                supportingText = { Text("Used to sign in — can't be changed here") },
+                supportingText = { Text(stringResource(R.string.settings_email_note)) },
                 colors = OutlinedTextFieldDefaults.colors(
                     disabledBorderColor = colors.outlineVariant,
                     disabledTextColor = colors.onSurfaceVariant,
@@ -2198,15 +2237,15 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
-                value = location ?: "Not set",
+                value = location ?: stringResource(R.string.common_not_set),
                 onValueChange = {},
-                label = { Text("Location") },
+                label = { Text(stringResource(R.string.settings_location)) },
                 leadingIcon = { Icon(Icons.Rounded.LocationOn, contentDescription = null) },
                 readOnly = true,
                 enabled = false,
                 singleLine = true,
                 shape = RoundedCornerShape(16.dp),
-                supportingText = { Text("You can change this from ADHD Profile") },
+                supportingText = { Text(stringResource(R.string.settings_location_note)) },
                 colors = OutlinedTextFieldDefaults.colors(
                     disabledBorderColor = colors.outlineVariant,
                     disabledTextColor = colors.onSurfaceVariant,
@@ -2230,7 +2269,77 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
                         modifier = Modifier.size(18.dp),
                     )
                 } else {
-                    Text("Save changes", color = colors.onPrimary, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_save_changes), color = colors.onPrimary, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            // the reversible option comes first, so someone reaching for delete passes it on the way
+            Spacer(Modifier.height(20.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(colors.surfaceVariant.copy(alpha = 0.5f))
+                    .padding(16.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_deactivate_profile),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.onSurface,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.settings_deactivate_profile_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                androidx.compose.material3.OutlinedButton(
+                    onClick = { deactivateDialogOpen = true },
+                    enabled = !saving,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                ) {
+                    Icon(Icons.Rounded.PauseCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.settings_deactivate), fontWeight = FontWeight.Bold)
+                }
+            }
+
+            // at the very bottom and in red: the one thing on this page that can't be taken back
+            Spacer(Modifier.height(12.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(colors.error.copy(alpha = 0.08f))
+                    .padding(16.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_delete_profile),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.error,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.settings_delete_profile_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                androidx.compose.material3.OutlinedButton(
+                    onClick = { deleteDialogOpen = true },
+                    enabled = !saving,
+                    shape = RoundedCornerShape(16.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, colors.error),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.error),
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                ) {
+                    Icon(Icons.Rounded.DeleteForever, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.settings_delete_profile), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -2239,4 +2348,192 @@ fun EditProfileScreen(onBack: () -> Unit, viewModel: SettingsViewModel = hiltVie
             modifier = Modifier.align(Alignment.TopCenter).padding(16.dp),
         )
     }
+
+    if (deleteDialogOpen) {
+        DeleteProfileDialog(
+            deleting = deletion.deleting,
+            failed = deletion.failed,
+            onConfirm = viewModel::deleteAccount,
+            onDismiss = {
+                if (!deletion.deleting) {
+                    deleteDialogOpen = false
+                    viewModel.clearAccountDeletionError()
+                }
+            },
+            onDeactivateInstead = {
+                deleteDialogOpen = false
+                viewModel.clearAccountDeletionError()
+                deactivateDialogOpen = true
+            },
+        )
+    }
+
+    if (deactivateDialogOpen) {
+        DeactivateProfileDialog(
+            busy = deactivation.deleting,
+            failed = deactivation.failed,
+            onConfirm = viewModel::deactivateAccount,
+            onDismiss = {
+                if (!deactivation.deleting) {
+                    deactivateDialogOpen = false
+                    viewModel.clearDeactivationError()
+                }
+            },
+        )
+    }
+}
+
+// no typed phrase: signing in undoes it, so a plain confirm is enough
+@Composable
+private fun DeactivateProfileDialog(
+    busy: Boolean,
+    failed: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(26.dp),
+        icon = { Icon(Icons.Rounded.PauseCircle, contentDescription = null, tint = colors.primary) },
+        title = { Text(stringResource(R.string.settings_deactivate_confirm_title), fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.settings_deactivate_profile_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+                if (failed) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.settings_deactivate_failed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.error,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onConfirm, enabled = !busy, shape = RoundedCornerShape(14.dp)) {
+                if (busy) {
+                    CircularProgressIndicator(
+                        color = colors.onPrimary,
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.settings_deactivating))
+                } else {
+                    Text(stringResource(R.string.settings_deactivate_confirm), fontWeight = FontWeight.Bold)
+                }
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss, enabled = !busy) {
+                Text(stringResource(R.string.common_cancel))
+            }
+        },
+    )
+}
+
+// the typed phrase is the confirmation. a button can be hit by accident, a whole sentence can't
+@Composable
+private fun DeleteProfileDialog(
+    deleting: Boolean,
+    failed: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    onDeactivateInstead: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    val phrase = stringResource(R.string.settings_delete_phrase)
+    var typed by remember { mutableStateOf("") }
+    val matches = typed.trim().equals(phrase, ignoreCase = true)
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(26.dp),
+        icon = { Icon(Icons.Rounded.DeleteForever, contentDescription = null, tint = colors.error) },
+        title = { Text(stringResource(R.string.settings_delete_confirm_title), fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.settings_delete_profile_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    text = stringResource(R.string.settings_delete_type_prompt),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurface,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = phrase,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = colors.error,
+                )
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = typed,
+                    onValueChange = { typed = it },
+                    placeholder = { Text(phrase) },
+                    singleLine = true,
+                    enabled = !deleting,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colors.error,
+                        cursorColor = colors.error,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (failed) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.settings_delete_failed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.error,
+                    )
+                }
+                // most people reaching for delete want a break, not an erasure
+                Spacer(Modifier.height(6.dp))
+                androidx.compose.material3.TextButton(onClick = onDeactivateInstead, enabled = !deleting) {
+                    Icon(Icons.Rounded.PauseCircle, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.settings_deactivate_instead), fontWeight = FontWeight.SemiBold)
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = matches && !deleting,
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colors.error,
+                    contentColor = colors.onError,
+                ),
+            ) {
+                if (deleting) {
+                    CircularProgressIndicator(
+                        color = colors.onError,
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.settings_deleting))
+                } else {
+                    Text(stringResource(R.string.settings_delete_forever), fontWeight = FontWeight.Bold)
+                }
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss, enabled = !deleting) {
+                Text(stringResource(R.string.common_cancel))
+            }
+        },
+    )
 }

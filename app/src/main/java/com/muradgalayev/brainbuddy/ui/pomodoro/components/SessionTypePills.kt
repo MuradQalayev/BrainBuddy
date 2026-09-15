@@ -26,6 +26,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.muradgalayev.brainbuddy.data.local.entity.PomodoroSessionType
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun SessionTypePills(
@@ -47,8 +49,8 @@ fun SessionTypePills(
             val visible = !collapseToSelected || selected
 
             val label = when (type) {
-                PomodoroSessionType.FOCUS -> "Focus"
-                PomodoroSessionType.BREAK -> "Break"
+                PomodoroSessionType.FOCUS -> stringResource(R.string.home_focus_widget)
+                PomodoroSessionType.BREAK -> stringResource(R.string.bd_break)
             }
 
             val bgColor by animateColorAsState(

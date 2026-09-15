@@ -3,7 +3,7 @@ package com.muradgalayev.brainbuddy.ui.reservation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.muradgalayev.brainbuddy.data.repository.CalendarRepository
-import com.muradgalayev.brainbuddy.domain.model.CalendarEvent
+import com.muradgalayev.brainbuddy.domain.model.isReservation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
@@ -16,7 +16,7 @@ class ReservationHistoryViewModel @Inject constructor(
 ) : ViewModel() {
     val appointments = calendarRepository.getAllEvents()
         .map { events ->
-            events.filter { it.description.startsWith("Reservation request") }
+            events.filter { it.isReservation }
                 .sortedByDescending { it.startTime }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())

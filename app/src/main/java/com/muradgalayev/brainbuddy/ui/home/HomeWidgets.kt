@@ -3,6 +3,7 @@ package com.muradgalayev.brainbuddy.ui.home
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Bluetooth
 import androidx.compose.material.icons.rounded.EmojiEmotions
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.NoteAdd
@@ -11,6 +12,7 @@ import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Today
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.muradgalayev.brainbuddy.R
 
 // how much of a row a tile wants
 enum class WidgetSpan { Full, Half }
@@ -22,8 +24,8 @@ enum class WidgetSpan { Full, Half }
 // reflexive, and 'put' means where they left it. span is likewise a starting width
 enum class HomeWidget(
     val id: String,
-    val label: String,
-    val blurb: String,
+    @androidx.annotation.StringRes val labelRes: Int,
+    @androidx.annotation.StringRes val blurbRes: Int,
     val icon: ImageVector,
     val span: WidgetSpan,
     val optIn: Boolean = false,
@@ -31,71 +33,85 @@ enum class HomeWidget(
     // select-and-paste, which belongs to the field, so hold-to-customise doesn't arm over it
     val holdsTextInput: Boolean = false,
 ) {
+    // the starting screen, top to bottom: what today looks like, what's next, then the two ways to act on
+    // it (focus alone, or add someone to do it with), then capture and health side by side
     Today(
         id = "today",
-        label = "Today",
-        blurb = "The date, the weather, and your day as a timeline",
+        labelRes = R.string.common_today,
+        blurbRes = R.string.widget_today_blurb,
         icon = Icons.Rounded.Today,
-        span = WidgetSpan.Full,
-    ),
-    Mode(
-        id = "mode",
-        label = "Mode",
-        blurb = "How much gets through to you right now",
-        icon = Icons.Rounded.Tune,
         span = WidgetSpan.Full,
     ),
     NextUp(
         id = "next_up",
-        label = "Next up",
-        blurb = "The one thing that's next, with a button to start it",
+        labelRes = R.string.widget_next_up,
+        blurbRes = R.string.widget_next_up_blurb,
         icon = Icons.Rounded.Bolt,
         span = WidgetSpan.Full,
     ),
+    Focus(
+        id = "focus",
+        labelRes = R.string.home_focus_widget,
+        blurbRes = R.string.widget_focus_blurb,
+        icon = Icons.Rounded.Timer,
+        span = WidgetSpan.Half,
+    ),
+    // right after Focus so the two pair up into one row: the other half of doing things with someone
+    NearbyAdd(
+        id = "nearby_add",
+        labelRes = R.string.widget_nearby_add,
+        blurbRes = R.string.widget_nearby_add_blurb,
+        icon = Icons.Rounded.Bluetooth,
+        span = WidgetSpan.Half,
+    ),
     QuickAdd(
         id = "quick_add",
-        label = "Quick add",
-        blurb = "Catch a task or event in a couple of seconds",
+        labelRes = R.string.widget_quick_add,
+        blurbRes = R.string.widget_quick_add_blurb,
         icon = Icons.Rounded.NoteAdd,
         span = WidgetSpan.Half,
     ),
     Wellness(
         id = "wellness",
-        label = "Health",
-        blurb = "Steps, sleep and medication rings",
+        labelRes = R.string.widget_health,
+        blurbRes = R.string.widget_health_blurb,
         icon = Icons.Rounded.FavoriteBorder,
         span = WidgetSpan.Half,
     ),
-    Focus(
-        id = "focus",
-        label = "Focus",
-        blurb = "Start a 5, 15 or 25 minute block in one tap",
-        icon = Icons.Rounded.Timer,
-        span = WidgetSpan.Half,
+
+    // everything below starts switched off and waits in customise
+    Mode(
+        id = "mode",
+        labelRes = R.string.widget_mode,
+        blurbRes = R.string.widget_mode_blurb,
+        icon = Icons.Rounded.Tune,
+        span = WidgetSpan.Full,
         optIn = true,
     ),
     Wins(
         id = "wins",
-        label = "Today's progress",
-        blurb = "What you've finished, and a companion that wakes up with you",
+        labelRes = R.string.widget_progress,
+        blurbRes = R.string.widget_progress_blurb,
         icon = Icons.Rounded.EmojiEmotions,
         span = WidgetSpan.Half,
         optIn = true,
     ),
     Tree(
         id = "tree",
-        label = "Focus tree",
-        blurb = "How far through your profile you are",
+        labelRes = R.string.survey_focus_tree_short,
+        blurbRes = R.string.widget_tree_blurb,
         icon = Icons.Rounded.Park,
         span = WidgetSpan.Full,
+        optIn = true,
     ),
     AiPrompt(
         id = "ai_prompt",
-        label = "Ask Myndora",
-        blurb = "The assistant prompt box",
+        labelRes = R.string.widget_ask,
+        blurbRes = R.string.widget_ask_blurb,
         icon = Icons.Rounded.AutoAwesome,
         span = WidgetSpan.Full,
         holdsTextInput = true,
+        optIn = true,
     ),
     ;
 
@@ -209,6 +225,11 @@ fun packRows(tiles: List<HomeTile>): List<HomeRow> {
     pending?.let { rows += HomeRow(listOf(it)) }
     return rows
 }
+
+// short tiles: a heading and a line of buttons. a row made only of these is drawn at their height
+// instead of the tall paired-row height, which would leave an empty band under both
+val HomeWidget.isCompact: Boolean
+    get() = this == HomeWidget.Focus || this == HomeWidget.NearbyAdd
 
 // quick add gets the bigger half of a pair. it's the tile whose whole value is being hit
 // without aiming, and a wider target is a faster one. everything else splits evenly

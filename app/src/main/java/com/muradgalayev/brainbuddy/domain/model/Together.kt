@@ -1,5 +1,11 @@
 package com.muradgalayev.brainbuddy.domain.model
 
+import com.muradgalayev.brainbuddy.ui.utils.uiText
+import com.muradgalayev.brainbuddy.ui.utils.asUiText
+import com.muradgalayev.brainbuddy.ui.utils.UiText
+import androidx.annotation.StringRes
+import com.muradgalayev.brainbuddy.R
+
 // Myndora Together: mutual connections between users, and the scopes each side chooses to
 // open up. the sharing model is deliberately one-directional per scope. if your partner grants
 // you CALENDAR you can put an event on their calendar and they'll see it, and you still see
@@ -9,11 +15,11 @@ package com.muradgalayev.brainbuddy.domain.model
 // can avoid your 12:00 without ever learning what your 12:00 is
 
 // how the sender labels the person they're adding
-enum class ConnectionRelation(val label: String) {
-    FRIEND("Friend"),
-    FAMILY("Family"),
-    PARTNER("Partner"),
-    OTHER("Someone else");
+enum class ConnectionRelation(@StringRes val labelRes: Int) {
+    FRIEND(R.string.together_rel_friend),
+    FAMILY(R.string.together_rel_family),
+    PARTNER(R.string.together_rel_partner),
+    OTHER(R.string.together_rel_other);
 
     companion object {
         fun fromRemote(value: String?): ConnectionRelation =
@@ -22,28 +28,26 @@ enum class ConnectionRelation(val label: String) {
 }
 
 // a single thing a connection may do with your data
-enum class ShareScope(val label: String, val description: String) {
+enum class ShareScope(@StringRes val labelRes: Int, @StringRes val descriptionRes: Int) {
     CALENDAR(
-        "Calendar",
-        "They can add events to your calendar. You'll see them; they only ever see the ones they added.",
+        R.string.together_scope_calendar,
+        R.string.together_scope_calendar_desc,
     ),
     AVAILABILITY(
-        "Free times",
-        "They see which hours you're already busy — the times only, never what's in them. " +
-            "Used to suggest when to put things.",
+        R.string.together_scope_free,
+        R.string.together_scope_free_desc,
     ),
     TODOS(
-        "To-dos",
-        "They can add tasks to your list. They only ever see the ones they added.",
+        R.string.together_scope_todos,
+        R.string.together_scope_todos_desc,
     ),
     WELLNESS(
-        "Wellness summary",
-        "They can see your step, sleep and heart-rate summary. Read-only.",
+        R.string.together_scope_wellness,
+        R.string.together_scope_wellness_desc,
     ),
     FOCUS(
-        "Focus together",
-        "They can invite you to focus at the same time, and see that you're in a " +
-            "session and how long is left — never what you're working on.",
+        R.string.together_scope_focus,
+        R.string.together_scope_focus_desc,
     );
 
     companion object {
@@ -68,6 +72,8 @@ data class Connection(
     val grantedByMe: Set<ShareScope> = emptySet(),
     val grantedToMe: Set<ShareScope> = emptySet(),
     val connectedAt: String? = null,
+    // they've paused their account. still connected, just away until they sign in again
+    val deactivated: Boolean = false,
 ) {
     // best available human label. falls back through username to a generic name
     val name: String
@@ -99,9 +105,9 @@ data class IncomingRequest(
             ?: "Myndora user"
 
     // what to show above the answer field
-    val prompt: String
-        get() = challengeQuestion?.takeIf { it.isNotBlank() }
-            ?: "Enter the code $name gave you"
+    val prompt: UiText
+        get() = challengeQuestion?.takeIf { it.isNotBlank() }?.asUiText()
+            ?: uiText(R.string.together_enter_code_from, name)
 }
 
 // a request I sent that hasn't been answered yet

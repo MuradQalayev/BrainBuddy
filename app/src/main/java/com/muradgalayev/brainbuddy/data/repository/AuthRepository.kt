@@ -11,6 +11,9 @@ import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -23,6 +26,8 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.storage.storage
+import io.github.jan.supabase.functions.functions
+import io.ktor.http.isSuccess
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.UUID
@@ -360,6 +365,30 @@ class AuthRepository @Inject constructor(
         supabaseClient.auth.updateUser {
             password = newPassword
         }
+    }
+
+    private val _reactivated = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    // fires when a sign-in brought a deactivated account back
+    val reactivated: SharedFlow<Unit> = _reactivated.asSharedFlow()
+
+    // the reversible alternative to deleting. nothing is removed: connections see the profile as
+    // deactivated until the next sign-in turns it back on
+    suspend fun deactivateAccount(): Result<Unit> = runCatching {
+        supabaseClient.postgrest.rpc("deactivate_my_account")
+    }
+
+    // called after every sign-in. signing in is the whole way back from deactivation, and for
+    // everyone else the rpc finds nothing to change. best-effort: a failure here must not block sign-in
+    suspend fun reactivateIfDeactivated() {
+        runCatching { supabaseClient.postgrest.rpc("reactivate_my_account").decodeAs<Boolean>() }
+            .onSuccess { wasDeactivated -> if (wasDeactivated) _reactivated.tryEmit(Unit) }
+    }
+
+    // permanent. the delete-account function removes the auth user (every cascading row goes with it)
+    // and the profile photos. the caller still signs out and clears local data afterwards
+    suspend fun deleteAccount(): Result<Unit> = runCatching {
+        val response = supabaseClient.functions.invoke(function = "delete-account")
+        check(response.status.isSuccess()) { "delete-account returned ${response.status}" }
     }
 
     suspend fun signOut() {

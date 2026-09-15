@@ -1,5 +1,8 @@
 package com.muradgalayev.brainbuddy.domain.model
 
+import androidx.annotation.StringRes
+import com.muradgalayev.brainbuddy.R
+
 // the user's ADHD self-profile, one row per user in Supabase. designed as a single bag the
 // assistant can fetch in one call and prepend as context to every request
 data class AdhdProfile(
@@ -87,17 +90,18 @@ enum class SurveyVersion(val raw: Int) {
 enum class DiagnosisStatus(
     val key: String,
     val label: String,
+    @StringRes val labelRes: Int,
     // false for values kept only so existing rows still parse
     val selectable: Boolean = true,
 ) {
-    Diagnosed("diagnosed", "Yes, formally diagnosed"),
-    SelfIdentified("self_identified", "I strongly suspect it but haven't been diagnosed"),
+    Diagnosed("diagnosed", "Yes, formally diagnosed", R.string.intake_diag_yes),
+    SelfIdentified("self_identified", "I strongly suspect it but haven't been diagnosed", R.string.intake_diag_suspect),
     ProfessionalMentioned(
         "professional_mentioned",
-        "A professional mentioned it but I haven't pursued it",
+        "A professional mentioned it but I haven't pursued it", R.string.intake_diag_professional,
     ),
-    GeneralSupport("general_support", "No — I'm here for general focus/organisation support"),
-    Exploring("exploring", "Still exploring", selectable = false);
+    GeneralSupport("general_support", "No — I'm here for general focus/organisation support", R.string.intake_diag_general),
+    Exploring("exploring", "Still exploring", R.string.intake_diag_exploring, selectable = false);
 
     // true where the app may name ADHD as a fact about this person
     val isConfirmed: Boolean get() = this == Diagnosed
@@ -110,13 +114,13 @@ enum class DiagnosisStatus(
     }
 }
 
-enum class AdhdSymptom(val key: String, val label: String) {
-    Inattention("inattention", "Inattention"),
-    Hyperactivity("hyperactivity", "Hyperactivity"),
-    Impulsivity("impulsivity", "Impulsivity"),
-    TimeBlindness("time_blindness", "Time-blindness"),
-    EmotionalDysregulation("emotional_dysregulation", "Emotional dysregulation"),
-    ExecutiveDysfunction("executive_dysfunction", "Executive dysfunction");
+enum class AdhdSymptom(val key: String, val label: String, @StringRes val labelRes: Int) {
+    Inattention("inattention", "Inattention", R.string.intake_sym_inattention),
+    Hyperactivity("hyperactivity", "Hyperactivity", R.string.intake_sym_hyperactivity),
+    Impulsivity("impulsivity", "Impulsivity", R.string.intake_sym_impulsivity),
+    TimeBlindness("time_blindness", "Time-blindness", R.string.intake_sym_time_blindness),
+    EmotionalDysregulation("emotional_dysregulation", "Emotional dysregulation", R.string.intake_sym_emotional),
+    ExecutiveDysfunction("executive_dysfunction", "Executive dysfunction", R.string.intake_sym_executive);
 
     companion object {
         fun fromKey(key: String): AdhdSymptom? = entries.firstOrNull { it.key == key }
@@ -127,62 +131,62 @@ enum class AdhdSymptom(val key: String, val label: String) {
 // tasks) to the most diffuse (feeling less overwhelmed), because people pick more accurately
 // when the specific options come first. FocusBetter isn't in the proposal's list but predates
 // it and is already chosen by existing users, so it stays
-enum class TopGoal(val key: String, val label: String) {
-    StartTasks("start_tasks", "Starting tasks"),
-    FinishTasks("finish_tasks", "Finishing what I start"),
-    RememberThings("remember_things", "Remembering things"),
-    ManageTime("manage_time", "Managing my time"),
-    FocusBetter("focus_better", "Focusing better"),
-    ReduceStress("reduce_stress", "Staying calm under stress"),
-    LessImpulsive("less_impulsive", "Being less impulsive"),
-    SleepBetter("sleep_better", "Sleeping better"),
-    LessOverwhelmed("less_overwhelmed", "Feeling less overwhelmed generally");
+enum class TopGoal(val key: String, val label: String, @StringRes val labelRes: Int) {
+    StartTasks("start_tasks", "Starting tasks", R.string.intake_goal_start),
+    FinishTasks("finish_tasks", "Finishing what I start", R.string.intake_goal_finish),
+    RememberThings("remember_things", "Remembering things", R.string.intake_goal_remember),
+    ManageTime("manage_time", "Managing my time", R.string.intake_goal_time),
+    FocusBetter("focus_better", "Focusing better", R.string.intake_goal_focus),
+    ReduceStress("reduce_stress", "Staying calm under stress", R.string.intake_goal_stress),
+    LessImpulsive("less_impulsive", "Being less impulsive", R.string.intake_goal_impulsive),
+    SleepBetter("sleep_better", "Sleeping better", R.string.intake_goal_sleep),
+    LessOverwhelmed("less_overwhelmed", "Feeling less overwhelmed generally", R.string.intake_goal_overwhelmed);
 
     companion object {
         fun fromKey(key: String): TopGoal? = entries.firstOrNull { it.key == key }
     }
 }
 
-enum class ProductiveTime(val key: String, val label: String) {
-    Morning("morning", "Morning"),
-    Afternoon("afternoon", "Afternoon"),
-    Evening("evening", "Evening"),
-    Night("night", "Night"),
-    Varies("varies", "Varies");
+enum class ProductiveTime(val key: String, val label: String, @StringRes val labelRes: Int) {
+    Morning("morning", "Morning", R.string.intake_time_morning),
+    Afternoon("afternoon", "Afternoon", R.string.intake_time_afternoon),
+    Evening("evening", "Evening", R.string.intake_time_evening),
+    Night("night", "Night", R.string.intake_time_night),
+    Varies("varies", "Varies", R.string.intake_time_varies);
 
     companion object {
         fun fromKey(key: String): ProductiveTime? = entries.firstOrNull { it.key == key }
     }
 }
 
-enum class MedicationStatus(val key: String, val label: String) {
-    Yes("yes", "Yes"),
-    No("no", "No"),
-    PreferNotToSay("prefer_not_to_say", "Prefer not to say");
+enum class MedicationStatus(val key: String, val label: String, @StringRes val labelRes: Int) {
+    Yes("yes", "Yes", R.string.common_yes),
+    No("no", "No", R.string.common_no),
+    PreferNotToSay("prefer_not_to_say", "Prefer not to say", R.string.intake_prefer_not_to_say);
 
     companion object {
         fun fromKey(key: String): MedicationStatus? = entries.firstOrNull { it.key == key }
     }
 }
 
-enum class CopingStrategy(val key: String, val label: String) {
-    Pomodoro("pomodoro", "Pomodoro"),
-    Lists("lists", "To-do lists"),
-    Alarms("alarms", "Alarms / reminders"),
-    BodyDoubling("body_doubling", "Body doubling"),
-    Music("music", "Music / soundscapes"),
-    None("none", "None right now");
+enum class CopingStrategy(val key: String, val label: String, @StringRes val labelRes: Int) {
+    Pomodoro("pomodoro", "Pomodoro", R.string.intake_coping_pomodoro),
+    Lists("lists", "To-do lists", R.string.intake_coping_lists),
+    Alarms("alarms", "Alarms / reminders", R.string.intake_coping_alarms),
+    BodyDoubling("body_doubling", "Body doubling", R.string.intake_body_doubling),
+    Music("music", "Music / soundscapes", R.string.intake_coping_music),
+    None("none", "None right now", R.string.intake_coping_none);
 
     companion object {
         fun fromKey(key: String): CopingStrategy? = entries.firstOrNull { it.key == key }
     }
 }
 
-enum class AiTone(val key: String, val label: String) {
-    Gentle("gentle", "Gentle"),
-    Direct("direct", "Direct"),
-    Playful("playful", "Playful"),
-    Professional("professional", "Professional");
+enum class AiTone(val key: String, val label: String, @StringRes val labelRes: Int) {
+    Gentle("gentle", "Gentle", R.string.intake_tone_gentle),
+    Direct("direct", "Direct", R.string.intake_tone_direct),
+    Playful("playful", "Playful", R.string.intake_tone_playful),
+    Professional("professional", "Professional", R.string.intake_tone_professional);
 
     companion object {
         fun fromKey(key: String): AiTone? = entries.firstOrNull { it.key == key }

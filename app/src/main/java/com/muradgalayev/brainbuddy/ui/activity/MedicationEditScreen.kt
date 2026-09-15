@@ -65,6 +65,8 @@ import com.muradgalayev.brainbuddy.domain.model.MedicationUnit
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.util.Locale
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // one medication, one screen. the editor this replaces put every medication into a single
 // 520dp scrolling sheet, so changing one dose meant finding it among the others in a window a
@@ -116,7 +118,7 @@ fun MedicationEditScreen(
         ) {
             WellnessBackButton(onBack)
             Text(
-                text = if (existing == null) "New medication" else draft.name.ifBlank { "Medication" },
+                text = if (existing == null) stringResource(R.string.med_new) else draft.name.ifBlank { stringResource(R.string.deep_medication) },
                 modifier = Modifier.weight(1f).padding(start = 14.dp),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
@@ -133,7 +135,7 @@ fun MedicationEditScreen(
                 ) {
                     Icon(
                         Icons.Rounded.DeleteOutline,
-                        contentDescription = "Delete medication",
+                        contentDescription = stringResource(R.string.med_delete),
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(20.dp),
                     )
@@ -148,18 +150,18 @@ fun MedicationEditScreen(
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(22.dp),
         ) {
-            Section("Name") {
+            Section(stringResource(R.string.med_name)) {
                 OutlinedTextField(
                     value = draft.name,
                     onValueChange = { draft = draft.copy(name = it) },
-                    placeholder = { Text("Ritalin, Vyvanse, melatonin…") },
+                    placeholder = { Text(stringResource(R.string.med_name_hint)) },
                     singleLine = true,
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
 
-            Section("Dose") {
+            Section(stringResource(R.string.med_dose)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = draft.dose,
@@ -179,7 +181,7 @@ fun MedicationEditScreen(
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        text = draft.doseLabel.ifBlank { "no dose set" },
+                        text = draft.doseLabel(androidx.compose.ui.platform.LocalContext.current.resources).ifBlank { stringResource(R.string.med_no_dose) },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = if (draft.dose.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant
@@ -203,7 +205,7 @@ fun MedicationEditScreen(
                 }
             }
 
-            Section("When") {
+            Section(stringResource(R.string.common_when)) {
                 ChipFlow {
                     MedicationSlot.entries.forEach { slot ->
                         SelectChip(
@@ -232,9 +234,9 @@ fun MedicationEditScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("Only when needed", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.med_only_needed), fontWeight = FontWeight.SemiBold)
                         Text(
-                            "No reminders, and it won't be counted as a missed dose",
+                            stringResource(R.string.med_only_needed_sub),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -249,7 +251,7 @@ fun MedicationEditScreen(
             // an as-needed medication has no schedule to speak of, so the day picker would be asking a
             // question that has no answer
             AnimatedVisibility(visible = !draft.asNeeded) {
-                Section("Days") {
+                Section(stringResource(R.string.med_days)) {
                     val active = draft.daysOfWeek.ifEmpty { (1..7).toList() }
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         (1..7).forEach { day ->
@@ -269,7 +271,7 @@ fun MedicationEditScreen(
                     }
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        text = if (active.size == 7) "Every day"
+                        text = if (active.size == 7) stringResource(R.string.mode_every_day)
                         else active.sorted().joinToString(", ") { dayLabel(it) },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -279,7 +281,7 @@ fun MedicationEditScreen(
 
             if (failed) {
                 Text(
-                    "Couldn't save. Check your connection and try again.",
+                    stringResource(R.string.med_save_failed),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -307,9 +309,9 @@ fun MedicationEditScreen(
             ) {
                 Text(
                     text = when {
-                        saving -> "Saving…"
-                        existing == null -> "Add medication"
-                        else -> "Save changes"
+                        saving -> stringResource(R.string.common_saving)
+                        existing == null -> stringResource(R.string.med_add_btn)
+                        else -> stringResource(R.string.common_save_changes)
                     },
                     fontWeight = FontWeight.Bold,
                 )
@@ -321,19 +323,19 @@ fun MedicationEditScreen(
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             shape = RoundedCornerShape(26.dp),
-            title = { Text("Delete ${existing.name.ifBlank { "this medication" }}?", fontWeight = FontWeight.Bold) },
-            text = { Text("It disappears from today's list and from your profile. Doses you already logged stay.") },
+            title = { Text(stringResource(R.string.med_delete_confirm, existing.name.ifBlank { stringResource(R.string.med_this_medication) }), fontWeight = FontWeight.Bold) },
+            text = { Text(stringResource(R.string.med_delete_body)) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         confirmDelete = false
                         commit(medications.filterNot { it.id == existing.id })
                     },
-                ) { Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) }
+                ) { Text(stringResource(R.string.common_delete), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
                 TextButton(onClick = { confirmDelete = false }) {
-                    Text("Keep", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.together_keep), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
         )

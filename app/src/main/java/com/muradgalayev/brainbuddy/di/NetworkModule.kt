@@ -9,6 +9,8 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.realtime.Realtime
+import io.ktor.client.engine.okhttp.OkHttp
 import io.github.jan.supabase.storage.Storage
 import javax.inject.Singleton
 
@@ -28,6 +30,9 @@ object NetworkModule {
             supabaseUrl = SUPABASE_URL,
             supabaseKey = SUPABASE_ANON_KEY
         ) {
+            // OkHttp rather than the Android engine: Realtime needs WebSockets, which Android's engine lacks
+            httpEngine = OkHttp.create()
+            install(Realtime)
             install(Postgrest)
             install(Storage)
             install(Functions)

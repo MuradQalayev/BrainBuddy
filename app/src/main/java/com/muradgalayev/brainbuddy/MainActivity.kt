@@ -12,16 +12,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
-import com.google.firebase.messaging.FirebaseMessaging
 import com.muradgalayev.brainbuddy.data.auth.PasswordRecoveryState
 import com.muradgalayev.brainbuddy.data.local.FontMode
 import com.muradgalayev.brainbuddy.data.local.PreferencesManager
@@ -31,6 +33,7 @@ import com.muradgalayev.brainbuddy.ui.accessibility.LocalAnimationsEnabled
 import com.muradgalayev.brainbuddy.ui.accessibility.LocalReadAloud
 import com.muradgalayev.brainbuddy.ui.accessibility.readAloudHandler
 import com.muradgalayev.brainbuddy.ui.navigation.NavGraph
+import com.muradgalayev.brainbuddy.ui.settings.components.LanguageSwitchOverlay
 import com.muradgalayev.brainbuddy.ui.theme.ThemeSelection
 import com.muradgalayev.brainbuddy.ui.theme.MyndoraTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -66,6 +69,10 @@ class MainActivity : ComponentActivity() {
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { /* result is reflected in checkSelfPermission later */ }
+
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(com.muradgalayev.brainbuddy.data.local.AppLocale.wrap(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -122,21 +129,18 @@ class MainActivity : ComponentActivity() {
                     LocalReadAloud provides readAloudHandler(readAloudSpeaker),
                     LocalAnimationsEnabled provides !reduceMotion,
                 ) {
-                    NavGraph(
-                        navController = navController,
-                        enabledOptionalRoutes = enabledNavItems,
-                        passwordRecoveryActive = passwordRecoveryActive,
-                        requestedQuestionnaireRoute = requestedQuestionnaireRoute,
-                        onQuestionnaireRouteConsumed = { questionnaireRoute.value = null },
-                    )
+                    Box(Modifier.fillMaxSize()) {
+                        NavGraph(
+                            navController = navController,
+                            enabledOptionalRoutes = enabledNavItems,
+                            passwordRecoveryActive = passwordRecoveryActive,
+                            requestedQuestionnaireRoute = requestedQuestionnaireRoute,
+                            onQuestionnaireRouteConsumed = { questionnaireRoute.value = null },
+                        )
+                        // above everything, so a language switch covers the whole app while it swaps
+                        LanguageSwitchOverlay()
+                    }
                 }
-                FirebaseMessaging.getInstance().token
-                    .addOnSuccessListener { token ->
-                        Log.d("FCM_TEST", "Token: $token")
-                    }
-                    .addOnFailureListener { error ->
-                        Log.e("FCM_TEST", "Failed to get token", error)
-                    }
             }
         }
     }

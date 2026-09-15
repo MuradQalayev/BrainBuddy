@@ -13,64 +13,68 @@ import com.muradgalayev.brainbuddy.R
 
 sealed class Screen(
     val route: String,
-    val label: String,
+    @androidx.annotation.StringRes val labelRes: Int,
     val icon: Int
 ) {
     // fixed, always in the navbar
-    object Home : Screen("home", "Home", R.drawable.ic_house)
-    object Activity : Screen("activity", "Workspace", R.drawable.ic_activity)
-    object Calendar : Screen("calendar", "Calendar", R.drawable.ic_calendar)
-    object Settings : Screen("settings", "Settings", R.drawable.ic_settings)
+    object Home : Screen("home", R.string.home_title, R.drawable.ic_house)
+    object Activity : Screen("activity", R.string.ws_title, R.drawable.ic_workspace)
+    object Calendar : Screen("calendar", R.string.together_scope_calendar, R.drawable.ic_calendar)
+    object Settings : Screen("settings", R.string.common_settings, R.drawable.ic_settings)
 
     // optional screens, toggled via Quick Access in Settings
-    object Todo : Screen("todo", "Todo", R.drawable.ic_todo)
-    object Pomodoro : Screen("pomodoro", "Pomodoro", R.drawable.ic_timer)
-    object ShapeFlow : Screen("shape_flow", "Shape Flow", R.drawable.ic_activity)
+    object Todo : Screen("todo", R.string.nav_todo, R.drawable.ic_todo)
+    object Pomodoro : Screen("pomodoro", R.string.intake_coping_pomodoro, R.drawable.ic_timer)
+    object ShapeFlow : Screen("shape_flow", R.string.nav_shape_flow, R.drawable.ic_activity)
 
     // detail screens
-    object TaskDetail : Screen("task_detail", "Task Detail", R.drawable.ic_check)
-    object TaskBreakdown : Screen("task_breakdown", "Breakdown", R.drawable.ic_calendar)
-    object Health : Screen("health", "Health", R.drawable.health)
-    object WellnessSummary : Screen("wellness_summary", "Health Connect", R.drawable.health)
-    object MedicationEdit : Screen("medication_edit", "Medication", R.drawable.health)
-    object ActivityGoals : Screen("wellness_activity_goals", "Activity Goals", R.drawable.health)
-    object WellnessEdit : Screen("wellness_edit", "Edit Summary", R.drawable.health)
-    object Medications : Screen("wellness_medications", "Medications", R.drawable.health)
-    object Modes : Screen("modes", "Modes", R.drawable.ic_settings)
-    object ModeEdit : Screen("mode_edit", "Mode", R.drawable.ic_settings)
+    object TaskDetail : Screen("task_detail", R.string.nav_task_detail, R.drawable.ic_check)
+    object TaskBreakdown : Screen("task_breakdown", R.string.bd_title, R.drawable.ic_calendar)
+    object Health : Screen("health", R.string.widget_health, R.drawable.health)
+    object WellnessSummary : Screen("wellness_summary", R.string.settings_health_connect, R.drawable.health)
+    object MedicationEdit : Screen("medication_edit", R.string.deep_medication, R.drawable.health)
+    object ActivityGoals : Screen("wellness_activity_goals", R.string.nav_activity_goals, R.drawable.health)
+    object WellnessEdit : Screen("wellness_edit", R.string.ws_edit_summary, R.drawable.health)
+    object Medications : Screen("wellness_medications", R.string.ws_medications, R.drawable.health)
+    object Modes : Screen("modes", R.string.settings_modes, R.drawable.ic_settings)
+    object ModeEdit : Screen("mode_edit", R.string.widget_mode, R.drawable.ic_settings)
 
     // auth
-    object Auth : Screen("auth", "Login", R.drawable.ic_ai)
+    object Auth : Screen("auth", R.string.nav_login, R.drawable.ic_ai)
 
     // splash
-    object Splash : Screen("splash", "Splash", R.drawable.ic_ai)
+    object Splash : Screen("splash", R.string.nav_splash, R.drawable.ic_ai)
 
     // onboarding: appearance first, then the ADHD profile setup
-    object OnboardingAppearance : Screen("onboarding_appearance", "Make it yours", R.drawable.ic_ai)
-    object OnboardingChoice : Screen("onboarding_choice", "Choose Setup", R.drawable.ic_ai)
-    object QuickSetup : Screen("onboarding_quick", "Quick Setup", R.drawable.ic_ai)
-    object DeepDive : Screen("onboarding_deep", "Deep Dive", R.drawable.ic_ai)
+    object OnboardingAppearance : Screen("onboarding_appearance", R.string.setup_make_it_yours, R.drawable.ic_ai)
+    object OnboardingChoice : Screen("onboarding_choice", R.string.nav_choose_setup, R.drawable.ic_ai)
+    object QuickSetup : Screen("onboarding_quick", R.string.onboarding_quick_setup, R.drawable.ic_ai)
+    object DeepDive : Screen("onboarding_deep", R.string.onboarding_deep_dive, R.drawable.ic_ai)
 
     // settings sub-pages
-    object EditProfile : Screen("settings_edit_profile", "Edit Profile", R.drawable.ic_ai)
-    object Customization : Screen("settings_customization", "Customization", R.drawable.ic_ai)
-    object NotificationSettings : Screen("settings_notifications", "Notifications", R.drawable.ic_ai)
-    object AiSettings : Screen("settings_ai", "Myndora AI", R.drawable.ic_ai)
-    object LinkedAccounts : Screen("settings_linked_accounts", "Linked accounts", R.drawable.ic_ai)
-    object LinkedDevices : Screen("settings_linked_devices", "Linked devices", R.drawable.ic_ai)
+    object EditProfile : Screen("settings_edit_profile", R.string.settings_edit_profile_title, R.drawable.ic_ai)
+    object Customization : Screen("settings_customization", R.string.settings_customization, R.drawable.ic_ai)
+    object NotificationSettings : Screen("settings_notifications", R.string.settings_notifications, R.drawable.ic_ai)
+    object AiSettings : Screen("settings_ai", R.string.ai_myndora_ai, R.drawable.ic_ai)
+    object LinkedAccounts : Screen("settings_linked_accounts", R.string.settings_linked_accounts, R.drawable.ic_ai)
+    object LinkedDevices : Screen("settings_linked_devices", R.string.settings_linked_devices, R.drawable.ic_ai)
+
+    // Myndora Plus, the paid plan (beta). takes an optional feature key to highlight
+    object Plan : Screen("plan", R.string.plan_name, R.drawable.ic_ai)
 
     // Myndora Together: connections, requests, per-person sharing
-    object Together : Screen("together", "Myndora Together", R.drawable.ic_ai)
-    object AddConnection : Screen("together_add", "Add someone", R.drawable.ic_ai)
-    object ConnectionProfile : Screen("together_profile", "Connection", R.drawable.ic_ai)
+    object Together : Screen("together", R.string.together_title, R.drawable.ic_ai)
+    object AddConnection : Screen("together_add", R.string.together_add_someone, R.drawable.ic_ai)
+    object NearbyAdd : Screen("together_nearby", R.string.together_nearby_title, R.drawable.ic_ai)
+    object ConnectionProfile : Screen("together_profile", R.string.together_connection, R.drawable.ic_ai)
 
     // care nearby: map and list of clinics, pharmacies, ASL
-    object CareNearby : Screen("care_nearby", "Find Care", R.drawable.ic_ai)
-    object Reservation : Screen("reservation", "Book appointment", R.drawable.ic_calendar)
-    object ReservationHistory : Screen("reservation_history", "Appointments", R.drawable.ic_calendar)
+    object CareNearby : Screen("care_nearby", R.string.ws_find_care, R.drawable.ic_ai)
+    object Reservation : Screen("reservation", R.string.nav_book_appointment, R.drawable.ic_calendar)
+    object ReservationHistory : Screen("reservation_history", R.string.nav_appointments, R.drawable.ic_calendar)
 
     // more, shown when overflow is needed
-    object More : Screen("more", "More", R.drawable.ic_more)
+    object More : Screen("more", R.string.nav_more, R.drawable.ic_more)
 }
 
 val fixedNavItems = listOf(Screen.Home, Screen.Activity, Screen.Calendar, Screen.Settings)
@@ -95,6 +99,7 @@ private val detailRouteParents: Map<String, String> = mapOf(
     Screen.ReservationHistory.route to Screen.Activity.route,
     Screen.Together.route to Screen.Activity.route,
     Screen.AddConnection.route to Screen.Activity.route,
+    Screen.NearbyAdd.route to Screen.Activity.route,
     Screen.ConnectionProfile.route to Screen.Activity.route,
 
     // reached from the Calendar
@@ -104,6 +109,7 @@ private val detailRouteParents: Map<String, String> = mapOf(
     Screen.TaskDetail.route to Screen.Calendar.route,
 
     // reached from Settings
+    Screen.Plan.route to Screen.Settings.route,
     Screen.EditProfile.route to Screen.Settings.route,
     Screen.Customization.route to Screen.Settings.route,
     Screen.NotificationSettings.route to Screen.Settings.route,

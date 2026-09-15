@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.Icon
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.graphics.Color
@@ -48,6 +49,7 @@ import com.muradgalayev.brainbuddy.ui.ai.AiAssistantViewModel
 import com.muradgalayev.brainbuddy.ui.ai.offline.OfflineAssistantPanel
 import com.muradgalayev.brainbuddy.ui.calendar.CalendarVoiceAssistant
 import kotlin.math.roundToInt
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun WorkspaceScreen(
@@ -58,6 +60,9 @@ fun WorkspaceScreen(
     var showVoiceAssistant by remember { mutableStateOf(false) }
     val savedVoiceHandlePosition by viewModel.voiceHandlePosition.collectAsState()
     val isOnline by viewModel.isOnline.collectAsState()
+    // the handle is a Myndora Plus feature. locked, it stays visible and opens the plan screen, so
+    // the feature can be found and explained rather than silently missing
+    val plusActive = viewModel.plan.collectAsState().value == com.muradgalayev.brainbuddy.domain.model.Plan.Plus
     // locked until the survey is finished, matching the calendar and the nav bar
     val surveyCompleted by voiceViewModel.surveyCompleted.collectAsState()
     LaunchedEffect(Unit) { voiceViewModel.refreshSurveyCompleted() }
@@ -116,7 +121,17 @@ fun WorkspaceScreen(
                         )
                     }
                     // offline the handle opens the on-device assistant rather than silently doing nothing
-                    .clickable { if (voiceUsable) showVoiceAssistant = true else showOfflineAssistant = true },
+                    .clickable {
+                        when {
+                            !plusActive -> onNavigate(
+                                com.muradgalayev.brainbuddy.ui.navigation.planRoute(
+                                    com.muradgalayev.brainbuddy.domain.model.PlanFeature.WorkspaceAi,
+                                ),
+                            )
+                            voiceUsable -> showVoiceAssistant = true
+                            else -> showOfflineAssistant = true
+                        }
+                    },
                 shape = RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp),
                 // the handle looks identical online and off. it used to mute its colours when the connection
                 // dropped, which on a flaky network read as the control breaking, and it never was: the tap
@@ -124,8 +139,10 @@ fun WorkspaceScreen(
                 // somewhere useful either way.
                 color = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.primary,
-                tonalElevation = 4.dp,
-                shadowElevation = 5.dp,
+                // flat, like the screen edge it's docked to. a shadow made it look like it was floating
+                // over the content instead of growing out of the side
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp,
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -133,19 +150,35 @@ fun WorkspaceScreen(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_ai),
-                        contentDescription = "Open Myndora voice assistant",
+                        contentDescription = stringResource(R.string.ws_open_voice),
                         modifier = Modifier.size(27.dp),
                     )
                     Spacer(Modifier.height(3.dp))
-                    Box(
-                        Modifier.width(14.dp).height(3.dp).background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = .45f),
-                            CircleShape,
-                        ),
-                    )
+                    if (plusActive) {
+                        Box(
+                            Modifier.width(14.dp).height(3.dp).background(
+                                MaterialTheme.colorScheme.primary.copy(alpha = .45f),
+                                CircleShape,
+                            ),
+                        )
+                    } else {
+                        Icon(
+                            androidx.compose.material.icons.Icons.Rounded.Lock,
+                            contentDescription = stringResource(R.string.plan_locked_cd),
+                            modifier = Modifier.size(11.dp),
+                        )
+                    }
                 }
             }
         }
+
+        com.muradgalayev.brainbuddy.ui.navigation.DimAppChrome(
+            when {
+                showVoiceAssistant -> .46f
+                showOfflineAssistant -> .32f
+                else -> 0f
+            },
+        )
 
         AnimatedVisibility(
             visible = showVoiceAssistant,

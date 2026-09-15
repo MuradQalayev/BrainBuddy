@@ -1,4 +1,5 @@
 package com.muradgalayev.brainbuddy.ui.todo
+import com.muradgalayev.brainbuddy.ui.utils.resolve
 import com.muradgalayev.brainbuddy.ui.sharedcomponents.AppSearchBar
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -79,6 +80,8 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.muradgalayev.brainbuddy.ui.sharedcomponents.SuccessPopup
 import com.muradgalayev.brainbuddy.ui.accessibility.speaking
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 @Composable
 fun TodoScreen(
     onConnectPeople: () -> Unit = {},
@@ -102,8 +105,8 @@ fun TodoScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         TodoListContent(
             palette = p,
-            dateTitle = uiState.dateTitle,
-            insightTitle = uiState.insightTitle,
+            dateTitle = uiState.dateTitle.resolve(),
+            insightTitle = uiState.insightTitle.resolve(),
             progress = uiState.progress,
             categories = uiState.categories,
             taskFilters = uiState.taskFilters,
@@ -148,7 +151,8 @@ fun TodoScreen(
             contentColor = Color.White,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(24.dp)
+                // sits above the floating nav bar, the list behind it runs underneath
+                .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 24.dp + com.muradgalayev.brainbuddy.ui.navigation.LocalNavBarInset.current)
                 .graphicsLayer {
                     scaleX = fabScale
                     scaleY = fabScale
@@ -162,7 +166,7 @@ fun TodoScreen(
         ) {
             Icon(
                 imageVector = Icons.Outlined.Add,
-                contentDescription = "Add task",
+                contentDescription = stringResource(R.string.qc_add_task),
                 modifier = Modifier.size(28.dp)
             )
         }
@@ -229,7 +233,7 @@ fun TodoScreen(
                     modifier = Modifier.padding(24.dp)
                 ) {
                     Text(
-                        text = "Delete Task?",
+                        text = stringResource(R.string.todo_delete_q),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -237,7 +241,7 @@ fun TodoScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = "Are you sure you want to delete this task?",
+                        text = stringResource(R.string.todo_delete_body),
                         style = MaterialTheme.typography.bodyMedium
                     )
 
@@ -250,7 +254,7 @@ fun TodoScreen(
                         TextButton(onClick = {
                             taskToDelete = null
                         }) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.common_cancel))
                         }
 
                         Spacer(modifier = Modifier.width(8.dp))
@@ -262,7 +266,7 @@ fun TodoScreen(
                             }
                         ) {
                             Text(
-                                "Delete",
+                                stringResource(R.string.common_delete),
                                 color = MaterialTheme.colorScheme.error,
                                 fontWeight = FontWeight.Bold
                             )
@@ -280,7 +284,7 @@ fun TodoListContent(
     modifier: Modifier = Modifier,
     palette: TodoPalette = rememberTodoPalette(),
     dateTitle: String = "January 10",
-    insightTitle: String = "Today's task insights",
+    insightTitle: String = stringResource(R.string.todo_insights_today),
     progress: Float = 0.2f,
     categories: List<CategoryUi> = emptyList(),
     taskFilters: List<CategoryUi> = emptyList(),
@@ -336,7 +340,7 @@ fun TodoListContent(
                         query = searchQuery,
                         onQueryChange = onSearchQueryChange,
                         onClose = onSearchClick,
-                        placeholderText = "Search tasks..."
+                        placeholderText = stringResource(R.string.todo_search_hint)
                     )
                 } else {
                     Row(
@@ -367,7 +371,7 @@ fun TodoListContent(
                             Spacer(Modifier.width(4.dp))
                             Icon(
                                 imageVector = Icons.Rounded.ExpandMore,
-                                contentDescription = "Choose a date",
+                                contentDescription = stringResource(R.string.todo_choose_date),
                                 tint = p.muted,
                                 modifier = Modifier.size(22.dp),
                             )
@@ -402,7 +406,7 @@ fun TodoListContent(
                                 )
                                 Spacer(Modifier.width(5.dp))
                                 Text(
-                                    text = "Today",
+                                    text = stringResource(R.string.common_today),
                                     color = p.lavender,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.SemiBold,
@@ -424,7 +428,7 @@ fun TodoListContent(
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Search,
-                                contentDescription = "Search",
+                                contentDescription = stringResource(R.string.common_search),
                                 tint = p.muted,
                                 modifier = Modifier.size(22.dp)
                             )
@@ -454,7 +458,7 @@ fun TodoListContent(
                     ) {
                         Icon(Icons.Outlined.Tune, null, tint = if (activeCount > 0) Color.White else p.muted, modifier = Modifier.size(18.dp))
                         Text(
-                            if (activeCount > 0) "Filters · $activeCount" else "Filters",
+                            if (activeCount > 0) stringResource(R.string.todo_filters_count, activeCount) else stringResource(R.string.todo_filters),
                             modifier = Modifier.padding(start = 7.dp),
                             color = if (activeCount > 0) Color.White else p.ink,
                             fontWeight = FontWeight.SemiBold,
@@ -468,11 +472,11 @@ fun TodoListContent(
         item {
             SectionTitle(
                 text = when (selectedTaskFilter) {
-                    "upcoming" -> "Upcoming tasks"
-                    "overdue" -> "Overdue tasks"
-                    "high" -> "High-priority tasks"
-                    "completed" -> "Completed tasks"
-                    else -> "Today"
+                    "upcoming" -> stringResource(R.string.todo_upcoming_tasks)
+                    "overdue" -> stringResource(R.string.todo_overdue_tasks)
+                    "high" -> stringResource(R.string.todo_high_tasks)
+                    "completed" -> stringResource(R.string.todo_completed_tasks)
+                    else -> stringResource(R.string.common_today)
                 },
                 palette = p,
             )
@@ -515,7 +519,7 @@ fun TodoListContent(
         if (completedTasks.isNotEmpty() && selectedTaskFilter != "completed") {
             item {
                 Spacer(Modifier.height(4.dp))
-                SectionTitle(text = "Completed tasks", palette = p)
+                SectionTitle(text = stringResource(R.string.todo_completed_tasks), palette = p)
             }
 
             // namespaced against the active list above: both sections live in one LazyColumn, and a bare
@@ -542,7 +546,8 @@ fun TodoListContent(
             }
         }
 
-        item { Spacer(Modifier.height(100.dp)) }
+        // clears the FAB and the floating nav bar the list scrolls under
+        item { Spacer(Modifier.height(100.dp + com.muradgalayev.brainbuddy.ui.navigation.LocalNavBarInset.current)) }
     }
 }
 
@@ -590,33 +595,33 @@ private fun TodoFilterSheet(
                     Spacer(Modifier.height(16.dp))
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("Filter tasks", color = palette.ink, fontSize = 23.sp, fontWeight = FontWeight.Bold)
-                            Text("Choose a view and category", color = palette.muted, fontSize = 13.sp)
+                            Text(stringResource(R.string.todo_filter_title), color = palette.ink, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.todo_filter_sub), color = palette.muted, fontSize = 13.sp)
                         }
-                        TextButton(onClick = onReset) { Text("Reset", color = palette.lavender, fontWeight = FontWeight.Bold) }
+                        TextButton(onClick = onReset) { Text(stringResource(R.string.common_reset), color = palette.lavender, fontWeight = FontWeight.Bold) }
                     }
 
                     Spacer(Modifier.height(20.dp))
-                    Text("VIEW", color = palette.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    Text(stringResource(R.string.todo_view_caps), color = palette.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     Spacer(Modifier.height(10.dp))
                     androidx.compose.foundation.layout.FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         taskFilters.forEach { filter ->
-                            CategoryChip(palette, filter.title, filter.selected) { onTaskFilterClick(filter.id) }
+                            CategoryChip(palette, filter.title.resolve(), filter.selected) { onTaskFilterClick(filter.id) }
                         }
                     }
 
                     Spacer(Modifier.height(22.dp))
-                    Text("CATEGORY", color = palette.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    Text(stringResource(R.string.todo_category_caps), color = palette.muted, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     Spacer(Modifier.height(10.dp))
                     androidx.compose.foundation.layout.FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         categories.forEach { category ->
-                            CategoryChip(palette, category.title, category.selected) { onCategoryClick(category.id) }
+                            CategoryChip(palette, category.title.resolve(), category.selected) { onCategoryClick(category.id) }
                         }
                     }
 
@@ -624,7 +629,7 @@ private fun TodoFilterSheet(
                         onClick = onDismiss,
                         modifier = Modifier.fillMaxWidth().padding(top = 26.dp).height(54.dp),
                         shape = RoundedCornerShape(17.dp),
-                    ) { Text("Show tasks", fontWeight = FontWeight.Bold) }
+                    ) { Text(stringResource(R.string.todo_show_tasks), fontWeight = FontWeight.Bold) }
                 }
             }
         }
@@ -753,7 +758,7 @@ fun TaskStatusCircle(palette: TodoPalette, completed: Boolean) {
         ) {
             Icon(
                 imageVector = Icons.Outlined.Check,
-                contentDescription = "Completed",
+                contentDescription = stringResource(R.string.onboarding_completed),
                 tint = Color.White,
                 modifier = Modifier.size(16.dp)
             )
@@ -768,18 +773,18 @@ private fun EmptyState(
     filter: String = "today",
 ) {
     val emptyTitle = when (filter) {
-        "upcoming" -> "Nothing upcoming"
-        "overdue" -> "You’re all caught up"
-        "high" -> "No high-priority tasks"
-        "completed" -> "No completed tasks"
-        else -> "No tasks for today"
+        "upcoming" -> stringResource(R.string.todo_empty_upcoming)
+        "overdue" -> stringResource(R.string.todo_empty_overdue)
+        "high" -> stringResource(R.string.todo_empty_high)
+        "completed" -> stringResource(R.string.todo_empty_completed)
+        else -> stringResource(R.string.todo_empty_today)
     }
     val emptySubtitle = when (filter) {
-        "upcoming" -> "Future tasks will appear here"
-        "overdue" -> "No unfinished tasks are past due"
-        "high" -> "Flag a task to prioritize it"
-        "completed" -> "Completed tasks will appear here"
-        else -> "Tap + to add your first task"
+        "upcoming" -> stringResource(R.string.todo_empty_upcoming_sub)
+        "overdue" -> stringResource(R.string.todo_empty_overdue_sub)
+        "high" -> stringResource(R.string.todo_empty_high_sub)
+        "completed" -> stringResource(R.string.todo_empty_completed_sub)
+        else -> stringResource(R.string.todo_empty_today_sub)
     }
     Column(
         modifier = Modifier
@@ -804,14 +809,14 @@ private fun EmptyState(
         }
         Spacer(Modifier.height(20.dp))
         Text(
-            text = if (isSearchResult) "No tasks found" else emptyTitle,
+            text = if (isSearchResult) stringResource(R.string.todo_no_found) else emptyTitle,
             color = palette.ink,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = if (isSearchResult) "Try a different search term" else emptySubtitle,
+            text = if (isSearchResult) stringResource(R.string.todo_try_search) else emptySubtitle,
             color = palette.muted,
             fontSize = 14.sp,
             fontWeight = FontWeight.Normal

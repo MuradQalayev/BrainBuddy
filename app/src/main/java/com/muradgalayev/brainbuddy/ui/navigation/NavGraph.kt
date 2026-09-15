@@ -7,6 +7,11 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -32,6 +37,25 @@ import androidx.compose.ui.res.painterResource
 import com.muradgalayev.brainbuddy.R
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -70,6 +94,12 @@ private const val MAX_VISIBLE_NAV_ITEMS = 4
 // which assistant the nav-bar AI button opened
 private enum class AiSheet { None, Online, Offline }
 
+// app-wide good news shown in the banner at the top
+private sealed interface TopBanner {
+    data class Connected(val name: String) : TopBanner
+    data object WelcomeBack : TopBanner
+}
+
 @Composable
 fun NavGraph(
     navController: NavHostController,
@@ -87,6 +117,26 @@ fun NavGraph(
     // tap time, the nav button was the one that didn't
     var aiSheet by remember { mutableStateOf(AiSheet.None) }
     var isNavDragging by remember { mutableStateOf(false) }
+    // the pill shrinks while you read down a page and comes back when you scroll up or reach for it.
+    // listens above the NavHost, so every scrolling screen drives it without knowing about it
+    var navCompact by remember { mutableStateOf(false) }
+    val compactThresholdPx = with(LocalDensity.current) { 24.dp.toPx() }
+    val navScrollConnection = remember(compactThresholdPx) {
+        object : NestedScrollConnection {
+            var travel = 0f
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                val dy = consumed.y
+                if (dy == 0f) return Offset.Zero
+                // a change of direction starts the count again, so a wobbly thumb doesn't flip it back and forth
+                if (travel != 0f && (dy > 0f) != (travel > 0f)) travel = 0f
+                travel += dy
+                if (travel <= -compactThresholdPx) navCompact = true
+                else if (travel >= compactThresholdPx) navCompact = false
+                return Offset.Zero
+            }
+        }
+    }
+    LaunchedEffect(currentRoute) { navCompact = false }
 
     // A reminder can open the activity from a cold start. Wait for Splash/Auth to resolve, then
     // take the signed-in user straight to the saved survey, which starts on its first incomplete page.
@@ -136,6 +186,30 @@ fun NavGraph(
         if (pendingInviteToken != null && currentRoute != Screen.Together.route) {
             navController.navigate(Screen.Together.route) { launchSingleTop = true }
         }
+    }
+
+    // the sender's side of an accepted invite. collected only while the app is on screen, so the
+    // repository knows to post a notification instead when it isn't
+    // the same slot also says welcome back when a sign-in reactivates a paused account
+    var banner by remember { mutableStateOf<TopBanner?>(null) }
+    // what the banner last showed, so its text doesn't blank out while it slides away
+    var lastBanner by remember { mutableStateOf<TopBanner?>(null) }
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            launch {
+                togetherViewModel.newlyConnected.collect { banner = TopBanner.Connected(it.name) }
+            }
+            launch {
+                togetherViewModel.reactivated.collect { banner = TopBanner.WelcomeBack }
+            }
+        }
+    }
+    LaunchedEffect(banner) {
+        val shown = banner ?: return@LaunchedEffect
+        lastBanner = shown
+        delay(4_500)
+        banner = null
     }
 
     // AI-driven navigation: tools emit a route through AiNavigator, so drive the NavController
@@ -199,6 +273,8 @@ fun NavGraph(
         Screen.WellnessEdit.route,
         Screen.Modes.route,
         "${Screen.ModeEdit.route}?modeId={modeId}",
+        "${Screen.Plan.route}?feature={feature}",
+        Screen.NearbyAdd.route,
     )
     val isFullScreen = currentRoute in fullScreenRoutes
     val aiBlockedRoutes = setOf(
@@ -226,6 +302,19 @@ fun NavGraph(
             animationSpec = tween(motionDuration),
         ) + fadeOut(tween(fadeDuration))
     }
+    // a sheet rather than a page: up over what you were doing, straight back down on close
+    val sheetEnter: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
+        slideIntoContainer(
+            AnimatedContentTransitionScope.SlideDirection.Up,
+            animationSpec = tween(motionDuration, easing = FastOutSlowInEasing),
+        ) + fadeIn(tween(fadeDuration))
+    }
+    val sheetPopExit: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
+        slideOutOfContainer(
+            AnimatedContentTransitionScope.SlideDirection.Down,
+            animationSpec = tween(motionDuration, easing = FastOutSlowInEasing),
+        ) + fadeOut(tween(fadeDuration))
+    }
     // no animation on bottom padding, an extra 220ms layout pass on every tab change made
     // navigation feel sluggish on older devices for no visible benefit
     val showBottomNav = !isFullScreen || isNavDragging
@@ -240,495 +329,592 @@ fun NavGraph(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Splash.route,
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(bottom = bottomPadding),
-            enterTransition = {
-                val from = tabRoutes.indexOf(initialState.destination.route)
-                val to = tabRoutes.indexOf(targetState.destination.route)
-                if (from >= 0 && to >= 0) {
-                    slideIntoContainer(
-                        towards = if (to > from) AnimatedContentTransitionScope.SlideDirection.Start
-                        else AnimatedContentTransitionScope.SlideDirection.End,
-                        animationSpec = tween(380, easing = FastOutSlowInEasing),
-                    ) + fadeIn(tween(240, easing = FastOutSlowInEasing))
-                } else {
-                    fadeIn(tween(240, easing = FastOutSlowInEasing))
+        // no bottom padding: screens run under the floating pill and pad their own scroll ends
+        CompositionLocalProvider(LocalNavBarInset provides bottomPadding) {
+            NavHost(
+                navController = navController,
+                startDestination = Screen.Splash.route,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .nestedScroll(navScrollConnection),
+                enterTransition = {
+                    val from = tabRoutes.indexOf(initialState.destination.route)
+                    val to = tabRoutes.indexOf(targetState.destination.route)
+                    if (from >= 0 && to >= 0) {
+                        slideIntoContainer(
+                            towards = if (to > from) AnimatedContentTransitionScope.SlideDirection.Start
+                            else AnimatedContentTransitionScope.SlideDirection.End,
+                            animationSpec = tween(380, easing = FastOutSlowInEasing),
+                        ) + fadeIn(tween(240, easing = FastOutSlowInEasing))
+                    } else {
+                        fadeIn(tween(240, easing = FastOutSlowInEasing))
+                    }
+                },
+                exitTransition = {
+                    val from = tabRoutes.indexOf(initialState.destination.route)
+                    val to = tabRoutes.indexOf(targetState.destination.route)
+                    if (from >= 0 && to >= 0) {
+                        slideOutOfContainer(
+                            towards = if (to > from) AnimatedContentTransitionScope.SlideDirection.Start
+                            else AnimatedContentTransitionScope.SlideDirection.End,
+                            animationSpec = tween(380, easing = FastOutSlowInEasing),
+                        ) + fadeOut(tween(210, easing = FastOutSlowInEasing))
+                    } else {
+                        fadeOut(tween(180, easing = FastOutSlowInEasing))
+                    }
+                },
+                popEnterTransition = {
+                    val from = tabRoutes.indexOf(initialState.destination.route)
+                    val to = tabRoutes.indexOf(targetState.destination.route)
+                    if (from >= 0 && to >= 0) {
+                        slideIntoContainer(
+                            towards = if (to > from) AnimatedContentTransitionScope.SlideDirection.Start
+                            else AnimatedContentTransitionScope.SlideDirection.End,
+                            animationSpec = tween(380, easing = FastOutSlowInEasing),
+                        ) + fadeIn(tween(240, easing = FastOutSlowInEasing))
+                    } else fadeIn(tween(240, easing = FastOutSlowInEasing))
+                },
+                popExitTransition = {
+                    val from = tabRoutes.indexOf(initialState.destination.route)
+                    val to = tabRoutes.indexOf(targetState.destination.route)
+                    if (from >= 0 && to >= 0) {
+                        slideOutOfContainer(
+                            towards = if (to > from) AnimatedContentTransitionScope.SlideDirection.Start
+                            else AnimatedContentTransitionScope.SlideDirection.End,
+                            animationSpec = tween(380, easing = FastOutSlowInEasing),
+                        ) + fadeOut(tween(210, easing = FastOutSlowInEasing))
+                    } else fadeOut(tween(180, easing = FastOutSlowInEasing))
                 }
-            },
-            exitTransition = {
-                val from = tabRoutes.indexOf(initialState.destination.route)
-                val to = tabRoutes.indexOf(targetState.destination.route)
-                if (from >= 0 && to >= 0) {
-                    slideOutOfContainer(
-                        towards = if (to > from) AnimatedContentTransitionScope.SlideDirection.Start
-                        else AnimatedContentTransitionScope.SlideDirection.End,
-                        animationSpec = tween(380, easing = FastOutSlowInEasing),
-                    ) + fadeOut(tween(210, easing = FastOutSlowInEasing))
-                } else {
-                    fadeOut(tween(180, easing = FastOutSlowInEasing))
+            ) {
+                composable(Screen.Splash.route) {
+                    SplashScreen(
+                        onNavigateToHome = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Splash.route) { inclusive = true }
+                            }
+                        },
+                        onNavigateToAuth = {
+                            navController.navigate(Screen.Auth.route) {
+                                popUpTo(Screen.Splash.route) { inclusive = true }
+                            }
+                        },
+                        onNavigateToOnboarding = {
+                            navController.navigate(Screen.OnboardingAppearance.route) {
+                                popUpTo(Screen.Splash.route) { inclusive = true }
+                            }
+                        }
+                    )
                 }
-            },
-            popEnterTransition = {
-                val from = tabRoutes.indexOf(initialState.destination.route)
-                val to = tabRoutes.indexOf(targetState.destination.route)
-                if (from >= 0 && to >= 0) {
-                    slideIntoContainer(
-                        towards = if (to > from) AnimatedContentTransitionScope.SlideDirection.Start
-                        else AnimatedContentTransitionScope.SlideDirection.End,
-                        animationSpec = tween(380, easing = FastOutSlowInEasing),
-                    ) + fadeIn(tween(240, easing = FastOutSlowInEasing))
-                } else fadeIn(tween(240, easing = FastOutSlowInEasing))
-            },
-            popExitTransition = {
-                val from = tabRoutes.indexOf(initialState.destination.route)
-                val to = tabRoutes.indexOf(targetState.destination.route)
-                if (from >= 0 && to >= 0) {
-                    slideOutOfContainer(
-                        towards = if (to > from) AnimatedContentTransitionScope.SlideDirection.Start
-                        else AnimatedContentTransitionScope.SlideDirection.End,
-                        animationSpec = tween(380, easing = FastOutSlowInEasing),
-                    ) + fadeOut(tween(210, easing = FastOutSlowInEasing))
-                } else fadeOut(tween(180, easing = FastOutSlowInEasing))
-            }
-        ) {
-            composable(Screen.Splash.route) {
-                SplashScreen(
-                    onNavigateToHome = {
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.Splash.route) { inclusive = true }
+                composable(Screen.Auth.route) {
+                    AuthScreen(
+                        onAuthSuccess = {
+                            // route through Splash so onboarding gating applies to new users
+                            navController.navigate(Screen.Splash.route) {
+                                popUpTo(Screen.Auth.route) { inclusive = true }
+                            }
                         }
-                    },
-                    onNavigateToAuth = {
-                        navController.navigate(Screen.Auth.route) {
-                            popUpTo(Screen.Splash.route) { inclusive = true }
+                    )
+                }
+                composable(Screen.OnboardingAppearance.route) {
+                    com.muradgalayev.brainbuddy.ui.onboarding.AppearanceSetupScreen(
+                        onContinue = {
+                            // popped on the way out, so finishing the questionnaire later doesn't unwind onto appearance
+                            navController.navigate(Screen.OnboardingChoice.route) {
+                                popUpTo(Screen.OnboardingAppearance.route) { inclusive = true }
+                            }
+                        },
+                    )
+                }
+                composable(Screen.OnboardingChoice.route) {
+                    val onboardingViewModel: com.muradgalayev.brainbuddy.ui.onboarding.OnboardingViewModel =
+                        hiltViewModel()
+                    com.muradgalayev.brainbuddy.ui.onboarding.OnboardingChoiceScreen(
+                        onPickQuick = { navController.navigate(Screen.QuickSetup.route) },
+                        onPickDeep = { navController.navigate(Screen.DeepDive.route) },
+                        onSkip = { skipOnboarding(navController, onboardingViewModel) },
+                    )
+                }
+                composable(Screen.QuickSetup.route) {
+                    val onboardingViewModel: com.muradgalayev.brainbuddy.ui.onboarding.OnboardingViewModel =
+                        hiltViewModel()
+                    com.muradgalayev.brainbuddy.ui.onboarding.QuickSetupScreen(
+                        onBack = { exitOnboarding(navController) },
+                        onDone = { finishOnboarding(navController) },
+                        onSkip = { skipOnboarding(navController, onboardingViewModel) },
+                    )
+                }
+                composable(Screen.DeepDive.route) {
+                    val onboardingViewModel: com.muradgalayev.brainbuddy.ui.onboarding.OnboardingViewModel =
+                        hiltViewModel()
+                    com.muradgalayev.brainbuddy.ui.onboarding.DeepDiveScreen(
+                        onBack = { exitOnboarding(navController) },
+                        onDone = { finishOnboarding(navController) },
+                        onSkip = { skipOnboarding(navController, onboardingViewModel) },
+                    )
+                }
+                composable(Screen.Home.route) {
+                    HomeScreen(
+                        onContinueProfile = { navController.navigate(Screen.DeepDive.route) },
+                        onOpenWellness = { navController.navigate(Screen.Health.route) },
+                        onOpenPomodoro = {
+                            navController.navigate(Screen.Pomodoro.route) { launchSingleTop = true }
+                        },
+                        onOpenProfile = {
+                            navController.navigate(Screen.EditProfile.route) { launchSingleTop = true }
+                        },
+                        onManageModes = {
+                            navController.navigate(Screen.Modes.route) { launchSingleTop = true }
+                        },
+                        onEditMode = { modeId ->
+                            navController.navigate("${Screen.ModeEdit.route}?modeId=${android.net.Uri.encode(modeId)}") {
+                                launchSingleTop = true
+                            }
+                        },
+                        onOpenNearbyAdd = {
+                            navController.navigate(Screen.NearbyAdd.route) { launchSingleTop = true }
+                        },
+                    )
+                }
+                composable(Screen.Modes.route, enterTransition = pageEnter, popExitTransition = pagePopExit) {
+                    com.muradgalayev.brainbuddy.ui.modes.ModesScreen(
+                        onBack = { navController.popBackStack() },
+                        onEditMode = { modeId ->
+                            // a blank id means new. encoded rather than left out so the route shape is the same either
+                            // way and the arg is never missing
+                            navController.navigate(
+                                "${Screen.ModeEdit.route}?modeId=${android.net.Uri.encode(modeId.orEmpty())}"
+                            )
+                        },
+                    )
+                }
+                composable(
+                    "${Screen.ModeEdit.route}?modeId={modeId}",
+                    arguments = listOf(
+                        navArgument("modeId") {
+                            type = androidx.navigation.NavType.StringType
+                            defaultValue = ""
                         }
-                    },
-                    onNavigateToOnboarding = {
-                        navController.navigate(Screen.OnboardingAppearance.route) {
-                            popUpTo(Screen.Splash.route) { inclusive = true }
+                    ),
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) { entry ->
+                    com.muradgalayev.brainbuddy.ui.modes.ModeEditScreen(
+                        modeId = entry.arguments?.getString("modeId")?.takeIf { it.isNotBlank() },
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                composable(Screen.Activity.route) {
+                    WorkspaceScreen(
+                        onNavigate = { route ->
+                            navController.navigate(route)
                         }
-                    }
-                )
-            }
-            composable(Screen.Auth.route) {
-                AuthScreen(
-                    onAuthSuccess = {
-                        // route through Splash so onboarding gating applies to new users
-                        navController.navigate(Screen.Splash.route) {
-                            popUpTo(Screen.Auth.route) { inclusive = true }
+                    )
+                }
+                composable(
+                    Screen.ShapeFlow.route,
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) {
+                    com.muradgalayev.brainbuddy.ui.games.ShapeFlowScreen(
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                composable(Screen.Settings.route) {
+                    SettingsScreen(
+                        onLogout = {
+                            navController.navigate(Screen.Auth.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        },
+                        onEditAdhdProfile = {
+                            // existing users edit the full questionnaire, quick/deep is only first-time onboarding
+                            navController.navigate(Screen.DeepDive.route)
+                        },
+                        onContinueQuestionnaire = { version ->
+                            val route = if (version == com.muradgalayev.brainbuddy.domain.model.SurveyVersion.Quick) {
+                                Screen.QuickSetup.route
+                            } else {
+                                Screen.DeepDive.route
+                            }
+                            navController.navigate(route) { launchSingleTop = true }
+                        },
+                        onEditProfile = { navController.navigate(Screen.EditProfile.route) },
+                        onOpenCustomization = { navController.navigate(Screen.Customization.route) },
+                        onOpenNotifications = { navController.navigate(Screen.NotificationSettings.route) },
+                        onOpenAiSettings = { navController.navigate(Screen.AiSettings.route) },
+                        onOpenAiWellness = { navController.navigate("${Screen.AiSettings.route}?focusWellness=true") },
+                        onOpenLinkedAccounts = { navController.navigate(Screen.LinkedAccounts.route) },
+                        onOpenLinkedDevices = { navController.navigate(Screen.LinkedDevices.route) },
+                        onOpenTogether = { navController.navigate(Screen.Together.route) },
+                        onOpenModes = { navController.navigate(Screen.Modes.route) },
+                        onOpenPlan = { navController.navigate(Screen.Plan.route) { launchSingleTop = true } },
+                    )
+                }
+                composable(
+                    "${Screen.Plan.route}?feature={feature}",
+                    arguments = listOf(
+                        navArgument("feature") {
+                            type = androidx.navigation.NavType.StringType
+                            defaultValue = ""
                         }
-                    }
-                )
-            }
-            composable(Screen.OnboardingAppearance.route) {
-                com.muradgalayev.brainbuddy.ui.onboarding.AppearanceSetupScreen(
-                    onContinue = {
-                        // popped on the way out, so finishing the questionnaire later doesn't unwind onto appearance
-                        navController.navigate(Screen.OnboardingChoice.route) {
-                            popUpTo(Screen.OnboardingAppearance.route) { inclusive = true }
-                        }
-                    },
-                )
-            }
-            composable(Screen.OnboardingChoice.route) {
-                val onboardingViewModel: com.muradgalayev.brainbuddy.ui.onboarding.OnboardingViewModel =
-                    hiltViewModel()
-                com.muradgalayev.brainbuddy.ui.onboarding.OnboardingChoiceScreen(
-                    onPickQuick = { navController.navigate(Screen.QuickSetup.route) },
-                    onPickDeep = { navController.navigate(Screen.DeepDive.route) },
-                    onSkip = { skipOnboarding(navController, onboardingViewModel) },
-                )
-            }
-            composable(Screen.QuickSetup.route) {
-                val onboardingViewModel: com.muradgalayev.brainbuddy.ui.onboarding.OnboardingViewModel =
-                    hiltViewModel()
-                com.muradgalayev.brainbuddy.ui.onboarding.QuickSetupScreen(
-                    onBack = { exitOnboarding(navController) },
-                    onDone = { finishOnboarding(navController) },
-                    onSkip = { skipOnboarding(navController, onboardingViewModel) },
-                )
-            }
-            composable(Screen.DeepDive.route) {
-                val onboardingViewModel: com.muradgalayev.brainbuddy.ui.onboarding.OnboardingViewModel =
-                    hiltViewModel()
-                com.muradgalayev.brainbuddy.ui.onboarding.DeepDiveScreen(
-                    onBack = { exitOnboarding(navController) },
-                    onDone = { finishOnboarding(navController) },
-                    onSkip = { skipOnboarding(navController, onboardingViewModel) },
-                )
-            }
-            composable(Screen.Home.route) {
-                HomeScreen(
-                    onContinueProfile = { navController.navigate(Screen.DeepDive.route) },
-                    onOpenWellness = { navController.navigate(Screen.Health.route) },
-                    onOpenPomodoro = {
-                        navController.navigate(Screen.Pomodoro.route) { launchSingleTop = true }
-                    },
-                    onOpenProfile = {
-                        navController.navigate(Screen.EditProfile.route) { launchSingleTop = true }
-                    },
-                    onManageModes = {
-                        navController.navigate(Screen.Modes.route) { launchSingleTop = true }
-                    },
-                )
-            }
-            composable(Screen.Modes.route, enterTransition = pageEnter, popExitTransition = pagePopExit) {
-                com.muradgalayev.brainbuddy.ui.modes.ModesScreen(
-                    onBack = { navController.popBackStack() },
-                    onEditMode = { modeId ->
-                        // a blank id means new. encoded rather than left out so the route shape is the same either
-                        // way and the arg is never missing
-                        navController.navigate(
-                            "${Screen.ModeEdit.route}?modeId=${android.net.Uri.encode(modeId.orEmpty())}"
+                    ),
+                    enterTransition = sheetEnter,
+                    popExitTransition = sheetPopExit,
+                ) { entry ->
+                    com.muradgalayev.brainbuddy.ui.plan.PlanScreen(
+                        highlight = com.muradgalayev.brainbuddy.domain.model.PlanFeature
+                            .fromKey(entry.arguments?.getString("feature")),
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                composable(
+                    Screen.EditProfile.route,
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) {
+                    com.muradgalayev.brainbuddy.ui.settings.EditProfileScreen(
+                        onBack = { navController.popBackStack() },
+                        // same exit as signing out: nothing behind the auth screen to go back to
+                        onAccountDeleted = {
+                            navController.navigate(Screen.Auth.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        },
+                    )
+                }
+                composable(
+                    Screen.Customization.route,
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) {
+                    com.muradgalayev.brainbuddy.ui.settings.CustomizationScreen(
+                        onBack = { navController.popBackStack() },
+                        onOpenPlan = {
+                            navController.navigate(planRoute(com.muradgalayev.brainbuddy.domain.model.PlanFeature.CustomColors)) {
+                                launchSingleTop = true
+                            }
+                        },
+                    )
+                }
+                composable(
+                    Screen.NotificationSettings.route,
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) {
+                    com.muradgalayev.brainbuddy.ui.settings.NotificationsScreen(
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                composable(
+                    "${Screen.AiSettings.route}?focusWellness={focusWellness}",
+                    arguments = listOf(navArgument("focusWellness") {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    }),
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) { entry ->
+                    com.muradgalayev.brainbuddy.ui.settings.AiSettingsScreen(
+                        onBack = { navController.popBackStack() },
+                        focusWellness = entry.arguments?.getBoolean("focusWellness") == true,
+                    )
+                }
+                composable(
+                    Screen.LinkedAccounts.route,
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) {
+                    com.muradgalayev.brainbuddy.ui.settings.LinkedAccountsScreen(
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                composable(
+                    Screen.LinkedDevices.route,
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) {
+                    com.muradgalayev.brainbuddy.ui.settings.LinkedDevicesScreen(
+                        onBack = { navController.popBackStack() },
+                        onOpenPlan = {
+                            navController.navigate(planRoute(com.muradgalayev.brainbuddy.domain.model.PlanFeature.HealthConnect)) {
+                                launchSingleTop = true
+                            }
+                        },
+                    )
+                }
+                composable(
+                    Screen.Together.route,
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) {
+                    AboveNavBar {
+                        com.muradgalayev.brainbuddy.ui.together.TogetherScreen(
+                            onBack = { navController.popBackStack() },
+                            onAddSomeone = { navController.navigate(Screen.AddConnection.route) },
+                            onOpenConnection = { userId ->
+                                navController.navigate(
+                                    "${Screen.ConnectionProfile.route}?userId=${android.net.Uri.encode(userId)}"
+                                )
+                            },
                         )
-                    },
-                )
-            }
-            composable(
-                "${Screen.ModeEdit.route}?modeId={modeId}",
-                arguments = listOf(
-                    navArgument("modeId") {
-                        type = androidx.navigation.NavType.StringType
-                        defaultValue = ""
                     }
-                ),
-                enterTransition = pageEnter,
-                popExitTransition = pagePopExit,
-            ) { entry ->
-                com.muradgalayev.brainbuddy.ui.modes.ModeEditScreen(
-                    modeId = entry.arguments?.getString("modeId")?.takeIf { it.isNotBlank() },
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable(Screen.Activity.route) {
-                WorkspaceScreen(
-                    onNavigate = { route ->
-                        navController.navigate(route)
-                    }
-                )
-            }
-            composable(
-                Screen.ShapeFlow.route,
-                enterTransition = pageEnter,
-                popExitTransition = pagePopExit,
-            ) {
-                com.muradgalayev.brainbuddy.ui.games.ShapeFlowScreen(
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable(Screen.Settings.route) {
-                SettingsScreen(
-                    onLogout = {
-                        navController.navigate(Screen.Auth.route) {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    },
-                    onEditAdhdProfile = {
-                        // existing users edit the full questionnaire, quick/deep is only first-time onboarding
-                        navController.navigate(Screen.DeepDive.route)
-                    },
-                    onContinueQuestionnaire = { version ->
-                        val route = if (version == com.muradgalayev.brainbuddy.domain.model.SurveyVersion.Quick) {
-                            Screen.QuickSetup.route
-                        } else {
-                            Screen.DeepDive.route
-                        }
-                        navController.navigate(route) { launchSingleTop = true }
-                    },
-                    onEditProfile = { navController.navigate(Screen.EditProfile.route) },
-                    onOpenCustomization = { navController.navigate(Screen.Customization.route) },
-                    onOpenNotifications = { navController.navigate(Screen.NotificationSettings.route) },
-                    onOpenAiSettings = { navController.navigate(Screen.AiSettings.route) },
-                    onOpenAiWellness = { navController.navigate("${Screen.AiSettings.route}?focusWellness=true") },
-                    onOpenLinkedAccounts = { navController.navigate(Screen.LinkedAccounts.route) },
-                    onOpenLinkedDevices = { navController.navigate(Screen.LinkedDevices.route) },
-                    onOpenTogether = { navController.navigate(Screen.Together.route) },
-                    onOpenModes = { navController.navigate(Screen.Modes.route) },
-                )
-            }
-            composable(
-                Screen.EditProfile.route,
-                enterTransition = pageEnter,
-                popExitTransition = pagePopExit,
-            ) {
-                com.muradgalayev.brainbuddy.ui.settings.EditProfileScreen(
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable(
-                Screen.Customization.route,
-                enterTransition = pageEnter,
-                popExitTransition = pagePopExit,
-            ) {
-                com.muradgalayev.brainbuddy.ui.settings.CustomizationScreen(
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable(
-                Screen.NotificationSettings.route,
-                enterTransition = pageEnter,
-                popExitTransition = pagePopExit,
-            ) {
-                com.muradgalayev.brainbuddy.ui.settings.NotificationsScreen(
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable(
-                "${Screen.AiSettings.route}?focusWellness={focusWellness}",
-                arguments = listOf(navArgument("focusWellness") {
-                    type = NavType.BoolType
-                    defaultValue = false
-                }),
-                enterTransition = pageEnter,
-                popExitTransition = pagePopExit,
-            ) { entry ->
-                com.muradgalayev.brainbuddy.ui.settings.AiSettingsScreen(
-                    onBack = { navController.popBackStack() },
-                    focusWellness = entry.arguments?.getBoolean("focusWellness") == true,
-                )
-            }
-            composable(
-                Screen.LinkedAccounts.route,
-                enterTransition = pageEnter,
-                popExitTransition = pagePopExit,
-            ) {
-                com.muradgalayev.brainbuddy.ui.settings.LinkedAccountsScreen(
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable(
-                Screen.LinkedDevices.route,
-                enterTransition = pageEnter,
-                popExitTransition = pagePopExit,
-            ) {
-                com.muradgalayev.brainbuddy.ui.settings.LinkedDevicesScreen(
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable(
-                Screen.Together.route,
-                enterTransition = pageEnter,
-                popExitTransition = pagePopExit,
-            ) {
-                com.muradgalayev.brainbuddy.ui.together.TogetherScreen(
-                    onBack = { navController.popBackStack() },
-                    onAddSomeone = { navController.navigate(Screen.AddConnection.route) },
-                    onOpenConnection = { userId ->
-                        navController.navigate(
-                            "${Screen.ConnectionProfile.route}?userId=${android.net.Uri.encode(userId)}"
+                }
+                composable(
+                    Screen.AddConnection.route,
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) {
+                    AboveNavBar {
+                        com.muradgalayev.brainbuddy.ui.together.AddConnectionScreen(
+                            onBack = { navController.popBackStack() },
+                            onOpenNearby = { navController.navigate(Screen.NearbyAdd.route) { launchSingleTop = true } },
                         )
-                    },
-                )
-            }
-            composable(
-                Screen.AddConnection.route,
-                enterTransition = pageEnter,
-                popExitTransition = pagePopExit,
-            ) {
-                com.muradgalayev.brainbuddy.ui.together.AddConnectionScreen(
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable(
-                "${Screen.ConnectionProfile.route}?userId={userId}",
-                arguments = listOf(
-                    navArgument("userId") {
-                        type = NavType.StringType
-                        defaultValue = ""
-                    },
-                ),
-                enterTransition = pageEnter,
-                popExitTransition = pagePopExit,
-            ) {
-                com.muradgalayev.brainbuddy.ui.together.ConnectionProfileScreen(
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable(Screen.Calendar.route) {
-                CalendarScreen(
-                    onBackClick = { navController.popBackStack() },
-                    onNavigateToPomodoro = {
-                        navController.navigate(Screen.Pomodoro.route) {
-                            launchSingleTop = true
-                        }
-                    },
-                    onOpenBreakdown = { eventId ->
-                        navController.navigate(
-                            "${Screen.TaskBreakdown.route}?eventId=${android.net.Uri.encode(eventId)}"
-                        )
-                    },
-                    onConnectPeople = { navController.navigate(Screen.AddConnection.route) },
-                )
-            }
-            composable(
-                "${Screen.TaskBreakdown.route}?eventId={eventId}",
-                arguments = listOf(
-                    navArgument("eventId") {
-                        type = androidx.navigation.NavType.StringType
-                        defaultValue = ""
                     }
-                ),
-                enterTransition = pageEnter,
-                popExitTransition = pagePopExit,
-            ) {
-                com.muradgalayev.brainbuddy.ui.calendar.TaskBreakdownScreen(
-                    onBack = { navController.popBackStack() },
-                    onNavigateToPomodoro = {
-                        navController.navigate(Screen.Pomodoro.route) {
-                            launchSingleTop = true
-                        }
-                    },
-                )
-            }
-            composable(Screen.Todo.route) {
-                TodoScreen(
-                    onConnectPeople = { navController.navigate(Screen.AddConnection.route) },
-                )
-            }
-            composable(Screen.Health.route, enterTransition = pageEnter, popExitTransition = pagePopExit) {
-                com.muradgalayev.brainbuddy.ui.activity.HealthScreen(
-                    onBack = { navController.popBackStack() },
-                    onMedications = { navController.navigate(Screen.Medications.route) },
-                    onHealthConnect = { navController.navigate(Screen.WellnessSummary.route) },
-                )
-            }
-            composable(
-                Screen.WellnessSummary.route,
-                enterTransition = pageEnter,
-                popExitTransition = pagePopExit,
-            ) {
-                com.muradgalayev.brainbuddy.ui.activity.WellnessSummaryScreen(
-                    onBack = { navController.popBackStack() },
-                    onConnectHealth = { navController.navigate(Screen.LinkedDevices.route) },
-                    onActivityGoals = { navController.navigate(Screen.ActivityGoals.route) },
-                    onEdit = { navController.navigate(Screen.WellnessEdit.route) },
-                    onMedications = { navController.navigate(Screen.Medications.route) },
-                )
-            }
-            composable(Screen.WellnessEdit.route, enterTransition = pageEnter, popExitTransition = pagePopExit) {
-                com.muradgalayev.brainbuddy.ui.activity.WellnessEditScreen(onBack = { navController.popBackStack() })
-            }
-            composable(Screen.ActivityGoals.route, enterTransition = pageEnter, popExitTransition = pagePopExit) {
-                com.muradgalayev.brainbuddy.ui.activity.ActivityGoalsScreen(onBack = { navController.popBackStack() })
-            }
-            composable(Screen.Medications.route, enterTransition = pageEnter, popExitTransition = pagePopExit) {
-                com.muradgalayev.brainbuddy.ui.activity.MedicationsScreen(
-                    onBack = { navController.popBackStack() },
-                    // a null id means new. the editor tells the two apart by whether it finds a matching
-                    // medication, so there's no separate add route
-                    onEditMedication = { id ->
-                        navController.navigate(
-                            if (id == null) Screen.MedicationEdit.route
-                            else "${Screen.MedicationEdit.route}?id=$id"
+                }
+                composable(
+                    Screen.NearbyAdd.route,
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) {
+                    com.muradgalayev.brainbuddy.ui.together.NearbyAddScreen(
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                composable(
+                    "${Screen.ConnectionProfile.route}?userId={userId}",
+                    arguments = listOf(
+                        navArgument("userId") {
+                            type = NavType.StringType
+                            defaultValue = ""
+                        },
+                    ),
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) {
+                    AboveNavBar {
+                        com.muradgalayev.brainbuddy.ui.together.ConnectionProfileScreen(
+                            onBack = { navController.popBackStack() },
                         )
-                    },
-                )
-            }
-            composable(
-                route = "${Screen.MedicationEdit.route}?id={id}",
-                arguments = listOf(navArgument("id") { nullable = true; defaultValue = null; type = NavType.StringType }),
-                enterTransition = pageEnter,
-                popExitTransition = pagePopExit,
-            ) { entry ->
-                com.muradgalayev.brainbuddy.ui.activity.MedicationEditScreen(
-                    medicationId = entry.arguments?.getString("id"),
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            // reached from the focus-together card. its own screen because waiting is a whole job on
-            // its own, not a strip on the timer
-            composable(
-                route = "focus_room/{sessionId}",
-                arguments = listOf(navArgument("sessionId") { type = NavType.StringType }),
-            ) { entry ->
-                FocusRoomScreen(
-                    sessionId = entry.arguments?.getString("sessionId").orEmpty(),
-                    onClose = { navController.popBackStack() },
-                )
-            }
-            composable(Screen.Pomodoro.route) {
-                PomodoroScreen(
-                    onBackClick = { navController.popBackStack() },
-                    onOpenFocusRoom = { sessionId ->
-                        navController.navigate("focus_room/$sessionId") {
-                            launchSingleTop = true
-                        }
-                    },
-                    onOpenBreakdown = { eventId ->
-                        navController.navigate(
-                            "${Screen.TaskBreakdown.route}?eventId=${android.net.Uri.encode(eventId)}"
-                        ) { launchSingleTop = true }
-                    },
-                )
-            }
-            composable(Screen.CareNearby.route, enterTransition = pageEnter, popExitTransition = pagePopExit) {
-                com.muradgalayev.brainbuddy.ui.care.CareNearbyScreen(
-                    onBack = { navController.popBackStack() },
-                    onReserve = { placeId ->
-                        val route = placeId?.let {
-                            "${Screen.Reservation.route}?placeId=${android.net.Uri.encode(it)}"
-                        } ?: Screen.Reservation.route
-                        navController.navigate(route)
-                    },
-                )
-            }
-            composable(
-                "${Screen.Reservation.route}?placeId={placeId}",
-                arguments = listOf(
-                    navArgument("placeId") {
-                        type = NavType.StringType
-                        defaultValue = ""
-                    },
-                ),
-                enterTransition = pageEnter,
-                popExitTransition = pagePopExit,
-            ) {
-                com.muradgalayev.brainbuddy.ui.reservation.ReservationScreen(
-                    onBack = { navController.popBackStack() },
-                    onHistory = { navController.navigate(Screen.ReservationHistory.route) },
-                )
-            }
-            composable(
-                Screen.ReservationHistory.route,
-                enterTransition = pageEnter,
-                popExitTransition = pagePopExit,
-            ) {
-                com.muradgalayev.brainbuddy.ui.reservation.ReservationHistoryScreen(
-                    onBack = { navController.popBackStack() },
-                )
-            }
-            composable(
-                "${Screen.TaskDetail.route}?taskId={taskId}",
-                arguments = listOf(
-                    navArgument("taskId") {
-                        type = NavType.StringType
-                        defaultValue = ""
                     }
-                )
-            ) { backStackEntry ->
-                val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
-                
-                val demoTask = TodoItemEntity(
-                    id = taskId,
-                    userId = "demo_user",
-                    title = "Sample Task",
-                    description = "Sample description",
-                    startTime = "10:00",
-                    endTime = "11:00"
-                )
+                }
+                composable(Screen.Calendar.route) {
+                    CalendarScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onOpenPlan = {
+                            navController.navigate(planRoute(com.muradgalayev.brainbuddy.domain.model.PlanFeature.CalendarAi)) {
+                                launchSingleTop = true
+                            }
+                        },
+                        onNavigateToPomodoro = {
+                            navController.navigate(Screen.Pomodoro.route) {
+                                launchSingleTop = true
+                            }
+                        },
+                        onOpenBreakdown = { eventId ->
+                            navController.navigate(
+                                "${Screen.TaskBreakdown.route}?eventId=${android.net.Uri.encode(eventId)}"
+                            )
+                        },
+                        onConnectPeople = { navController.navigate(Screen.AddConnection.route) },
+                    )
+                }
+                composable(
+                    "${Screen.TaskBreakdown.route}?eventId={eventId}",
+                    arguments = listOf(
+                        navArgument("eventId") {
+                            type = androidx.navigation.NavType.StringType
+                            defaultValue = ""
+                        }
+                    ),
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) {
+                    AboveNavBar {
+                        com.muradgalayev.brainbuddy.ui.calendar.TaskBreakdownScreen(
+                            onBack = { navController.popBackStack() },
+                            onNavigateToPomodoro = {
+                                navController.navigate(Screen.Pomodoro.route) {
+                                    launchSingleTop = true
+                                }
+                            },
+                        )
+                    }
+                }
+                composable(Screen.Todo.route) {
+                    TodoScreen(
+                        onConnectPeople = { navController.navigate(Screen.AddConnection.route) },
+                    )
+                }
+                composable(Screen.Health.route, enterTransition = pageEnter, popExitTransition = pagePopExit) {
+                    com.muradgalayev.brainbuddy.ui.activity.HealthScreen(
+                        onBack = { navController.popBackStack() },
+                        onMedications = { navController.navigate(Screen.Medications.route) },
+                        onHealthConnect = { navController.navigate(Screen.WellnessSummary.route) },
+                    )
+                }
+                composable(
+                    Screen.WellnessSummary.route,
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) {
+                    com.muradgalayev.brainbuddy.ui.activity.WellnessSummaryScreen(
+                        onBack = { navController.popBackStack() },
+                        onConnectHealth = { navController.navigate(Screen.LinkedDevices.route) },
+                        onActivityGoals = { navController.navigate(Screen.ActivityGoals.route) },
+                        onEdit = { navController.navigate(Screen.WellnessEdit.route) },
+                        onMedications = { navController.navigate(Screen.Medications.route) },
+                    )
+                }
+                composable(Screen.WellnessEdit.route, enterTransition = pageEnter, popExitTransition = pagePopExit) {
+                    com.muradgalayev.brainbuddy.ui.activity.WellnessEditScreen(onBack = { navController.popBackStack() })
+                }
+                composable(Screen.ActivityGoals.route, enterTransition = pageEnter, popExitTransition = pagePopExit) {
+                    com.muradgalayev.brainbuddy.ui.activity.ActivityGoalsScreen(onBack = { navController.popBackStack() })
+                }
+                composable(Screen.Medications.route, enterTransition = pageEnter, popExitTransition = pagePopExit) {
+                    AboveNavBar {
+                        com.muradgalayev.brainbuddy.ui.activity.MedicationsScreen(
+                            onBack = { navController.popBackStack() },
+                            // a null id means new. the editor tells the two apart by whether it finds a matching
+                            // medication, so there's no separate add route
+                            onEditMedication = { id ->
+                                navController.navigate(
+                                    if (id == null) Screen.MedicationEdit.route
+                                    else "${Screen.MedicationEdit.route}?id=$id"
+                                )
+                            },
+                        )
+                    }
+                }
+                composable(
+                    route = "${Screen.MedicationEdit.route}?id={id}",
+                    arguments = listOf(navArgument("id") { nullable = true; defaultValue = null; type = NavType.StringType }),
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) { entry ->
+                    AboveNavBar {
+                        com.muradgalayev.brainbuddy.ui.activity.MedicationEditScreen(
+                            medicationId = entry.arguments?.getString("id"),
+                            onBack = { navController.popBackStack() },
+                        )
+                    }
+                }
+                // reached from the focus-together card. its own screen because waiting is a whole job on
+                // its own, not a strip on the timer
+                composable(
+                    route = "focus_room/{sessionId}",
+                    arguments = listOf(navArgument("sessionId") { type = NavType.StringType }),
+                ) { entry ->
+                    AboveNavBar {
+                        FocusRoomScreen(
+                            sessionId = entry.arguments?.getString("sessionId").orEmpty(),
+                            onClose = { navController.popBackStack() },
+                        )
+                    }
+                }
+                composable(Screen.Pomodoro.route) {
+                    PomodoroScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onOpenFocusRoom = { sessionId ->
+                            navController.navigate("focus_room/$sessionId") {
+                                launchSingleTop = true
+                            }
+                        },
+                        onOpenBreakdown = { eventId ->
+                            navController.navigate(
+                                "${Screen.TaskBreakdown.route}?eventId=${android.net.Uri.encode(eventId)}"
+                            ) { launchSingleTop = true }
+                        },
+                        onOpenPlan = { feature ->
+                            navController.navigate(planRoute(feature)) { launchSingleTop = true }
+                        },
+                    )
+                }
+                composable(Screen.CareNearby.route, enterTransition = pageEnter, popExitTransition = pagePopExit) {
+                    com.muradgalayev.brainbuddy.ui.care.CareNearbyScreen(
+                        onBack = { navController.popBackStack() },
+                        onReserve = { placeId ->
+                            val route = placeId?.let {
+                                "${Screen.Reservation.route}?placeId=${android.net.Uri.encode(it)}"
+                            } ?: Screen.Reservation.route
+                            navController.navigate(route)
+                        },
+                    )
+                }
+                composable(
+                    "${Screen.Reservation.route}?placeId={placeId}",
+                    arguments = listOf(
+                        navArgument("placeId") {
+                            type = NavType.StringType
+                            defaultValue = ""
+                        },
+                    ),
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) {
+                    AboveNavBar {
+                        com.muradgalayev.brainbuddy.ui.reservation.ReservationScreen(
+                            onBack = { navController.popBackStack() },
+                            onHistory = { navController.navigate(Screen.ReservationHistory.route) },
+                        )
+                    }
+                }
+                composable(
+                    Screen.ReservationHistory.route,
+                    enterTransition = pageEnter,
+                    popExitTransition = pagePopExit,
+                ) {
+                    com.muradgalayev.brainbuddy.ui.reservation.ReservationHistoryScreen(
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                composable(
+                    "${Screen.TaskDetail.route}?taskId={taskId}",
+                    arguments = listOf(
+                        navArgument("taskId") {
+                            type = NavType.StringType
+                            defaultValue = ""
+                        }
+                    )
+                ) { backStackEntry ->
+                    val taskId = backStackEntry.arguments?.getString("taskId") ?: ""
+                    
+                    val demoTask = TodoItemEntity(
+                        id = taskId,
+                        userId = "demo_user",
+                        title = "Sample Task",
+                        description = "Sample description",
+                        startTime = "10:00",
+                        endTime = "11:00"
+                    )
 
-                TaskDetailScreen(
-                    task = demoTask,
-                    onBackClick = { navController.popBackStack() },
-                    onDeleteClick = { navController.popBackStack() },
-                    onUpdateClick = { navController.popBackStack() }
-                )
+                    AboveNavBar {
+                        TaskDetailScreen(
+                            task = demoTask,
+                            onBackClick = { navController.popBackStack() },
+                            onDeleteClick = { navController.popBackStack() },
+                            onUpdateClick = { navController.popBackStack() }
+                        )
+                    }
+                }
             }
+        }
+
+        // a screen overlay's dim, carried under the status bar where the NavHost can't draw
+        val chromeDim by animateFloatAsState(
+            targetValue = ChromeScrim.alpha,
+            animationSpec = tween(if (animationsOn()) 240 else 0),
+            label = "chromeScrim",
+        )
+        if (chromeDim > 0f) {
+            Box(
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .windowInsetsTopHeight(WindowInsets.statusBars)
+                    .background(Color.Black.copy(alpha = chromeDim))
+            )
         }
 
         // scrim
@@ -817,12 +1003,19 @@ fun NavGraph(
                 currentRoute = tabRouteFor(currentRoute),
                 onItemClick = { screen ->
                     aiSheet = AiSheet.None
-                    navController.navigate(screen.route) {
-                        popUpTo(Screen.Home.route) {
-                            saveState = false
+                    // Reselecting the tab that is already on screen is intentionally a no-op.
+                    // Even with launchSingleTop, issuing another navigate/popUpTo cycle dispatches
+                    // lifecycle and back-stack updates that make Home refresh its data again.
+                    // Compare the real route (not tabRouteFor): tapping a parent tab while one of
+                    // its detail screens is open must still return to that tab's root screen.
+                    if (currentRoute != screen.route) {
+                        navController.navigate(screen.route) {
+                            popUpTo(Screen.Home.route) {
+                                saveState = false
+                            }
+                            launchSingleTop = true
+                            restoreState = false
                         }
-                        launchSingleTop = true
-                        restoreState = false
                     }
                 },
                 onAiClick = {
@@ -833,10 +1026,61 @@ fun NavGraph(
                     }
                 },
                 isAiOpen = aiSheet != AiSheet.None,
+                compact = navCompact && aiSheet == AiSheet.None && animationsOn(),
+                onExpand = { navCompact = false },
                 hasActiveAiChat = aiHasActiveChat,
                 aiEnabled = surveyCompleted,
                 onDragStateChanged = { isNavDragging = it },
             )
+        }
+
+        AnimatedVisibility(
+            visible = banner != null,
+            enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .padding(top = 10.dp, start = 16.dp, end = 16.dp),
+        ) {
+            Surface(
+                onClick = {
+                    if (lastBanner is TopBanner.Connected) {
+                        navController.navigate(Screen.Together.route) { launchSingleTop = true }
+                    }
+                    banner = null
+                },
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                shadowElevation = 10.dp,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        androidx.compose.material.icons.Icons.Rounded.CheckCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(26.dp),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    val shown = lastBanner
+                    Column {
+                        Text(
+                            if (shown is TopBanner.Connected) stringResource(R.string.together_invite_accepted, shown.name)
+                            else stringResource(R.string.home_welcome_back),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            if (shown is TopBanner.Connected) stringResource(R.string.together_now_connected_body)
+                            else stringResource(R.string.home_profile_reactivated),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -883,3 +1127,7 @@ private fun exitOnboarding(navController: NavHostController) {
     if (navController.popBackStack(Screen.Settings.route, inclusive = false)) return
     navController.popBackStack()
 }
+
+// the plan screen, opened by a locked feature with that feature highlighted
+fun planRoute(feature: com.muradgalayev.brainbuddy.domain.model.PlanFeature? = null): String =
+    if (feature == null) Screen.Plan.route else "${Screen.Plan.route}?feature=${feature.key}"

@@ -49,6 +49,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.muradgalayev.brainbuddy.data.local.PomodoroQueueItem
 import com.muradgalayev.brainbuddy.data.local.PomodoroQueueState
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // the 'you are running this calendar plan' header that sits above the timer when a queue is
 // loaded. collapsed it shows the event, the station ribbon and the current step; expanded it
@@ -106,7 +108,7 @@ fun CalendarPlanStrip(
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Calendar plan",
+                        text = stringResource(R.string.plan_calendar),
                         color = muted,
                         fontSize = 9.5.sp,
                         fontWeight = FontWeight.Bold,
@@ -131,7 +133,7 @@ fun CalendarPlanStrip(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.OpenInNew,
-                        contentDescription = "Open full breakdown",
+                        contentDescription = stringResource(R.string.plan_open_breakdown),
                         tint = muted,
                         modifier = Modifier.size(13.dp),
                     )
@@ -147,7 +149,7 @@ fun CalendarPlanStrip(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Close,
-                        contentDescription = "Stop following plan",
+                        contentDescription = stringResource(R.string.plan_stop_following),
                         tint = muted,
                         modifier = Modifier.size(13.dp),
                     )
@@ -186,9 +188,9 @@ fun CalendarPlanStrip(
             val current = queue.current
             val currentLabel = if (current != null) {
                 val n = queue.currentIndex + 1
-                "Step $n of ${queue.items.size} · ${current.title}"
+                stringResource(R.string.plan_step_of, n, queue.items.size, current.title)
             } else {
-                "Plan complete"
+                stringResource(R.string.bd_plan_complete)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (current != null && !current.isFocus) {
@@ -250,7 +252,7 @@ fun CalendarPlanStrip(
                         Text(
                             // says why the per-step buttons are gone, rather than leaving them tappable and silently
                             // ignoring the tap mid-session
-                            text = "Finish or stop the current session to jump to another step.",
+                            text = stringResource(R.string.plan_finish_first),
                             color = muted,
                             fontSize = 10.5.sp,
                             lineHeight = 14.sp,
@@ -283,14 +285,14 @@ private fun ExpandToggle(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = if (expanded) "Hide steps" else "All $stepCount steps",
+            text = if (expanded) stringResource(R.string.plan_hide_steps) else stringResource(R.string.plan_all_steps, stepCount),
             color = tint,
             fontSize = 10.5.sp,
             fontWeight = FontWeight.SemiBold,
         )
         Icon(
             imageVector = Icons.Rounded.KeyboardArrowDown,
-            contentDescription = if (expanded) "Hide all steps" else "Show all steps",
+            contentDescription = if (expanded) stringResource(R.string.plan_hide_all) else stringResource(R.string.plan_show_all),
             tint = tint,
             modifier = Modifier
                 .size(15.dp)
@@ -366,7 +368,7 @@ private fun PlanStepRow(
                 }
                 Text(
                     text = "${item.durationMs / 60_000L}m" +
-                        if (isCurrent) " · current" else "",
+                        if (isCurrent) stringResource(R.string.plan_current) else "",
                     color = if (isCurrent) accentColor else muted,
                     fontSize = 10.sp,
                 )
@@ -386,7 +388,7 @@ private fun PlanStepRow(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.PlayArrow,
-                    contentDescription = "Start ${item.title}",
+                    contentDescription = stringResource(R.string.plan_start_item, item.title),
                     tint = tint,
                     modifier = Modifier.size(15.dp),
                 )

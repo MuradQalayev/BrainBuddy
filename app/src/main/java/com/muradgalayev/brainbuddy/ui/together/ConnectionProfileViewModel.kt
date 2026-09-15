@@ -29,10 +29,13 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import javax.inject.Inject
+import com.muradgalayev.brainbuddy.R
 
 // what the user is composing when adding something to a connection's calendar or list
 data class ComposeItemDraft(
@@ -49,6 +52,7 @@ data class ComposeItemDraft(
 
 @HiltViewModel
 class ConnectionProfileViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val repository: TogetherRepository,
     private val calendarRepository: CalendarRepository,
     private val todoRepository: TodoRepository,
@@ -126,19 +130,50 @@ class ConnectionProfileViewModel @Inject constructor(
     }
 
     fun togglePermission(scope: ShareScope, granted: Boolean) {
-        if (userId.isEmpty()) return
+        // a select all is still settling this one
+        if (userId.isEmpty() || scope in _optimisticGrants.value) return
         viewModelScope.launch {
             _busyScopes.value = _busyScopes.value + scope
             repository.setPermission(userId, scope, granted)
                 .onSuccess {
                     _message.value = if (granted) {
-                        "${scope.label} shared"
+                        context.getString(R.string.together_scope_shared, context.getString(scope.labelRes))
                     } else {
-                        "${scope.label} sharing turned off"
+                        context.getString(R.string.together_scope_off, context.getString(scope.labelRes))
                     }
                 }
-                .onFailure { _message.value = it.friendlyMessage("Couldn't change that permission") }
+                .onFailure { _message.value = it.friendlyMessage(context, R.string.together_permission_failed) }
             _busyScopes.value = _busyScopes.value - scope
+        }
+    }
+
+    // switches flipped ahead of the server by select all. the screen reads these first, so every switch
+    // moves at once instead of each one waiting for its own round trip
+    private val _optimisticGrants = MutableStateFlow<Map<ShareScope, Boolean>>(emptyMap())
+    val optimisticGrants: StateFlow<Map<ShareScope, Boolean>> = _optimisticGrants.asStateFlow()
+
+    // every scope in one go: the switches move straight away and the grants go out together in the
+    // background. only the ones that actually change are sent
+    fun setAllPermissions(granted: Boolean) {
+        if (userId.isEmpty() || _busyScopes.value.isNotEmpty() || _optimisticGrants.value.isNotEmpty()) return
+        val person = connection.value ?: return
+        val changing = ShareScope.entries.filter { person.canGrant(it) != granted }
+        if (changing.isEmpty()) return
+        _optimisticGrants.value = changing.associateWith { granted }
+        viewModelScope.launch {
+            val failed = changing
+                .map { scope -> async { repository.setPermission(userId, scope, granted).isFailure } }
+                .awaitAll()
+                .any { it }
+            // each grant refreshes on its own and those can land out of order, so settle on one last read
+            // before letting go. a grant that failed then simply shows its real, unchanged state
+            repository.refresh()
+            _optimisticGrants.value = emptyMap()
+            _message.value = when {
+                failed -> context.getString(R.string.together_permission_failed)
+                granted -> context.getString(R.string.together_all_shared, person.name)
+                else -> context.getString(R.string.together_all_off, person.name)
+            }
         }
     }
 
@@ -147,7 +182,7 @@ class ConnectionProfileViewModel @Inject constructor(
         viewModelScope.launch {
             repository.removeConnection(userId)
                 .onSuccess { _removed.value = true }
-                .onFailure { _message.value = it.friendlyMessage("Couldn't remove that connection") }
+                .onFailure { _message.value = it.friendlyMessage(context, R.string.together_remove_conn_failed) }
         }
     }
 
@@ -179,7 +214,7 @@ class ConnectionProfileViewModel @Inject constructor(
             )
                 .onSuccess {
                     _eventDraft.value = null
-                    _message.value = "Added to their calendar"
+                    _message.value = context.getString(R.string.together_added_calendar)
                     loadSharedContent()
                 }
                 .onFailure { error ->
@@ -187,7 +222,7 @@ class ConnectionProfileViewModel @Inject constructor(
                         saving = false,
                         // a rejection here usually means the grant was pulled while the sheet was open, so say that
                         error = error.friendlyMessage(
-                            "Couldn't add that. They may have turned calendar sharing off.",
+                            context, R.string.together_add_calendar_failed,
                         ),
                     )
                 }
@@ -336,14 +371,14 @@ class ConnectionProfileViewModel @Inject constructor(
             )
                 .onSuccess {
                     _todoDraft.value = null
-                    _message.value = "Added to their list"
+                    _message.value = context.getString(R.string.together_added_list)
                     loadSharedContent()
                 }
                 .onFailure { error ->
                     _todoDraft.value = _todoDraft.value?.copy(
                         saving = false,
                         error = error.friendlyMessage(
-                            "Couldn't add that. They may have turned task sharing off.",
+                            context, R.string.together_add_list_failed,
                         ),
                     )
                 }
@@ -354,10 +389,10 @@ class ConnectionProfileViewModel @Inject constructor(
         viewModelScope.launch {
             repository.deleteEventICreated(eventId)
                 .onSuccess {
-                    _message.value = "Removed from their calendar"
+                    _message.value = context.getString(R.string.together_removed_calendar)
                     loadSharedContent()
                 }
-                .onFailure { _message.value = it.friendlyMessage("Couldn't remove that event") }
+                .onFailure { _message.value = it.friendlyMessage(context, R.string.together_remove_event_failed) }
         }
     }
 
@@ -365,10 +400,10 @@ class ConnectionProfileViewModel @Inject constructor(
         viewModelScope.launch {
             repository.deleteTodoICreated(todoId)
                 .onSuccess {
-                    _message.value = "Removed from their list"
+                    _message.value = context.getString(R.string.together_removed_list)
                     loadSharedContent()
                 }
-                .onFailure { _message.value = it.friendlyMessage("Couldn't remove that task") }
+                .onFailure { _message.value = it.friendlyMessage(context, R.string.together_remove_task_failed) }
         }
     }
 

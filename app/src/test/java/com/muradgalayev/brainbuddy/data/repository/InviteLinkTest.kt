@@ -82,4 +82,25 @@ class InviteLinkTest {
 
         assertEquals("abc123", parsed)
     }
+
+    @Test
+    fun `a whole forwarded message yields the token inside it`() {
+        val message = "Let's connect on Myndora! Tap this private invite link:\nmyndora://connect?token=aB3-_xYz9QwErTyUiOp1"
+
+        assertEquals("aB3-_xYz9QwErTyUiOp1", TogetherRepository.tokenFromPastedText(message))
+    }
+
+    @Test
+    fun `a bare token can be pasted on its own`() {
+        assertEquals("aB3-_xYz9QwErTyUiOp1", TogetherRepository.tokenFromPastedText("  aB3-_xYz9QwErTyUiOp1 "))
+    }
+
+    @Test
+    fun `pasted text with no invite in it is rejected`() {
+        assertNull(TogetherRepository.tokenFromPastedText("hello"))
+        assertNull(TogetherRepository.tokenFromPastedText("see https://example.com/connect?token=abc123"))
+        assertNull(TogetherRepository.tokenFromPastedText("two words"))
+        assertNull(TogetherRepository.tokenFromPastedText(""))
+    }
+
 }

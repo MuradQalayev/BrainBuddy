@@ -43,6 +43,8 @@ import androidx.compose.ui.window.DialogProperties
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun TimePickerDialog(
@@ -112,7 +114,7 @@ fun TimePickerDialog(
                     Spacer(Modifier.height(16.dp))
                     Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Text(
-                        "Slide through your day or use a quick time",
+                        stringResource(R.string.tp_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.onSurfaceVariant,
                     )
@@ -131,14 +133,14 @@ fun TimePickerDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        TimeAdjustButton("Minus 15 minutes", Icons.Rounded.Remove) { adjust(-15) }
+                        TimeAdjustButton(stringResource(R.string.tp_minus_15), Icons.Rounded.Remove) { adjust(-15) }
                         Slider(
                             value = totalMinutes.toFloat(),
                             onValueChange = { totalMinutes = ((it / 5f).roundToInt() * 5).coerceIn(0, 1435) },
                             valueRange = 0f..1435f,
                             modifier = Modifier.weight(1f),
                         )
-                        TimeAdjustButton("Add 15 minutes", Icons.Rounded.Add) { adjust(15) }
+                        TimeAdjustButton(stringResource(R.string.tp_plus_15), Icons.Rounded.Add) { adjust(15) }
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         listOf("00", "06", "12", "18", "24").forEach {
@@ -179,12 +181,12 @@ fun TimePickerDialog(
                             shape = RoundedCornerShape(17.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceContainerHighest),
                             elevation = null,
-                        ) { Text("Cancel", color = colors.onSurface, fontWeight = FontWeight.SemiBold) }
+                        ) { Text(stringResource(R.string.common_cancel), color = colors.onSurface, fontWeight = FontWeight.SemiBold) }
                         Button(
                             onClick = { onConfirm(hour, minute) },
                             modifier = Modifier.weight(1.45f).height(52.dp),
                             shape = RoundedCornerShape(17.dp),
-                        ) { Text("Use this time", fontWeight = FontWeight.Bold) }
+                        ) { Text(stringResource(R.string.tp_use_time), fontWeight = FontWeight.Bold) }
                     }
                 }
             }

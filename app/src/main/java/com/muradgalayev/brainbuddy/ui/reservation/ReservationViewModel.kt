@@ -20,6 +20,7 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.util.UUID
 import javax.inject.Inject
+import com.muradgalayev.brainbuddy.R
 
 data class ReservationState(
     val loading: Boolean = true,
@@ -36,6 +37,7 @@ data class ReservationState(
 
 @HiltViewModel
 class ReservationViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val placesRepository: PlacesRepository,
     private val profileRepository: AdhdProfileRepository,
     private val calendarRepository: CalendarRepository,
@@ -60,7 +62,7 @@ class ReservationViewModel @Inject constructor(
         val cities = placesRepository.listCities().getOrNull().orEmpty()
         val city = cities.firstOrNull { it.id == profile?.cityId }
         if (city == null) {
-            _state.update { it.copy(loading = false, error = "Choose your city in ADHD Profile first") }
+            _state.update { it.copy(loading = false, error = context.getString(R.string.res_choose_city_first)) }
             return@launch
         }
         val places = placesRepository.listPlacesInCity(city.id).getOrElse { emptyList() }
@@ -72,7 +74,7 @@ class ReservationViewModel @Inject constructor(
                 selectedPlaceId = requestedPlaceId
                     .takeIf { requested -> places.any { it.id == requested } }
                     ?: places.firstOrNull()?.id,
-                error = if (places.isEmpty()) "No medical places are available in ${city.name}" else null,
+                error = if (places.isEmpty()) context.getString(R.string.res_no_places, city.name) else null,
             )
         }
     }
@@ -85,7 +87,7 @@ class ReservationViewModel @Inject constructor(
         val snapshot = _state.value
         if (!networkObserver.currentlyOnline()) {
             _state.update {
-                it.copy(isOnline = false, error = "Connect to the internet to make a booking")
+                it.copy(isOnline = false, error = context.getString(R.string.res_connect_internet))
             }
             return
         }
@@ -100,8 +102,8 @@ class ReservationViewModel @Inject constructor(
                 calendarRepository.insertEvent(
                     CalendarEvent(
                         id = UUID.randomUUID().toString(),
-                        title = "Appointment at ${place.name}",
-                        description = "Reservation request — confirm directly with ${place.name}. " +
+                        title = context.getString(R.string.res_appointment_at, place.name),
+                        description = context.getString(R.string.res_request_description, place.name) +
                             listOf(place.phone, place.email).filter { it.isNotBlank() }.joinToString(" · "),
                         startTime = start.toString(),
                         endTime = start.plusMinutes(30).toString(),
@@ -112,7 +114,7 @@ class ReservationViewModel @Inject constructor(
                 )
             }
             appointmentResult.onFailure { error ->
-                _state.update { it.copy(saving = false, error = error.message ?: "Couldn't save appointment") }
+                _state.update { it.copy(saving = false, error = error.message ?: context.getString(R.string.res_save_failed)) }
                 return@launch
             }
 

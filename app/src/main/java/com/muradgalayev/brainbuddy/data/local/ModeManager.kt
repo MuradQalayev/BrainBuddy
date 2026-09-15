@@ -84,6 +84,9 @@ class ModeManager @Inject constructor(
     // against this rather than a ticking clock, so nothing recomputes sixty times a minute
     private val clock = MutableStateFlow(LocalDateTime.now())
     private val schedulerRefresh = MutableStateFlow(0L)
+    // Registration must show the base appearance the person is choosing. Automatic Work/Weekend
+    // modes are overlays and used to make every onboarding appearance tap silently fail.
+    private val appearanceSetupActive = MutableStateFlow(false)
 
     val modes: StateFlow<List<AppMode>> = modeRepository.observeModes()
         .stateIn(scope, SharingStarted.Eagerly, emptyList())
@@ -106,8 +109,10 @@ class ModeManager @Inject constructor(
         modes,
         selection,
         clock,
-    ) { available, currentSelection, now ->
-        resolveActiveMode(available, currentSelection, now.dayOfWeek, now.toLocalTime())
+        appearanceSetupActive,
+    ) { available, currentSelection, now, appearanceSetup ->
+        if (appearanceSetup) null
+        else resolveActiveMode(available, currentSelection, now.dayOfWeek, now.toLocalTime())
     }.distinctUntilChanged().stateIn(scope, SharingStarted.Eagerly, null)
 
     init {
@@ -153,6 +158,14 @@ class ModeManager @Inject constructor(
     fun refresh() {
         clock.value = LocalDateTime.now()
         schedulerRefresh.update { it + 1L }
+    }
+
+    // In-memory on purpose: it pauses overlays without changing the user's Automatic/Manual mode
+    // choice, and is released as soon as the registration appearance screen leaves composition.
+    fun setAppearanceSetupActive(active: Boolean) {
+        if (appearanceSetupActive.value == active) return
+        appearanceSetupActive.value = active
+        refresh()
     }
 
     // reasserts external device state after startup reconciliation clears stale leases. reads
@@ -274,6 +287,7 @@ class ModeManager @Inject constructor(
     }
 
     suspend fun activeModeNow(): AppMode? {
+        if (appearanceSetupActive.value) return null
         val available = modeRepository.getModes()
         val currentSelection = preferencesManager.modeSelection.first()
             .withAvailableModes(available)

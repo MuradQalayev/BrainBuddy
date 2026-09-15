@@ -14,6 +14,7 @@ import androidx.annotation.RequiresApi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.muradgalayev.brainbuddy.R
 
 // independent reasons Myndora may currently need its Do Not Disturb rule
 enum class DndOwner(val storedKey: String) {
@@ -239,7 +240,7 @@ class FocusModeManager @Inject constructor(
         } else {
             notificationManager.setAutomaticZenRuleState(
                 id,
-                Condition(CONDITION_ID, "Focus session in progress", Condition.STATE_TRUE),
+                Condition(CONDITION_ID, context.getString(R.string.focus_condition_on), Condition.STATE_TRUE),
             )
             true
         }
@@ -254,7 +255,7 @@ class FocusModeManager @Inject constructor(
         if (id != null) {
             notificationManager.setAutomaticZenRuleState(
                 id,
-                Condition(CONDITION_ID, "Focus session ended", Condition.STATE_FALSE),
+                Condition(CONDITION_ID, context.getString(R.string.focus_condition_off), Condition.STATE_FALSE),
             )
         }
         // cleared even when the id had gone stale: whatever the rule is doing we're no longer
@@ -318,7 +319,7 @@ class FocusModeManager @Inject constructor(
                 // scoped to this rule and leaves every other DND source alone
                 notificationManager.setAutomaticZenRuleState(
                     id,
-                    Condition(CONDITION_ID, "Focus session in progress", Condition.STATE_TRUE),
+                    Condition(CONDITION_ID, context.getString(R.string.focus_condition_on), Condition.STATE_TRUE),
                 )
                 true
             }

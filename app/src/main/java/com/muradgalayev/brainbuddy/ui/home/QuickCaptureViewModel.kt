@@ -19,15 +19,16 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import javax.inject.Inject
+import com.muradgalayev.brainbuddy.R
 
 enum class QuickCaptureMode { Task, Event }
 
 // the one-tap when chips. nothing selected means whatever the text said, or today
-enum class QuickWhen(val label: String) {
-    Now("Now"),
-    InAnHour("In 1 h"),
-    Tonight("Tonight"),
-    Tomorrow("Tomorrow");
+enum class QuickWhen(@androidx.annotation.StringRes val labelRes: Int) {
+    Now(R.string.agenda_now),
+    InAnHour(R.string.qc_in_an_hour),
+    Tonight(R.string.qc_tonight),
+    Tomorrow(R.string.common_tomorrow);
 
     fun resolve(now: LocalDateTime): LocalDateTime = when (this) {
         Now -> now.withSecond(0).withNano(0)
@@ -50,6 +51,7 @@ data class QuickCaptureFeedback(
 // about it. nothing here is ever awaited by the UI
 @HiltViewModel
 class QuickCaptureViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val todoRepository: TodoRepository,
     private val calendarRepository: CalendarRepository,
 ) : ViewModel() {
@@ -89,7 +91,7 @@ class QuickCaptureViewModel @Inject constructor(
             color = "blue",
             category = "personal",
         )
-        show("Task added", whenLabel(date, time))
+        show(context.getString(R.string.qc_task_added), whenLabel(date, time))
         viewModelScope.launch {
             runCatching { todoRepository.insertTodoItem(item) }
                 .onFailure { showError() }
@@ -107,7 +109,7 @@ class QuickCaptureViewModel @Inject constructor(
             location = "",
             color = DefaultEventColorKey,
         )
-        show("Event added", whenLabel(date, time))
+        show(context.getString(R.string.qc_event_added), whenLabel(date, time))
         viewModelScope.launch {
             runCatching { calendarRepository.insertEvent(event) }
                 .onFailure { showError() }
@@ -130,7 +132,7 @@ class QuickCaptureViewModel @Inject constructor(
     // bumps the token so the success timer already in flight can't clear the failure
     private fun showError() {
         feedbackToken++
-        _feedback.value = QuickCaptureFeedback("Couldn't save", "Tap to dismiss", isError = true)
+        _feedback.value = QuickCaptureFeedback(context.getString(R.string.qc_couldnt_save), context.getString(R.string.qc_tap_dismiss), isError = true)
     }
 
     // events need a clock reading, and the next half hour is the least surprising guess
@@ -143,8 +145,8 @@ class QuickCaptureViewModel @Inject constructor(
     private fun whenLabel(date: LocalDate, time: LocalTime?): String {
         val today = LocalDate.now()
         val day = when (date) {
-            today -> "Today"
-            today.plusDays(1) -> "Tomorrow"
+            today -> context.getString(R.string.common_today)
+            today.plusDays(1) -> context.getString(R.string.common_tomorrow)
             else -> date.format(DAY_MONTH)
         }
         return time?.let { "$day · ${it.format(HOUR_MINUTE)}" } ?: day

@@ -1,5 +1,7 @@
 package com.muradgalayev.brainbuddy.domain.scheduling
 
+import com.muradgalayev.brainbuddy.ui.utils.resolve
+import com.muradgalayev.brainbuddy.testing.TestStrings
 import com.muradgalayev.brainbuddy.domain.model.ProductiveTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -149,7 +151,7 @@ class TimeSuggestionEngineTest {
     fun `a to-do can be the thing a suggestion is chained to`() {
         val busy = listOf(BusyInterval(17 * 60, 17 * 60 + 30, "Call pharmacy"))
         val result = suggest("Errand", context(busy = busy, at = date.atTime(16, 0)))
-        assertTrue(result.any { it.reasonText == "Right after Call pharmacy" })
+        assertTrue(result.any { it.reasonText.resolve(TestStrings.en) == "Right after Call pharmacy" })
     }
 
     @Test
@@ -366,7 +368,7 @@ class TimeSuggestionEngineTest {
     @Test
     fun `every suggestion carries a reason the user can read`() {
         suggest("Gym").forEach {
-            assertTrue(it.reasonText.isNotBlank())
+            assertTrue(it.reasonText.resolve(TestStrings.en).isNotBlank())
         }
     }
 
@@ -510,7 +512,7 @@ class TimeSuggestionEngineTest {
         val moved = result.filter { it.date != date }
         assertEquals("expected exactly one cross-day option", 1, moved.size)
         assertEquals(SuggestionReason.BetterAnotherDay, moved.single().reason)
-        assertEquals("You'll have more in the tank", moved.single().reasonText)
+        assertEquals("You'll have more in the tank", moved.single().reasonText.resolve(TestStrings.en))
         // the day being edited still leads, moving is offered and never imposed
         assertEquals(date, result.first().date)
     }
@@ -573,7 +575,7 @@ class TimeSuggestionEngineTest {
         val moved = suggestAcross("Gym", today = packed).single()
         // `date` is both the day on screen and the engine's today here, which is
         // the one case where Tomorrow is the correct word
-        assertEquals("Tomorrow", moved.dayLabel(date, today = date))
+        assertEquals("Tomorrow", moved.dayLabel(date, today = date)?.resolve(TestStrings.en))
         assertTrue(moved.movesDay(date))
     }
 
@@ -607,7 +609,7 @@ class TimeSuggestionEngineTest {
         assertTrue(result.isNotEmpty())
         assertTrue(
             "A borrowed block's title must never reach a chip",
-            result.none { it.reasonText.contains("Therapy") },
+            result.none { it.reasonText.resolve(TestStrings.en).contains("Therapy") },
         )
         assertTrue(result.none { it.reason == SuggestionReason.AfterEvent })
     }
@@ -616,7 +618,7 @@ class TimeSuggestionEngineTest {
     fun `a block of my own is still named`() {
         val mine = BusyInterval(17 * 60, 17 * 60 + 30, "Standup")
         val result = suggest("Errand", context(busy = listOf(mine), at = date.atTime(16, 0)))
-        assertTrue(result.any { it.reasonText == "Right after Standup" })
+        assertTrue(result.any { it.reasonText.resolve(TestStrings.en) == "Right after Standup" })
     }
 
     @Test

@@ -42,6 +42,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.muradgalayev.brainbuddy.ui.navigation.optionalNavItems
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 
 @Composable
@@ -104,14 +106,14 @@ fun QuickAccessSection(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Quick Access",
+                        text = stringResource(R.string.settings_quick_access),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.size(2.dp))
                     Text(
-                        text = "${enabledRoutes.size} items shown in navigation bar",
+                        text = stringResource(R.string.settings_quick_access_count, enabledRoutes.size),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -209,16 +211,16 @@ fun QuickAccessSection(
 
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = screen.label,
+                                    text = stringResource(screen.labelRes),
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
                                     text = if (enabled)
-                                        "Shown in navigation bar"
+                                        stringResource(R.string.settings_shown_in_nav)
                                     else
-                                        "Tap to add to navigation",
+                                        stringResource(R.string.settings_tap_to_add_nav),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

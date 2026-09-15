@@ -1,5 +1,7 @@
 package com.muradgalayev.brainbuddy.ui.together
 
+import com.muradgalayev.brainbuddy.ui.utils.resolve
+import com.muradgalayev.brainbuddy.testing.TestStrings
 import com.muradgalayev.brainbuddy.domain.model.Connection
 import com.muradgalayev.brainbuddy.domain.model.ConnectionRelation
 import com.muradgalayev.brainbuddy.domain.model.ShareScope
@@ -164,7 +166,7 @@ class ShareOutcomeTest {
     @Test
     fun `full success on both calendars names the recipient`() {
         val message = ShareOutcome(succeeded = listOf("Aylin"))
-            .message(keptOnMine = true, kind = SharedItemKind.EVENT)
+            .message(keptOnMine = true, kind = SharedItemKind.EVENT).resolve(TestStrings.en)
 
         assertEquals("Added for you and Aylin", message)
     }
@@ -172,7 +174,7 @@ class ShareOutcomeTest {
     @Test
     fun `friend-only success says it is theirs alone`() {
         val message = ShareOutcome(succeeded = listOf("Aylin"))
-            .message(keptOnMine = false, kind = SharedItemKind.EVENT)
+            .message(keptOnMine = false, kind = SharedItemKind.EVENT).resolve(TestStrings.en)
 
         assertEquals("Added to Aylin's calendar", message)
     }
@@ -180,7 +182,7 @@ class ShareOutcomeTest {
     @Test
     fun `to-do wording says list rather than calendar`() {
         val message = ShareOutcome(succeeded = listOf("Aylin"))
-            .message(keptOnMine = false, kind = SharedItemKind.TASK)
+            .message(keptOnMine = false, kind = SharedItemKind.TASK).resolve(TestStrings.en)
 
         assertEquals("Added to Aylin's list", message)
     }
@@ -190,7 +192,7 @@ class ShareOutcomeTest {
         // reporting only the successes is how someone believes their partner was told about an
         // appointment that never reached them
         val message = ShareOutcome(succeeded = listOf("Aylin"), failed = listOf("Bahar"))
-            .message(keptOnMine = true, kind = SharedItemKind.EVENT)
+            .message(keptOnMine = true, kind = SharedItemKind.EVENT).resolve(TestStrings.en)
 
         assertTrue(message, message.contains("Aylin"))
         assertTrue(message, message.contains("Bahar"))
@@ -200,7 +202,7 @@ class ShareOutcomeTest {
     @Test
     fun `total failure with my own copy kept explains the likely cause`() {
         val message = ShareOutcome(failed = listOf("Aylin"))
-            .message(keptOnMine = true, kind = SharedItemKind.EVENT)
+            .message(keptOnMine = true, kind = SharedItemKind.EVENT).resolve(TestStrings.en)
 
         assertTrue(message, message.startsWith("Saved,"))
         assertTrue(message, message.contains("calendar sharing off"))
@@ -209,7 +211,7 @@ class ShareOutcomeTest {
     @Test
     fun `total failure names task sharing for the to-do flow`() {
         val message = ShareOutcome(failed = listOf("Aylin"))
-            .message(keptOnMine = true, kind = SharedItemKind.TASK)
+            .message(keptOnMine = true, kind = SharedItemKind.TASK).resolve(TestStrings.en)
 
         assertTrue(message, message.contains("task sharing off"))
     }
@@ -217,7 +219,7 @@ class ShareOutcomeTest {
     @Test
     fun `rescue message tells the user where their work went`() {
         val message = ShareOutcome(failed = listOf("Aylin"))
-            .message(keptOnMine = false, kind = SharedItemKind.TASK)
+            .message(keptOnMine = false, kind = SharedItemKind.TASK).resolve(TestStrings.en)
 
         assertTrue(message, message.contains("Aylin"))
         assertTrue(message, message.contains("saved to your list instead"))
@@ -226,7 +228,7 @@ class ShareOutcomeTest {
     @Test
     fun `several recipients are listed readably`() {
         val message = ShareOutcome(succeeded = listOf("Aylin", "Bahar"))
-            .message(keptOnMine = false, kind = SharedItemKind.EVENT)
+            .message(keptOnMine = false, kind = SharedItemKind.EVENT).resolve(TestStrings.en)
 
         assertEquals("Added to Aylin and Bahar's calendar", message)
     }
@@ -243,7 +245,7 @@ class ShareOutcomeTest {
         for (outcome in combos) {
             for (kept in listOf(true, false)) {
                 for (kind in SharedItemKind.entries) {
-                    val message = outcome.message(kept, kind)
+                    val message = outcome.message(kept, kind).resolve(TestStrings.en)
                     if (outcome.failed.isNotEmpty()) {
                         assertTrue(
                             "\"$message\" hides a failure for ${outcome.failed}",

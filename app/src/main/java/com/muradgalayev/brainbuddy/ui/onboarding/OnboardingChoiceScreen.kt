@@ -32,6 +32,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun OnboardingChoiceScreen(
@@ -53,14 +55,14 @@ fun OnboardingChoiceScreen(
                 .padding(top = 64.dp, bottom = 32.dp)
         ) {
             Text(
-                text = "Let's get to know you",
+                text = stringResource(R.string.onboarding_get_to_know_you),
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = colors.onSurface,
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Myndora works best when it knows how your ADHD shows up. Pick how much you want to share — you can edit anything later.",
+                text = stringResource(R.string.onboarding_choice_intro),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
             )
@@ -68,9 +70,9 @@ fun OnboardingChoiceScreen(
             Spacer(Modifier.height(40.dp))
 
             ChoiceCard(
-                title = "Quick Setup",
-                subtitle = "5 questions · ~30 seconds",
-                blurb = "Just the basics. Enough for the assistant to be useful from day one.",
+                title = stringResource(R.string.onboarding_quick_setup),
+                subtitle = stringResource(R.string.onboarding_quick_setup_meta),
+                blurb = stringResource(R.string.onboarding_quick_setup_blurb),
                 icon = Icons.Outlined.Bolt,
                 accent = colors.primary,
                 onClick = onPickQuick,
@@ -79,9 +81,9 @@ fun OnboardingChoiceScreen(
             Spacer(Modifier.height(16.dp))
 
             ChoiceCard(
-                title = "Deep Dive",
-                subtitle = "12 questions · ~3 minutes",
-                blurb = "Sleep, focus patterns, coping tools, tone preference. The more we know, the better the support.",
+                title = stringResource(R.string.onboarding_deep_dive),
+                subtitle = stringResource(R.string.onboarding_deep_dive_meta),
+                blurb = stringResource(R.string.onboarding_deep_dive_blurb),
                 icon = Icons.Outlined.Insights,
                 accent = colors.tertiary,
                 onClick = onPickDeep,
@@ -96,7 +98,7 @@ fun OnboardingChoiceScreen(
                     .align(Alignment.CenterHorizontally),
             ) {
                 Text(
-                    text = "I'll do this later",
+                    text = stringResource(R.string.onboarding_do_later),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = colors.onSurfaceVariant,

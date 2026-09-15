@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.ui.home
 
+import com.muradgalayev.brainbuddy.testing.TestStrings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -30,14 +31,14 @@ class HomeGreetingTest {
     @Test
     fun `a 2am check-in gets the night-owl band, not the evening one`() {
         assertEquals(DayBand.LateNight, dayBandFor(LocalTime.of(2, 0)))
-        val lines = (0..4).map { homeGreeting(LocalTime.of(2, 0), "Murad", it) }
+        val lines = (0..4).map { homeGreeting(LocalTime.of(2, 0), "Murad", it, TestStrings.en) }
         assertTrue("expected a night-owl line among $lines", lines.any { it.contains("Night owl") })
         assertFalse(lines.any { it.contains("evening", ignoreCase = true) })
     }
 
     @Test
     fun `the name is substituted when known`() {
-        assertEquals("Good morning, Murad", homeGreeting(LocalTime.of(9, 0), "Murad", 0))
+        assertEquals("Good morning, Murad", homeGreeting(LocalTime.of(9, 0), "Murad", 0, TestStrings.en))
     }
 
     @Test
@@ -46,7 +47,7 @@ class HomeGreetingTest {
         val everyBand = listOf(2, 6, 9, 14, 18, 22).map { LocalTime.of(it, 0) }
         everyBand.forEach { time ->
             (0..4).forEach { seed ->
-                val line = homeGreeting(time, null, seed)
+                val line = homeGreeting(time, null, seed, TestStrings.en)
                 assertFalse("unfilled slot in '$line'", line.contains("{name}"))
                 assertFalse("dangling comma in '$line'", line.contains(", ?") || line.endsWith(","))
                 assertFalse("double space in '$line'", line.contains("  "))
@@ -57,11 +58,11 @@ class HomeGreetingTest {
 
     @Test
     fun `the seed folds into range so any Int is safe`() {
-        val inRange = homeGreeting(LocalTime.of(9, 0), "Murad", 0)
-        assertEquals(inRange, homeGreeting(LocalTime.of(9, 0), "Murad", 5))
-        assertEquals(inRange, homeGreeting(LocalTime.of(9, 0), "Murad", -5))
+        val inRange = homeGreeting(LocalTime.of(9, 0), "Murad", 0, TestStrings.en)
+        assertEquals(inRange, homeGreeting(LocalTime.of(9, 0), "Murad", 5, TestStrings.en))
+        assertEquals(inRange, homeGreeting(LocalTime.of(9, 0), "Murad", -5, TestStrings.en))
         // would overflow a naive abs(seed) % size
-        homeGreeting(LocalTime.of(9, 0), "Murad", Int.MIN_VALUE)
+        homeGreeting(LocalTime.of(9, 0), "Murad", Int.MIN_VALUE, TestStrings.en)
     }
 
     @Test
@@ -72,4 +73,20 @@ class HomeGreetingTest {
         assertEquals("Murad", firstNameFrom("  ", "murad", null))
         assertNull(firstNameFrom(null, null, null))
     }
+
+    @Test
+    fun `Italian greetings drop the name slot as cleanly as the English ones`() {
+        val everyBand = listOf(2, 6, 9, 14, 18, 22).map { LocalTime.of(it, 0) }
+        everyBand.forEach { time ->
+            (0..4).forEach { seed ->
+                val line = homeGreeting(time, null, seed, TestStrings.it)
+                assertFalse("unfilled slot in '$line'", line.contains("{name}"))
+                assertFalse("dangling comma in '$line'", line.contains(", ?") || line.endsWith(","))
+                assertFalse("double space in '$line'", line.contains("  "))
+                assertEquals("untrimmed '$line'", line.trim(), line)
+                assertTrue(homeGreeting(time, "Giulia", seed, TestStrings.it).contains("Giulia"))
+            }
+        }
+    }
+
 }

@@ -1,5 +1,9 @@
 package com.muradgalayev.brainbuddy.domain.scheduling
 
+import com.muradgalayev.brainbuddy.ui.utils.uiText
+import com.muradgalayev.brainbuddy.ui.utils.UiText
+import com.muradgalayev.brainbuddy.R
+
 // an interface so the engine stays pure and the tests don't need Room
 fun interface HabitStatLookup {
     // already decayed to now by the caller, null when the habit is unknown
@@ -66,9 +70,9 @@ object TimeSuggestionEngine {
     private fun TimeSuggestion.asCrossDay(selectedDay: DayContext): TimeSuggestion {
         val fatigue = selectedDay.fatigue ?: 0f
         val text = when {
-            fatigue >= 0.35f && kind.demand >= 0.5f -> "You'll have more in the tank"
-            selectedDay.freeRatio < 0.2f -> "Today has no room for this"
-            else -> "A clearer run at it than today"
+            fatigue >= 0.35f && kind.demand >= 0.5f -> uiText(R.string.reason_more_in_tank)
+            selectedDay.freeRatio < 0.2f -> uiText(R.string.reason_no_room_today)
+            else -> uiText(R.string.reason_clearer_run)
         }
         return copy(reason = SuggestionReason.BetterAnotherDay, reasonText = text)
     }
@@ -369,7 +373,7 @@ object TimeSuggestionEngine {
         prior: TimingPrior,
         fullDuration: Int,
         context: DayContext,
-    ): Pair<SuggestionReason, String> {
+    ): Pair<SuggestionReason, UiText> {
         val nearUsual = circularDistance(start, prior.peakMinutes) <=
             maxOf(30, prior.spreadMinutes / 2)
         val fatigue = context.fatigue ?: 0f
@@ -377,36 +381,36 @@ object TimeSuggestionEngine {
         return when {
             prior.personalWeight >= 0.4f && nearUsual -> SuggestionReason.UsualTime to
                 if (prior.sampleCount >= 4) {
-                    "Your usual ${kind.label} time"
+                    uiText(R.string.reason_usual_time, uiText(kind.labelRes))
                 } else {
-                    "Close to when you last did this"
+                    uiText(R.string.reason_close_to_last)
                 }
 
-            chainedTo != null -> SuggestionReason.AfterEvent to "Right after ${chainedTo.trim()}"
+            chainedTo != null -> SuggestionReason.AfterEvent to uiText(R.string.reason_right_after, chainedTo.trim())
 
             fatigue >= 0.35f && kind.demand >= 0.5f -> SuggestionReason.EnergyAware to
                 if (duration < fullDuration) {
-                    "Shorter session — today's been a heavy one"
+                    uiText(R.string.reason_shorter_heavy)
                 } else {
-                    "Earlier, while you've still got energy"
+                    uiText(R.string.reason_earlier_energy)
                 }
 
-            circadian >= 1.04 -> SuggestionReason.FocusWindow to "Your best focus window"
+            circadian >= 1.04 -> SuggestionReason.FocusWindow to uiText(R.string.reason_focus_window)
 
             context.sleep.windDownPressure(start + duration) > 0.25f && kind.demand < 0.35f ->
                 SuggestionReason.BeforeBed to
-                    "Winds down before ${formatHhMm(context.sleep.bedMinutes)}"
+                    uiText(R.string.reason_winds_down, formatHhMm(context.sleep.bedMinutes))
 
             // above the generic advice: when a slot had to clear two calendars, that's what earned it.
             // only claimable when they actually had something on, otherwise 'free for you both' is an
             // inference dressed up as a fact
             context.busy.any { it.opaque } ->
-                SuggestionReason.FreeForBoth to "Free for you both"
+                SuggestionReason.FreeForBoth to uiText(R.string.reason_free_both)
 
             prior.personalWeight < 0.4f && kind != ActivityKind.General ->
-                SuggestionReason.TypicalForActivity to "Typical ${kind.label} time"
+                SuggestionReason.TypicalForActivity to uiText(R.string.reason_typical_time, uiText(kind.labelRes))
 
-            else -> SuggestionReason.ClearGap to "The clearest gap in your day"
+            else -> SuggestionReason.ClearGap to uiText(R.string.reason_clear_gap)
         }
     }
 

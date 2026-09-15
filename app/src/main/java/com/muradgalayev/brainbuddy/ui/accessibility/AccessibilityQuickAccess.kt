@@ -69,6 +69,8 @@ import com.muradgalayev.brainbuddy.ui.theme.AppTheme
 import com.muradgalayev.brainbuddy.ui.theme.fontFamilyOf
 import com.muradgalayev.brainbuddy.ui.modes.modeAccentColor
 import com.muradgalayev.brainbuddy.ui.modes.modeIcon
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // a tab on the right edge that opens the four things people change when a screen is hard to
 // use: brightness, colour, typeface, text size, and whether taps are read aloud. it exists
@@ -186,13 +188,13 @@ private fun EdgeTab(onClick: () -> Unit) {
             .clip(shape)
             .background(colors.surfaceContainerHigh)
             .border(1.dp, colors.outlineVariant.copy(alpha = 0.6f), shape)
-            .clickable(onClick = speaking("Accessibility", onClick))
+            .clickable(onClick = speaking(stringResource(R.string.a11y_title), onClick))
             .padding(start = 9.dp, end = 7.dp, top = 12.dp, bottom = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = Icons.Rounded.AccessibilityNew,
-            contentDescription = "Accessibility settings",
+            contentDescription = stringResource(R.string.a11y_settings),
             tint = colors.primary,
             modifier = Modifier.size(21.dp),
         )
@@ -244,7 +246,7 @@ private fun QuickPanel(
                 }
                 Spacer(Modifier.width(9.dp))
                 Text(
-                    text = "Accessibility",
+                    text = stringResource(R.string.a11y_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = colors.onSurface,
@@ -254,12 +256,12 @@ private fun QuickPanel(
                     Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .clickable(onClick = speaking("Close", onClose)),
+                        .clickable(onClick = speaking(stringResource(R.string.common_close), onClose)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Close,
-                        contentDescription = "Close",
+                        contentDescription = stringResource(R.string.common_close),
                         tint = colors.onSurfaceVariant,
                         modifier = Modifier.size(15.dp),
                     )
@@ -297,14 +299,14 @@ private fun QuickPanel(
                         }
                         Spacer(Modifier.height(10.dp))
                         Text(
-                            "${activeMode.name} mode is active",
+                            stringResource(R.string.settings_mode_active, activeMode.name),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = colors.onSurface,
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            "Appearance changes aren't available in this mode. Turn it off or edit the mode first.",
+                            stringResource(R.string.a11y_locked),
                             style = MaterialTheme.typography.bodySmall,
                             color = colors.onSurfaceVariant,
                         )
@@ -313,20 +315,20 @@ private fun QuickPanel(
                 return@Column
             }
 
-            RowLabel("Brightness")
+            RowLabel(stringResource(R.string.a11y_brightness))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                BrightnessButton(Icons.Rounded.LightMode, "Light", themeMode == ThemeMode.Light) {
+                BrightnessButton(Icons.Rounded.LightMode, stringResource(R.string.common_light), themeMode == ThemeMode.Light) {
                     onThemeMode(ThemeMode.Light)
                 }
-                BrightnessButton(Icons.Rounded.DarkMode, "Dark", themeMode == ThemeMode.Dark) {
+                BrightnessButton(Icons.Rounded.DarkMode, stringResource(R.string.common_dark), themeMode == ThemeMode.Dark) {
                     onThemeMode(ThemeMode.Dark)
                 }
-                BrightnessButton(Icons.Rounded.Brightness4, "Auto", themeMode == ThemeMode.System) {
+                BrightnessButton(Icons.Rounded.Brightness4, stringResource(R.string.common_auto), themeMode == ThemeMode.System) {
                     onThemeMode(ThemeMode.System)
                 }
             }
 
-            RowLabel("Colour")
+            RowLabel(stringResource(R.string.common_colour))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 AppTheme.entries.forEach { theme ->
                     ThemeDot(
@@ -337,7 +339,7 @@ private fun QuickPanel(
                 }
             }
 
-            RowLabel("Typeface")
+            RowLabel(stringResource(R.string.setup_typeface))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FontChip("Arial", FontMode.Arial, fontMode == FontMode.Arial) {
                     onFontMode(FontMode.Arial)
@@ -345,12 +347,12 @@ private fun QuickPanel(
                 FontChip("Atkinson", FontMode.Atkinson, fontMode == FontMode.Atkinson) {
                     onFontMode(FontMode.Atkinson)
                 }
-                FontChip("Dyslexic", FontMode.OpenDyslexic, fontMode == FontMode.OpenDyslexic) {
+                FontChip(stringResource(R.string.settings_font_dyslexic), FontMode.OpenDyslexic, fontMode == FontMode.OpenDyslexic) {
                     onFontMode(FontMode.OpenDyslexic)
                 }
             }
 
-            RowLabel("Text size")
+            RowLabel(stringResource(R.string.setup_text_size))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // the glyph is the control: each button shows the size it sets, so the choice needs no words
                 // and no preview
@@ -365,15 +367,15 @@ private fun QuickPanel(
                 }
             }
 
-            RowLabel("Line spacing")
+            RowLabel(stringResource(R.string.a11y_line_spacing))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SpacingButton(2.dp, "Normal", textSpacing == TextSpacing.Normal) {
+                SpacingButton(2.dp, stringResource(R.string.spacing_normal), textSpacing == TextSpacing.Normal) {
                     onTextSpacing(TextSpacing.Normal)
                 }
-                SpacingButton(5.dp, "Relaxed", textSpacing == TextSpacing.Relaxed) {
+                SpacingButton(5.dp, stringResource(R.string.spacing_relaxed), textSpacing == TextSpacing.Relaxed) {
                     onTextSpacing(TextSpacing.Relaxed)
                 }
-                SpacingButton(8.dp, "Loose", textSpacing == TextSpacing.Loose) {
+                SpacingButton(8.dp, stringResource(R.string.spacing_loose), textSpacing == TextSpacing.Loose) {
                     onTextSpacing(TextSpacing.Loose)
                 }
             }
@@ -385,7 +387,7 @@ private fun QuickPanel(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
                     .background(colors.surfaceContainerHighest.copy(alpha = 0.7f))
-                    .clickable(onClick = speaking("Speak what I tap") { onReadAloud(!readAloudTaps) })
+                    .clickable(onClick = speaking(stringResource(R.string.settings_speak_tap)) { onReadAloud(!readAloudTaps) })
                     .padding(start = 12.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -397,7 +399,7 @@ private fun QuickPanel(
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    text = "Speak what I tap",
+                    text = stringResource(R.string.settings_speak_tap),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium,
                     color = colors.onSurface,
@@ -476,7 +478,7 @@ private fun ThemeDot(theme: AppTheme, selected: Boolean, onClick: () -> Unit) {
             .background(
                 if (selected) colors.primary.copy(alpha = 0.16f) else Color.Transparent
             )
-            .clickable(onClick = speaking(theme.label, onClick)),
+            .clickable(onClick = speaking(stringResource(theme.labelRes), onClick)),
         contentAlignment = Alignment.Center,
     ) {
         Box(

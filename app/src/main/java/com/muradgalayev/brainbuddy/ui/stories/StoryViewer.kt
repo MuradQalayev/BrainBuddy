@@ -59,6 +59,8 @@ import com.muradgalayev.brainbuddy.data.repository.Story
 import com.muradgalayev.brainbuddy.data.repository.safeStoryLink
 import com.muradgalayev.brainbuddy.ui.accessibility.animationsOn
 import kotlinx.coroutines.delay
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // how long a story holds before advancing itself
 private const val STORY_DURATION_MS = 6_000L
@@ -219,7 +221,8 @@ private fun StoryPager(
         StoryProgressBars(
             count = stories.size,
             index = index,
-            progress = if (autoAdvance) elapsed else 0f,
+            progress = elapsed,
+            autoAdvance = autoAdvance,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .statusBarsPadding()
@@ -238,7 +241,7 @@ private fun StoryLinkSticker(
     val host = remember(url) {
         runCatching { java.net.URI(url).host?.removePrefix("www.") }.getOrNull()
     }
-    val text = label?.take(60) ?: host ?: "Open link"
+    val text = label?.take(60) ?: host ?: stringResource(R.string.story_open_link)
 
     Surface(
         onClick = {
@@ -265,7 +268,7 @@ private fun StoryLinkSticker(
             Spacer(Modifier.size(10.dp))
             Icon(
                 Icons.AutoMirrored.Rounded.OpenInNew,
-                contentDescription = "Open link",
+                contentDescription = stringResource(R.string.story_open_link),
                 modifier = Modifier.size(18.dp),
             )
         }
@@ -290,7 +293,7 @@ private fun StoryImage(story: Story) {
             .data(story.imageUrl)
             .crossfade(true)
             .build(),
-        contentDescription = story.caption ?: "Story",
+        contentDescription = story.caption ?: stringResource(R.string.story_cd),
         contentScale = ContentScale.Fit,
         modifier = Modifier.fillMaxSize(),
         onSuccess = { loading = false },
@@ -312,6 +315,7 @@ private fun StoryProgressBars(
     count: Int,
     index: Int,
     progress: Float,
+    autoAdvance: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -323,8 +327,9 @@ private fun StoryProgressBars(
                 i < index -> 1f
                 i > index -> 0f
                 // with auto-advance off there's no elapsing time to show, so the current bar is simply full
-                // rather than frozen at zero
-                progress == 0f && i == index -> 1f
+                // rather than frozen at zero. its own flag, not progress == 0: every story starts at 0, and
+                // reading that as 'full' filled each new bar up before it dropped back to start
+                !autoAdvance -> 1f
                 else -> progress
             }
             val animatedFill by animateFloatAsState(

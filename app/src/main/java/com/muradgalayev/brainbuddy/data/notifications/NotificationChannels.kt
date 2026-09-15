@@ -16,6 +16,7 @@ object NotificationChannels {
     const val FOCUS_NUDGE = "focus_nudge_v1"
     const val POMODORO_ALERTS = "pomodoro_alerts_v1"
     const val QUESTIONNAIRE_REMINDERS = "questionnaire_reminders_v1"
+    const val TOGETHER = "together_v1"
 
     private val LEGACY_CHANNELS = listOf(
         "event_reminders", "daily_summary",
@@ -36,10 +37,10 @@ object NotificationChannels {
         nm.createNotificationChannel(
             NotificationChannel(
                 EVENT_REMINDERS,
-                "Reminders",
+                context.getString(R.string.channel_reminders),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Heads-up nudges before your events and tasks."
+                description = context.getString(R.string.channel_reminders_desc)
                 setSound(customSoundUri, audioAttrs)
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 250, 200, 250)
@@ -50,10 +51,10 @@ object NotificationChannels {
         nm.createNotificationChannel(
             NotificationChannel(
                 DAILY_SUMMARY,
-                "Daily summary",
+                context.getString(R.string.notif_daily_summary),
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "A gentle morning rundown of your day."
+                description = context.getString(R.string.channel_summary_desc)
                 setSound(customSoundUri, audioAttrs)
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 200)
@@ -64,10 +65,10 @@ object NotificationChannels {
         nm.createNotificationChannel(
             NotificationChannel(
                 FOCUS_NUDGE,
-                "Focus nudges",
+                context.getString(R.string.notif_focus_nudges),
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "Gentle prompts to start a Pomodoro focus session."
+                description = context.getString(R.string.channel_nudges_desc)
                 setSound(customSoundUri, audioAttrs)
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 200)
@@ -78,10 +79,10 @@ object NotificationChannels {
         nm.createNotificationChannel(
             NotificationChannel(
                 QUESTIONNAIRE_REMINDERS,
-                "Profile check-ins",
+                context.getString(R.string.channel_profile),
                 NotificationManager.IMPORTANCE_DEFAULT,
             ).apply {
-                description = "Occasional reminders to continue an unfinished Myndora profile."
+                description = context.getString(R.string.channel_profile_desc)
                 setSound(customSoundUri, audioAttrs)
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 200)
@@ -91,11 +92,25 @@ object NotificationChannels {
 
         nm.createNotificationChannel(
             NotificationChannel(
+                TOGETHER,
+                context.getString(R.string.notif_channel_together),
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ).apply {
+                description = context.getString(R.string.notif_channel_together_desc)
+                setSound(customSoundUri, audioAttrs)
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 200)
+                setShowBadge(true)
+            }
+        )
+
+        nm.createNotificationChannel(
+            NotificationChannel(
                 POMODORO_ALERTS,
-                "Pomodoro breaks",
+                context.getString(R.string.channel_breaks),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Alerts when a focus session or break finishes."
+                description = context.getString(R.string.channel_breaks_desc)
                 setSound(customSoundUri, audioAttrs)
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 250, 200, 250)

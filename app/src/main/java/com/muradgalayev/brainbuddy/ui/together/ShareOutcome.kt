@@ -1,7 +1,10 @@
 package com.muradgalayev.brainbuddy.ui.together
 
+import com.muradgalayev.brainbuddy.R
 import com.muradgalayev.brainbuddy.domain.model.Connection
 import com.muradgalayev.brainbuddy.domain.model.ShareScope
+import com.muradgalayev.brainbuddy.ui.utils.UiText
+import com.muradgalayev.brainbuddy.ui.utils.uiText
 
 // shared logic for 'create this for someone else', used identically by the calendar and the
 // to-do list. both fan an item out to one or more connections and then have to say what
@@ -10,15 +13,7 @@ import com.muradgalayev.brainbuddy.domain.model.ShareScope
 // author's own list) is in one testable place rather than duplicated in two ViewModels
 
 // which flow is sharing, purely so the copy reads naturally
-enum class SharedItemKind(
-    // where the item lives, from the recipient's side
-    internal val place: String,
-    // the permission the recipient may have switched off
-    internal val sharingName: String,
-) {
-    EVENT("calendar", "calendar sharing"),
-    TASK("list", "task sharing"),
-}
+enum class SharedItemKind { EVENT, TASK }
 
 // names of the connections a fan-out succeeded and failed for
 data class ShareOutcome(
@@ -34,26 +29,29 @@ data class ShareOutcome(
     // what to tell the user. never claims success for a connection that rejected the write: a
     // partial failure names both sides, because 'saved' printed over a silently dropped copy is
     // how someone ends up believing their partner was told about an appointment they never got
-    fun message(keptOnMine: Boolean, kind: SharedItemKind): String {
-        val place = kind.place
+    fun message(keptOnMine: Boolean, kind: SharedItemKind): UiText {
+        val added = UiText.Names(succeeded)
+        val notAdded = UiText.Names(failed)
+        val event = kind == SharedItemKind.EVENT
         return when {
-            needsLocalRescue(keptOnMine) ->
-                "Couldn't add for ${failed.joinToString(" and ")} — saved to your " +
-                    "$place instead so you don't lose it"
+            needsLocalRescue(keptOnMine) -> uiText(
+                if (event) R.string.share_rescued_calendar else R.string.share_rescued_list,
+                notAdded,
+            )
 
-            failed.isEmpty() && keptOnMine ->
-                "Added for you and ${succeeded.joinToString(" and ")}"
+            failed.isEmpty() && keptOnMine -> uiText(R.string.share_added_for_you_and, added)
 
-            failed.isEmpty() ->
-                "Added to ${succeeded.joinToString(" and ")}'s $place"
+            failed.isEmpty() -> uiText(
+                if (event) R.string.share_added_to_calendar_of else R.string.share_added_to_list_of,
+                added,
+            )
 
-            succeeded.isEmpty() ->
-                "Saved, but couldn't add for ${failed.joinToString(" and ")} — " +
-                    "they may have turned ${kind.sharingName} off"
+            succeeded.isEmpty() -> uiText(
+                if (event) R.string.share_saved_calendar_off else R.string.share_saved_tasks_off,
+                notAdded,
+            )
 
-            else ->
-                "Added for ${succeeded.joinToString(" and ")}; " +
-                    "couldn't add for ${failed.joinToString(" and ")}"
+            else -> uiText(R.string.share_partial, added, notAdded)
         }
     }
 }

@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.muradgalayev.brainbuddy.R
 import kotlinx.coroutines.delay
+import androidx.compose.ui.res.stringResource
 
 // today's focus total, doubling as the entry point to history. when animated is false it stops
 // cycling and just sits there: a chip that keeps flipping in the corner is movement in the
@@ -73,12 +74,12 @@ fun HistorySummarySwitcher(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_history),
-                        contentDescription = "History",
+                        contentDescription = stringResource(R.string.focus_history_cd),
                         tint = accentColor,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = "${todayFocusMinutes}m today",
+                        text = stringResource(R.string.focus_minutes_today, todayFocusMinutes),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = accentColor,
@@ -99,9 +100,9 @@ fun HistorySummarySwitcher(
                 if (isTextVisible) {
                     Text(
                         text = if (todayFocusMinutes > 0) {
-                            "${todayFocusMinutes}m today"
+                            stringResource(R.string.focus_minutes_today, todayFocusMinutes)
                         } else {
-                            "0m today"
+                            stringResource(R.string.focus_zero_today)
                         },
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
@@ -111,7 +112,7 @@ fun HistorySummarySwitcher(
                 } else {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_history),
-                        contentDescription = "History",
+                        contentDescription = stringResource(R.string.focus_history_cd),
                         tint = accentColor,
                         modifier = Modifier.size(18.dp)
                     )

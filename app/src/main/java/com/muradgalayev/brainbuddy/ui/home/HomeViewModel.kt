@@ -109,6 +109,35 @@ class HomeViewModel @Inject constructor(
         homeLayout(null, HomeWidget.defaultHidden, emptyMap()),
     )
 
+    // the one nudge towards Reduce motion. it waits for the app to have been used a few times,
+    // stands down the moment motion is already reduced (by the switch or by a mode), and once it
+    // has been answered either way it never comes back. asking about movement is only fair after
+    // someone has sat with the movement
+    val motionTipVisible: StateFlow<Boolean> = combine(
+        preferencesManager.homeOpens,
+        preferencesManager.motionTipDone,
+        modeManager.effectiveReduceMotion,
+    ) { opens, answered, reduced ->
+        opens >= PreferencesManager.MOTION_TIP_AFTER_OPENS && !answered && !reduced
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    fun noteHomeOpened() {
+        viewModelScope.launch { preferencesManager.noteHomeOpened() }
+    }
+
+    fun keepMotion() {
+        viewModelScope.launch { preferencesManager.setMotionTipDone() }
+    }
+
+    // the tip's whole point. writes the same preference the switch in Settings writes, so the
+    // switch is already on when they go looking for how to undo it
+    fun reduceMotionFromTip() {
+        viewModelScope.launch {
+            preferencesManager.setReduceMotion(true)
+            preferencesManager.setMotionTipDone()
+        }
+    }
+
     // returns false when a mode owns the screen, so the caller can say why rather than do nothing
     fun moveWidget(from: Int, to: Int): Boolean = editBaseLayout {
         preferencesManager.setHomeWidgetOrder(layout.value.reordered(from, to).map { it.id })
@@ -145,7 +174,25 @@ class HomeViewModel @Inject constructor(
     val modes: StateFlow<List<com.muradgalayev.brainbuddy.domain.model.AppMode>> = modeManager.modes
     val activeMode: StateFlow<com.muradgalayev.brainbuddy.domain.model.AppMode?> = modeManager.activeMode
 
-    fun selectMode(id: String?) = modeManager.selectMode(id)
+    val activeModeStatus: StateFlow<com.muradgalayev.brainbuddy.domain.model.ModeStatus?> =
+        combine(modeManager.activeMode, modeManager.selection) { mode, selection ->
+            mode?.let { com.muradgalayev.brainbuddy.domain.model.modeStatus(it, selection) }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    // false until DataStore answers, so someone who already dismissed it never sees it flash in
+    val showModesIntro: StateFlow<Boolean> = preferencesManager.modesIntroSeen
+        .map { !it }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun dismissModesIntro() {
+        viewModelScope.launch { preferencesManager.setModesIntroSeen() }
+    }
+
+    // picking a mode is the clearest sign the intro has done its job
+    fun selectMode(id: String?) {
+        modeManager.selectMode(id)
+        dismissModesIntro()
+    }
 
     val timerRunning: StateFlow<Boolean> = timerManager.state
         .map { it.timerState == TimerState.RUNNING || it.timerState == TimerState.PAUSED }

@@ -1,5 +1,6 @@
 package com.muradgalayev.brainbuddy.ui.together
 
+import com.muradgalayev.brainbuddy.ui.utils.resolve
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -28,13 +29,12 @@ import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Diversity3
 import androidx.compose.material.icons.rounded.HourglassTop
 import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.PersonAdd
-import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -49,6 +49,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -64,10 +65,11 @@ import com.muradgalayev.brainbuddy.domain.model.Connection
 import com.muradgalayev.brainbuddy.domain.model.ConnectionRelation
 import com.muradgalayev.brainbuddy.domain.model.IncomingRequest
 import com.muradgalayev.brainbuddy.domain.model.OutgoingRequest
-import com.muradgalayev.brainbuddy.domain.model.ShareScope
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 // which half of the hub is showing
-private enum class TogetherTab(val label: String) { People("People"), Requests("Requests") }
+private enum class TogetherTab(@androidx.annotation.StringRes val labelRes: Int) { People(R.string.together_tab_people), Requests(R.string.together_tab_requests) }
 
 // the Together hub. two tabs rather than one long scroll, because the two jobs here are
 // unrelated: 'who am I connected to' is browsing, 'someone is waiting on me' is a task.
@@ -91,6 +93,7 @@ fun TogetherScreen(
     val pendingInvite by viewModel.pendingInvite.collectAsState()
 
     var tab by remember { mutableStateOf(TogetherTab.People) }
+    var qrOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { viewModel.refresh() }
     // a tapped myndora://connect link lands here, resolve it into a confirmation
@@ -104,7 +107,19 @@ fun TogetherScreen(
 
     val pendingCount = incoming.size + outgoing.size
 
-    TogetherScaffold(title = "Myndora Together", onBack = onBack) {
+    TogetherScaffold(
+        title = stringResource(R.string.together_title),
+        onBack = onBack,
+        trailing = {
+            IconButton(onClick = { qrOpen = true }) {
+                Icon(
+                    Icons.Rounded.QrCode2,
+                    contentDescription = stringResource(R.string.together_qr_open),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        },
+    ) {
         TogetherStatsHero(
             connections = connections,
             pendingRequests = incoming.size,
@@ -117,7 +132,7 @@ fun TogetherScreen(
         ) {
             Icon(Icons.Rounded.PersonAdd, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Add someone", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.together_add_someone), fontWeight = FontWeight.Bold)
         }
 
         SegmentedTabs(
@@ -148,7 +163,7 @@ fun TogetherScreen(
                 }
                 if (incoming.isNotEmpty()) {
                     TogetherSectionHeader(
-                        title = "Waiting for you",
+                        title = stringResource(R.string.together_waiting_for_you),
                         accent = MaterialTheme.colorScheme.tertiary,
                     )
                     for (request in incoming) {
@@ -163,7 +178,7 @@ fun TogetherScreen(
                 }
                 if (outgoing.isNotEmpty()) {
                     TogetherSectionHeader(
-                        title = "Sent by you",
+                        title = stringResource(R.string.together_sent_by_you),
                         accent = MaterialTheme.colorScheme.outline,
                     )
                     for (request in outgoing) {
@@ -184,6 +199,8 @@ fun TogetherScreen(
             InlineToast(text)
         }
     }
+
+    if (qrOpen) MyQrCodeSheet(onDismiss = { qrOpen = false })
 
     pendingInvite?.let { pending ->
         InviteConfirmationDialog(
@@ -212,9 +229,9 @@ private fun InviteConfirmationDialog(
         title = {
             Text(
                 when {
-                    pending.loading -> "Opening invite…"
-                    usable -> "${preview.name} invited you"
-                    else -> "This invite can't be used"
+                    pending.loading -> stringResource(R.string.together_opening_invite)
+                    usable -> stringResource(R.string.together_invited_you, preview.name)
+                    else -> stringResource(R.string.together_invite_unusable)
                 },
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
@@ -238,9 +255,7 @@ private fun InviteConfirmationDialog(
                         Spacer(Modifier.height(8.dp))
                     }
                     Text(
-                        "They'd like to connect as ${preview.relation.label.lowercase()}. " +
-                            "Accepting only links your accounts — nothing is shared until " +
-                            "you each choose what to share.",
+                        stringResource(R.string.together_invite_body, stringResource(preview.relation.labelRes).lowercase()),
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -267,16 +282,16 @@ private fun InviteConfirmationDialog(
                     if (pending.accepting) {
                         CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                     } else {
-                        Text("Connect", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.together_connect), fontWeight = FontWeight.Bold)
                     }
                 }
             } else {
-                TextButton(onClick = onDismiss) { Text("Close") }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_close)) }
             }
         },
         dismissButton = {
             if (usable) {
-                TextButton(onClick = onDismiss, enabled = !pending.accepting) { Text("Not now") }
+                TextButton(onClick = onDismiss, enabled = !pending.accepting) { Text(stringResource(R.string.common_not_now)) }
             }
         },
     )
@@ -329,7 +344,7 @@ private fun TogetherStatsHero(
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = if (connections.isEmpty()) "Your people" else "Your small world",
+                    text = if (connections.isEmpty()) stringResource(R.string.together_your_people) else stringResource(R.string.together_small_world),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = colors.onSurface,
@@ -338,9 +353,10 @@ private fun TogetherStatsHero(
                 Text(
                     text = when {
                         pendingRequests > 0 ->
-                            "$pendingRequests ${if (pendingRequests == 1) "person is" else "people are"} waiting on you"
+                            if (pendingRequests == 1) stringResource(R.string.together_waiting_one)
+                            else stringResource(R.string.together_waiting_many, pendingRequests)
                         connections.isEmpty() ->
-                            "Connect with a partner, family or friend"
+                            stringResource(R.string.together_connect_hint)
                         else ->
                             connections.take(3).joinToString(", ") { it.name }
                     },
@@ -354,8 +370,8 @@ private fun TogetherStatsHero(
         if (connections.isNotEmpty() || pendingRequests > 0) {
             Spacer(Modifier.height(18.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatTile("Connected", connections.size, Modifier.weight(1f))
-                StatTile("Pending", pendingRequests, Modifier.weight(1f))
+                StatTile(stringResource(R.string.together_stat_connected), connections.size, Modifier.weight(1f))
+                StatTile(stringResource(R.string.together_stat_pending), pendingRequests, Modifier.weight(1f))
             }
         }
     }
@@ -455,7 +471,7 @@ private fun SegmentedTabs(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         TabPill(
-            label = TogetherTab.People.label,
+            label = stringResource(TogetherTab.People.labelRes),
             count = peopleCount,
             selected = selected == TogetherTab.People,
             showDot = false,
@@ -463,7 +479,7 @@ private fun SegmentedTabs(
             onClick = { onSelect(TogetherTab.People) },
         )
         TabPill(
-            label = TogetherTab.Requests.label,
+            label = stringResource(TogetherTab.Requests.labelRes),
             count = requestCount,
             selected = selected == TogetherTab.Requests,
             showDot = attention,
@@ -542,15 +558,14 @@ private fun EmptyPeopleState(onAddSomeone: () -> Unit) {
         }
         Spacer(Modifier.height(14.dp))
         Text(
-            "Nobody here yet",
+            stringResource(R.string.together_nobody_yet),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = colors.onSurface,
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            "Invite someone you already know from your phone contacts with a private, " +
-                "single-use passcode. Then you both choose what to share.",
+            stringResource(R.string.together_nobody_body),
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
         )
@@ -558,7 +573,7 @@ private fun EmptyPeopleState(onAddSomeone: () -> Unit) {
         OutlinedButton(onClick = onAddSomeone, shape = RoundedCornerShape(16.dp)) {
             Icon(Icons.Rounded.PersonAdd, contentDescription = null, modifier = Modifier.size(17.dp))
             Spacer(Modifier.width(7.dp))
-            Text("Invite a contact")
+            Text(stringResource(R.string.together_invite_contact))
         }
     }
 }
@@ -567,14 +582,14 @@ private fun EmptyPeopleState(onAddSomeone: () -> Unit) {
 private fun EmptyRequestsState() {
     TogetherCard {
         Text(
-            "No requests",
+            stringResource(R.string.together_no_requests),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            "Requests you send and receive show up here.",
+            stringResource(R.string.together_no_requests_body),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -629,10 +644,14 @@ private fun IncomingRequestCard(
                     color = colors.onSurface,
                 )
                 Spacer(Modifier.height(2.dp))
+                val wantsToConnect = stringResource(
+                    R.string.together_wants_connect,
+                    stringResource(request.relation.labelRes).lowercase(),
+                )
                 Text(
                     buildString {
                         request.username?.let { append("@$it • ") }
-                        append("wants to connect as ${request.relation.label.lowercase()}")
+                        append(wantsToConnect)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
@@ -652,13 +671,13 @@ private fun IncomingRequestCard(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "Locked after too many wrong answers. Ask them to send a new request.",
+                    stringResource(R.string.together_locked_body),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.error,
                 )
             }
             Spacer(Modifier.height(8.dp))
-            TextButton(onClick = onDecline) { Text("Dismiss") }
+            TextButton(onClick = onDecline) { Text(stringResource(R.string.common_dismiss)) }
             return@TogetherCard
         }
 
@@ -671,7 +690,7 @@ private fun IncomingRequestCard(
                 .padding(14.dp),
         ) {
             Text(
-                "THEIR QUESTION",
+                stringResource(R.string.together_their_question),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = colors.tertiary,
@@ -679,7 +698,7 @@ private fun IncomingRequestCard(
             )
             Spacer(Modifier.height(5.dp))
             Text(
-                request.prompt,
+                request.prompt.resolve(),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = colors.onSurface,
@@ -692,7 +711,7 @@ private fun IncomingRequestCard(
             value = state.answer,
             onValueChange = onAnswerChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Your answer") },
+            placeholder = { Text(stringResource(R.string.together_your_answer)) },
             singleLine = true,
             isError = state.error != null,
             shape = RoundedCornerShape(14.dp),
@@ -710,7 +729,7 @@ private fun IncomingRequestCard(
         if (state.error == null) {
             Spacer(Modifier.height(6.dp))
             Text(
-                "Only they know the answer — that's how Myndora checks it's really them.",
+                stringResource(R.string.together_answer_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
             )
@@ -728,7 +747,7 @@ private fun IncomingRequestCard(
                 if (state.checking) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("Accept", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.together_accept), fontWeight = FontWeight.Bold)
                 }
             }
             OutlinedButton(
@@ -736,7 +755,7 @@ private fun IncomingRequestCard(
                 modifier = Modifier.weight(1f).height(48.dp),
                 shape = RoundedCornerShape(16.dp),
             ) {
-                Text("Decline")
+                Text(stringResource(R.string.together_decline))
             }
         }
     }
@@ -749,12 +768,15 @@ private fun ConnectionCard(connection: Connection, onClick: () -> Unit) {
 
     TogetherCard(onClick = onClick, accent = accent) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TogetherAvatar(
-                name = connection.name,
-                avatarUrl = connection.avatarUrl,
-                size = 54.dp,
-                ring = accent,
-            )
+            // faded, not hidden: they're still a connection, just away for now
+            Box(Modifier.alpha(if (connection.deactivated) .45f else 1f)) {
+                TogetherAvatar(
+                    name = connection.name,
+                    avatarUrl = connection.avatarUrl,
+                    size = 54.dp,
+                    ring = accent,
+                )
+            }
             Spacer(Modifier.width(13.dp))
             Column(Modifier.weight(1f)) {
                 Text(
@@ -768,7 +790,11 @@ private fun ConnectionCard(connection: Connection, onClick: () -> Unit) {
                 Spacer(Modifier.height(3.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     RelationChip(relation = connection.relation, accent = accent)
-                    connection.username?.takeIf { it.isNotBlank() }?.let {
+                    if (connection.deactivated) {
+                        Spacer(Modifier.width(6.dp))
+                        DeactivatedChip()
+                    }
+                    connection.username?.takeIf { it.isNotBlank() && !connection.deactivated }?.let {
                         Spacer(Modifier.width(7.dp))
                         Text(
                             "@$it",
@@ -799,14 +825,26 @@ private fun ConnectionCard(connection: Connection, onClick: () -> Unit) {
             }
         }
 
-        // one line, not the switch-by-switch breakdown, which lives on the profile where the switches
-        // are. but a list of names alone can't answer the question people actually bring to this
-        // screen ('am I sharing anything with them?'), and the direction has to be in the words: the
-        // two grants are independent, and a summary that blurred them would misdescribe the feature
-        Spacer(Modifier.height(12.dp))
-        HorizontalDivider(color = colors.onSurface.copy(alpha = .07f))
-        Spacer(Modifier.height(10.dp))
-        SharingSummaryRow(connection = connection, accent = accent)
+    }
+}
+
+// neutral grey on purpose: deactivated is a pause, not an error
+@Composable
+internal fun DeactivatedChip() {
+    val colors = MaterialTheme.colorScheme
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(7.dp))
+            .background(colors.onSurfaceVariant.copy(alpha = .14f))
+            .padding(horizontal = 7.dp, vertical = 2.dp),
+    ) {
+        Text(
+            stringResource(R.string.together_deactivated),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = colors.onSurfaceVariant,
+            fontSize = 9.5.sp,
+        )
     }
 }
 
@@ -819,7 +857,7 @@ private fun RelationChip(relation: ConnectionRelation, accent: Color) {
             .padding(horizontal = 7.dp, vertical = 2.dp),
     ) {
         Text(
-            relation.label,
+            stringResource(relation.labelRes),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
             color = accent,
@@ -827,54 +865,6 @@ private fun RelationChip(relation: ConnectionRelation, accent: Color) {
         )
     }
 }
-
-// 'You share Calendar, they share Wellness', or an invitation to set some of it up
-@Composable
-private fun SharingSummaryRow(connection: Connection, accent: Color) {
-    val colors = MaterialTheme.colorScheme
-    val mine = connection.grantedByMe
-    val theirs = connection.grantedToMe
-    val nothingShared = mine.isEmpty() && theirs.isEmpty()
-
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            if (nothingShared) Icons.Rounded.LockOpen else Icons.Rounded.SwapHoriz,
-            contentDescription = null,
-            tint = if (nothingShared) colors.onSurfaceVariant else accent,
-            modifier = Modifier.size(15.dp),
-        )
-        Spacer(Modifier.width(7.dp))
-        Text(
-            text = sharingSummary(mine, theirs),
-            style = MaterialTheme.typography.bodySmall,
-            color = colors.onSurfaceVariant,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-private fun sharingSummary(mine: Set<ShareScope>, theirs: Set<ShareScope>): String {
-    val minePart = mine.joinToString(", ") { it.shortLabel }
-    val theirsPart = theirs.joinToString(", ") { it.shortLabel }
-    return when {
-        mine.isEmpty() && theirs.isEmpty() -> "Nothing shared yet"
-        theirs.isEmpty() -> "You share $minePart"
-        mine.isEmpty() -> "They share $theirsPart"
-        else -> "You share $minePart · They share $theirsPart"
-    }
-}
-
-// shorter than ShareScope.label because these sit inline in a sentence: 'Wellness summary'
-// pushes a two-way summary onto a second line on its own
-private val ShareScope.shortLabel: String
-    get() = when (this) {
-        ShareScope.CALENDAR -> "Calendar"
-        ShareScope.AVAILABILITY -> "Free times"
-        ShareScope.TODOS -> "To-dos"
-        ShareScope.WELLNESS -> "Wellness"
-        ShareScope.FOCUS -> "Focus"
-    }
 
 // a hue per relation, so a scrolled list has shape to it rather than being one repeated grey
 // card. drawn from theme roles rather than fixed colours, so it holds up in every theme
@@ -911,16 +901,16 @@ private fun OutgoingRequestCard(request: OutgoingRequest, onCancel: () -> Unit) 
                     Spacer(Modifier.width(5.dp))
                     Text(
                         if (request.locked) {
-                            "They ran out of tries — withdraw and send a new one"
+                            stringResource(R.string.together_out_of_tries)
                         } else {
-                            "Waiting for them to answer"
+                            stringResource(R.string.together_waiting_answer)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = if (request.locked) colors.error else colors.onSurfaceVariant,
                     )
                 }
             }
-            TextButton(onClick = onCancel) { Text("Withdraw") }
+            TextButton(onClick = onCancel) { Text(stringResource(R.string.together_withdraw)) }
         }
     }
 }

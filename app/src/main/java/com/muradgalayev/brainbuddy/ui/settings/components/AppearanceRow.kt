@@ -49,6 +49,8 @@ import com.muradgalayev.brainbuddy.ui.settings.PillOption
 import com.muradgalayev.brainbuddy.ui.settings.SectionLabel
 import com.muradgalayev.brainbuddy.data.local.FontSize
 import com.muradgalayev.brainbuddy.data.local.TextSpacing
+import com.muradgalayev.brainbuddy.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun AppearanceRow(
@@ -113,7 +115,7 @@ fun AppearanceRow(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Appearance",
+                        text = stringResource(R.string.settings_appearance),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -170,27 +172,27 @@ fun AppearanceRow(
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     // theme
-                    SectionLabel(icon = Icons.Outlined.Brightness4, label = "Theme")
+                    SectionLabel(icon = Icons.Outlined.Brightness4, label = stringResource(R.string.common_theme))
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         PillOption(
-                            label = "Light",
+                            label = stringResource(R.string.common_light),
                             icon = Icons.Outlined.LightMode,
                             selected = themeMode == ThemeMode.Light,
                             onClick = { onThemeChange(ThemeMode.Light) },
                             modifier = Modifier.weight(1f)
                         )
                         PillOption(
-                            label = "Dark",
+                            label = stringResource(R.string.common_dark),
                             icon = Icons.Outlined.DarkMode,
                             selected = themeMode == ThemeMode.Dark,
                             onClick = { onThemeChange(ThemeMode.Dark) },
                             modifier = Modifier.weight(1f)
                         )
                         PillOption(
-                            label = "Auto",
+                            label = stringResource(R.string.common_auto),
                             icon = Icons.Outlined.Brightness4,
                             selected = themeMode == ThemeMode.System,
                             onClick = { onThemeChange(ThemeMode.System) },
@@ -199,7 +201,7 @@ fun AppearanceRow(
                     }
 
                     // font
-                    SectionLabel(icon = Icons.Outlined.TextFields, label = "Font")
+                    SectionLabel(icon = Icons.Outlined.TextFields, label = stringResource(R.string.settings_font))
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier.fillMaxWidth()
@@ -211,7 +213,7 @@ fun AppearanceRow(
                             modifier = Modifier.weight(1f)
                         )
                         PillOption(
-                            label = "Dyslexic",
+                            label = stringResource(R.string.settings_font_dyslexic),
                             selected = fontMode == FontMode.OpenDyslexic,
                             onClick = { onFontChange(FontMode.OpenDyslexic) },
                             modifier = Modifier.weight(1f)
@@ -224,26 +226,26 @@ fun AppearanceRow(
                         )
                     }
                     // font size
-                    SectionLabel(icon = Icons.Outlined.TextFields, label = "Font Size")
+                    SectionLabel(icon = Icons.Outlined.TextFields, label = stringResource(R.string.settings_font_size))
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         PillOption(
-                            label = "Small",
+                            label = stringResource(R.string.common_small),
                             selected = fontSize == FontSize.Small,
                             onClick = { onFontSizeChange(FontSize.Small) },
                             modifier = Modifier.weight(1f)
                         )
                         PillOption(
-                            label = "Medium",
+                            label = stringResource(R.string.common_medium),
                             selected = fontSize == FontSize.Medium,
                             onClick = { onFontSizeChange(FontSize.Medium) },
                             modifier = Modifier.weight(1f)
                         )
                         PillOption(
-                            label = "Large",
+                            label = stringResource(R.string.common_large),
                             selected = fontSize == FontSize.Large,
                             onClick = { onFontSizeChange(FontSize.Large) },
                             modifier = Modifier.weight(1f)
@@ -252,10 +254,9 @@ fun AppearanceRow(
 
                     // text spacing, directly under size because the two are usually tried together: 'still hard to
                     // read' is answered by one or the other, and which one only becomes clear by trying both
-                    SectionLabel(icon = Icons.Outlined.FormatLineSpacing, label = "Text Spacing")
+                    SectionLabel(icon = Icons.Outlined.FormatLineSpacing, label = stringResource(R.string.settings_text_spacing))
                     Text(
-                        text = "Adds room between lines and letters. This page updates as you " +
-                            "choose, so you can read the difference here.",
+                        text = stringResource(R.string.settings_text_spacing_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -265,19 +266,19 @@ fun AppearanceRow(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         PillOption(
-                            label = "Normal",
+                            label = stringResource(R.string.spacing_normal),
                             selected = textSpacing == TextSpacing.Normal,
                             onClick = { onTextSpacingChange(TextSpacing.Normal) },
                             modifier = Modifier.weight(1f)
                         )
                         PillOption(
-                            label = "Relaxed",
+                            label = stringResource(R.string.spacing_relaxed),
                             selected = textSpacing == TextSpacing.Relaxed,
                             onClick = { onTextSpacingChange(TextSpacing.Relaxed) },
                             modifier = Modifier.weight(1f)
                         )
                         PillOption(
-                            label = "Loose",
+                            label = stringResource(R.string.spacing_loose),
                             selected = textSpacing == TextSpacing.Loose,
                             onClick = { onTextSpacingChange(TextSpacing.Loose) },
                             modifier = Modifier.weight(1f)

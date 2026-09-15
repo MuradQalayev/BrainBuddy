@@ -30,6 +30,7 @@ import javax.inject.Singleton
 // the network: an edit lands in Room marked pending, and sync() settles up on the next pass
 @Singleton
 class ModeRepository @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val appModeDao: AppModeDao,
     private val remoteDataSource: SupabaseAppModeDataSource,
     private val authRepository: AuthRepository,
@@ -66,6 +67,17 @@ class ModeRepository @Inject constructor(
             }
         }
         .map { rows -> rows.map { it.toDomain() } }
+
+    // the built-ins are seeded with English names. until someone renames one it follows the app's
+    // language, including a name saved back while the app was in the other one
+    private fun builtInDisplayName(id: String, isBuiltIn: Boolean, stored: String): String = when {
+        !isBuiltIn -> stored
+        id == AppMode.ID_WORK && stored in setOf("Work", "Lavoro") ->
+            context.getString(com.muradgalayev.brainbuddy.R.string.mode_work)
+        id == AppMode.ID_WEEKEND && stored in setOf("Weekend", "Fine settimana") ->
+            context.getString(com.muradgalayev.brainbuddy.R.string.mode_weekend)
+        else -> stored
+    }
 
     suspend fun getModes(): List<AppMode> {
         val userId = userId() ?: return emptyList()
@@ -260,7 +272,7 @@ class ModeRepository @Inject constructor(
 
     private fun AppModeEntity.toDomain() = AppMode(
         id = id,
-        name = name,
+        name = builtInDisplayName(id, isBuiltIn, name),
         icon = icon,
         accent = accent,
         isBuiltIn = isBuiltIn,
