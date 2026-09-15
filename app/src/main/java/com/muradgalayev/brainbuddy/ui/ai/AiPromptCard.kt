@@ -69,6 +69,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.ime
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -314,6 +315,12 @@ fun AiPromptCard(
     // so without imePadding below the keyboard simply covers the composer. isImeVisible rather than
     // the inset value, because it answers the question directly and doesn't care who consumed what
     val keyboardOpen = WindowInsets.isImeVisible
+    // isImeVisible can be true with a near-zero reported inset — a floating/compact IME (seen on
+    // some emulator configurations) reports itself open without pushing the layout up at all. Only
+    // subtracting the ime's real height from the nav-bar clearance (never assuming the keyboard
+    // alone covers it) keeps the card correctly clear of the nav bar in that case too, instead of
+    // collapsing behind it.
+    val imeBottomDp = with(LocalDensity.current) { WindowInsets.ime.getBottom(this).toDp() }
 
     Surface(
         modifier = Modifier
@@ -327,10 +334,10 @@ fun AiPromptCard(
             .imePadding()
             .heightIn(max = maxCardHeight)
             .padding(horizontal = 12.dp)
-            // 104dp is exactly what NavGraph reserves for the bottom navigation bar, so the card sits
-            // directly on top of it rather than floating the extra 16dp this used to guess at. with
-            // the keyboard up there is no bar to clear, imePadding has already done the lifting
-            .padding(bottom = if (keyboardOpen) 0.dp else 104.dp)
+            // 104dp is exactly what NavGraph reserves for the bottom navigation bar. Only the part
+            // the keyboard hasn't already covered is added here, so a keyboard shorter than 104dp
+            // (or reporting 0dp, see above) still leaves the card clear of the bar.
+            .padding(bottom = (104.dp - imeBottomDp).coerceAtLeast(0.dp))
             .graphicsLayer {
                 alpha = .42f + (.58f * newChatMotion)
                 scaleX = .985f + (.015f * newChatMotion)
